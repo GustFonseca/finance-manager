@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const GOOGLE_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
+const WEB_REDIRECT_URI = 'https://gustfonseca.github.io/finance-manager';
 
 function extractIdTokenFromHash(): string | null {
   if (Platform.OS !== 'web') return null;
@@ -40,6 +41,17 @@ function extractIdTokenFromHash(): string | null {
   return idToken;
 }
 
+function webSignIn() {
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: WEB_REDIRECT_URI,
+    response_type: 'id_token',
+    scope: 'openid profile email',
+    nonce: Math.random().toString(36).substring(2),
+  });
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     token: null,
@@ -50,15 +62,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
-    redirectUri: 'https://gustfonseca.github.io/finance-manager',
+    redirectUri: WEB_REDIRECT_URI,
   });
 
   useEffect(() => {
     loadToken();
   }, []);
 
+  // Handle native Expo auth response
   useEffect(() => {
-    if (response?.type === 'success') {
+    if (Platform.OS !== 'web' && response?.type === 'success') {
       const idToken = response.params.id_token;
       if (idToken) {
         handleGoogleToken(idToken);
@@ -98,6 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithGoogle() {
+    if (Platform.OS === 'web') {
+      webSignIn();
+      return;
+    }
     await promptAsync();
   }
 
