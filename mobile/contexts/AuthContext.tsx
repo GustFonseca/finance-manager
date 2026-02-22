@@ -35,12 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
-  const redirectUri = makeRedirectUri({ native: 'finance-manager://' });
-  console.log('OAuth redirect URI:', redirectUri);
-
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
-    redirectUri,
+    redirectUri: 'https://gustfonseca.github.io/finance-manager',
   });
 
   useEffect(() => {
