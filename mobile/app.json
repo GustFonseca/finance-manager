@@ -29,13 +29,14 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "experiments": {
+      "typedRoutes": true,
+      "baseUrl": "/finance-manager"
+    },
     "plugins": [
       "expo-router",
       "expo-web-browser",
       "expo-secure-store"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }
