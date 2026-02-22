@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-const GOOGLE_CLIENT_ID = 'YOUR-GOOGLE-CLIENT-ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
