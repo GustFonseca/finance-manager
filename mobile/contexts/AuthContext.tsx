@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import { getItem, setItem, deleteItem } from '../services/storage';
 import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '../services/api';
@@ -27,11 +27,6 @@ const AuthContext = createContext<AuthContextType>({
 
 const GOOGLE_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 
-const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     token: null,
@@ -39,23 +34,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: GOOGLE_CLIENT_ID,
-      scopes: ['openid', 'profile', 'email'],
-      responseType: AuthSession.ResponseType.IdToken,
-      redirectUri: AuthSession.makeRedirectUri({ scheme: 'finance-manager' }),
-    },
-    discovery
-  );
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: GOOGLE_CLIENT_ID,
+  });
 
   useEffect(() => {
     loadToken();
   }, []);
 
   useEffect(() => {
-    if (response?.type === 'success' && response.params.id_token) {
-      handleGoogleToken(response.params.id_token);
+    if (response?.type === 'success') {
+      const idToken = response.params.id_token;
+      if (idToken) {
+        handleGoogleToken(idToken);
+      }
     }
   }, [response]);
 
