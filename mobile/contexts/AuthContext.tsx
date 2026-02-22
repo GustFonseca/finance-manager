@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { getItem, setItem, deleteItem } from '../services/storage';
 import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '../services/api';
@@ -28,12 +28,25 @@ const AuthContext = createContext<AuthContextType>({
 
 const GOOGLE_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 
+function extractIdTokenFromHash(): string | null {
+  if (Platform.OS !== 'web') return null;
+  const hash = window.location.hash;
+  if (!hash) return null;
+  const params = new URLSearchParams(hash.substring(1));
+  const idToken = params.get('id_token');
+  if (idToken) {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+  return idToken;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     token: null,
     user: null,
     isLoading: true,
   });
+  const hashTokenRef = useRef(extractIdTokenFromHash());
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
@@ -54,13 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [response]);
 
   async function loadToken() {
-    const token = await getItem('jwt_token');
+    const existingToken = await getItem('jwt_token');
     const userJson = await getItem('user_data');
-    if (token && userJson) {
-      setState({ token, user: JSON.parse(userJson), isLoading: false });
-    } else {
-      setState((prev) => ({ ...prev, isLoading: false }));
+    if (existingToken && userJson) {
+      setState({ token: existingToken, user: JSON.parse(userJson), isLoading: false });
+      return;
     }
+
+    const hashToken = hashTokenRef.current;
+    if (hashToken) {
+      hashTokenRef.current = null;
+      await handleGoogleToken(hashToken);
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isLoading: false }));
   }
 
   async function handleGoogleToken(idToken: string) {
@@ -72,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ token: data.token, user, isLoading: false });
     } catch (error) {
       console.error('Auth failed:', error);
+      setState((prev) => ({ ...prev, isLoading: false }));
     }
   }
 
