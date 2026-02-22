@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
 import { getItem, setItem, deleteItem } from '../services/storage';
 import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '../services/api';
@@ -34,8 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
+  const redirectUri = makeRedirectUri({ native: 'finance-manager://' });
+  console.log('OAuth redirect URI:', redirectUri);
+
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
+    redirectUri,
   });
 
   useEffect(() => {
