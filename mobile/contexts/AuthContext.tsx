@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import * as AuthSession from 'expo-auth-session';
+import { getItem, setItem, deleteItem } from '../services/storage';
 import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '../services/api';
 
@@ -60,8 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [response]);
 
   async function loadToken() {
-    const token = await SecureStore.getItemAsync('jwt_token');
-    const userJson = await SecureStore.getItemAsync('user_data');
+    const token = await getItem('jwt_token');
+    const userJson = await getItem('user_data');
     if (token && userJson) {
       setState({ token, user: JSON.parse(userJson), isLoading: false });
     } else {
@@ -72,9 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function handleGoogleToken(idToken: string) {
     try {
       const { data } = await authApi.googleLogin(idToken);
-      await SecureStore.setItemAsync('jwt_token', data.token);
+      await setItem('jwt_token', data.token);
       const user = { email: data.email, name: data.name };
-      await SecureStore.setItemAsync('user_data', JSON.stringify(user));
+      await setItem('user_data', JSON.stringify(user));
       setState({ token: data.token, user, isLoading: false });
     } catch (error) {
       console.error('Auth failed:', error);
@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    await SecureStore.deleteItemAsync('jwt_token');
-    await SecureStore.deleteItemAsync('user_data');
+    await deleteItem('jwt_token');
+    await deleteItem('user_data');
     setState({ token: null, user: null, isLoading: false });
   }
 
