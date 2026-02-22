@@ -1,0 +1,38 @@
+# C# / .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vs/
+*.DotSettings.user
+appsettings.Development.json
+
+# EF Core
+*.db
+*.db-shm
+*.db-wal
+
+# Node / React Native
+node_modules/
+.expo/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+publish/
+deploy.zip

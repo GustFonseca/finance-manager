@@ -1,0 +1,42 @@
+name: Deploy API to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch: # permite rodar manualmente
+
+env:
+  AZURE_WEBAPP_NAME: finance-manager-api-gufds
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore backend/FinanceManager.Api/FinanceManager.Api.csproj
+
+      - name: Build
+        run: dotnet build backend/FinanceManager.Api/FinanceManager.Api.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish backend/FinanceManager.Api/FinanceManager.Api.csproj --configuration Release --output ./publish --no-build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
