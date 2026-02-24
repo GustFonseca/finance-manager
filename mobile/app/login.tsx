@@ -8,7 +8,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Finance Manager</Text>
+        <Text style={styles.title}>Finance Manager Teste</Text>
         <Text style={styles.subtitle}>Controle suas finanças com facilidade</Text>
       </View>
 
