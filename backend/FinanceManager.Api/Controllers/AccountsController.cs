@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Accounts.Commands.CreateAccount;
+using FinanceManager.Aplication.UseCases.Accounts.Commands.DeleteAccount;
 using FinanceManager.Aplication.UseCases.Accounts.Commands.UpdateAccount;
 using FinanceManager.Aplication.UseCases.Accounts.Queries.GetAllAccounts;
 using Microsoft.AspNetCore.Authorization;
@@ -43,5 +44,20 @@ public class AccountsController : ControllerBase
         var account = await _mediator.Send(new UpdateAccountCommand(GetUserId(), id, request.Name));
         if (account == null) return NotFound();
         return Ok(account);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            var deleted = await _mediator.Send(new DeleteAccountCommand(GetUserId(), id));
+            if (!deleted) return NotFound();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

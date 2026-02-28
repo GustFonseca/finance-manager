@@ -34,6 +34,7 @@ export const accountsApi = {
   getAll: () => api.get<AccountDto[]>('/accounts'),
   create: (name: string) => api.post<AccountDto>('/accounts', { name }),
   update: (id: string, name: string) => api.put<AccountDto>(`/accounts/${id}`, { name }),
+  delete: (id: string) => api.delete(`/accounts/${id}`),
 };
 
 // Categories
@@ -103,6 +104,7 @@ export const goalsApi = {
   updateProgress: (id: string, amountCents: number) =>
     api.put<GoalDto>(`/goals/${id}/progress`, { amountCents }),
   complete: (id: string) => api.put<GoalDto>(`/goals/${id}/complete`),
+  delete: (id: string) => api.delete(`/goals/${id}`),
 };
 
 // Summary

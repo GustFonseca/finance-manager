@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { CategoryDto } from '../services/api';
+import { colors } from '@/constants/theme';
 
 type Props = {
   categories: CategoryDto[];
@@ -43,6 +44,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  text: { fontSize: 14 },
+  text: { fontSize: 14, color: colors.textPrimary },
   textActive: { color: '#fff', fontWeight: '600' },
 });

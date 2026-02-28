@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { summaryApi, transactionsApi, goalsApi, FinancialSummaryDto, TransactionDto, GoalDto } from '../../services/api';
 import { MoneyDisplay } from '../../components/MoneyDisplay';
 import { useAuth } from '../../contexts/AuthContext';
+import { colors } from '@/constants/theme';
 
 export default function DashboardScreen() {
   const { user, signOut } = useAuth();
@@ -112,7 +113,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -120,11 +121,11 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
   },
-  greeting: { fontSize: 22, fontWeight: '700' },
-  signOut: { color: '#F44336', fontWeight: '600' },
+  greeting: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  signOut: { color: colors.expense, fontWeight: '600' },
   summaryCards: { paddingHorizontal: 16 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -137,41 +138,41 @@ const styles = StyleSheet.create({
   balanceCard: { alignItems: 'center' },
   halfCard: { flex: 1 },
   row: { flexDirection: 'row', gap: 8 },
-  cardLabel: { fontSize: 13, color: '#888', marginBottom: 4 },
+  cardLabel: { fontSize: 13, color: colors.textSecondary, marginBottom: 4 },
   balanceValue: { fontSize: 28, fontWeight: '700' },
-  incomeValue: { fontSize: 18, fontWeight: '600', color: '#4CAF50' },
-  expenseValue: { fontSize: 18, fontWeight: '600', color: '#F44336' },
+  incomeValue: { fontSize: 18, fontWeight: '600', color: colors.income },
+  expenseValue: { fontSize: 18, fontWeight: '600', color: colors.expense },
   section: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
-  empty: { color: '#888', fontStyle: 'italic' },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12, color: colors.textPrimary },
+  empty: { color: colors.textSecondary, fontStyle: 'italic' },
   goalMini: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 12,
     borderRadius: 8,
   },
-  goalName: { width: 100, fontSize: 14, fontWeight: '500' },
+  goalName: { width: 100, fontSize: 14, fontWeight: '500', color: colors.textPrimary },
   goalProgress: {
     flex: 1,
     height: 6,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.surfaceLight,
     borderRadius: 3,
     overflow: 'hidden',
   },
-  goalBar: { height: '100%', backgroundColor: '#4CAF50', borderRadius: 3 },
-  goalPercent: { width: 40, fontSize: 12, color: '#666', textAlign: 'right' },
+  goalBar: { height: '100%', backgroundColor: colors.income, borderRadius: 3 },
+  goalPercent: { width: 40, fontSize: 12, color: colors.textMuted, textAlign: 'right' },
   txnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 8,
     marginBottom: 6,
   },
-  txnDesc: { fontSize: 15, fontWeight: '500' },
-  txnDate: { fontSize: 12, color: '#888', marginTop: 2 },
+  txnDesc: { fontSize: 15, fontWeight: '500', color: colors.textPrimary },
+  txnDate: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 });

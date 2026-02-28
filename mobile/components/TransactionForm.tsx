@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { accountsApi, categoriesApi, AccountDto, CategoryDto } from '../services/api';
+import { colors } from '@/constants/theme';
 
 type Props = {
   visible: boolean;
@@ -98,6 +99,7 @@ export function TransactionForm({ visible, onClose, onSubmit }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Valor (ex: 150,00)"
+            placeholderTextColor={colors.textMuted}
             keyboardType="decimal-pad"
             value={amount}
             onChangeText={setAmount}
@@ -106,6 +108,7 @@ export function TransactionForm({ visible, onClose, onSubmit }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Descrição"
+            placeholderTextColor={colors.textMuted}
             value={description}
             onChangeText={setDescription}
           />
@@ -117,7 +120,7 @@ export function TransactionForm({ visible, onClose, onSubmit }: Props) {
                 key={acc.id}
                 style={[styles.chip, selectedAccount === acc.id && styles.chipActive]}
                 onPress={() => setSelectedAccount(acc.id)}>
-                <Text style={selectedAccount === acc.id ? styles.chipTextActive : undefined}>
+                <Text style={[styles.chipText, selectedAccount === acc.id && styles.chipTextActive]}>
                   {acc.name}
                 </Text>
               </TouchableOpacity>
@@ -135,7 +138,7 @@ export function TransactionForm({ visible, onClose, onSubmit }: Props) {
                   selectedCategory === cat.id && { backgroundColor: cat.color },
                 ]}
                 onPress={() => setSelectedCategory(cat.id)}>
-                <Text style={selectedCategory === cat.id ? styles.chipTextActive : undefined}>
+                <Text style={[styles.chipText, selectedCategory === cat.id && styles.chipTextActive]}>
                   {cat.name}
                 </Text>
               </TouchableOpacity>
@@ -157,45 +160,47 @@ export function TransactionForm({ visible, onClose, onSubmit }: Props) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
+  overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  modal: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
+  title: { fontSize: 20, fontWeight: '700', marginBottom: 16, textAlign: 'center', color: colors.textPrimary },
   typeToggle: { flexDirection: 'row', marginBottom: 16, gap: 8 },
   typeBtn: {
     flex: 1,
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     alignItems: 'center',
   },
-  expenseActive: { backgroundColor: '#F44336', borderColor: '#F44336' },
-  incomeActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-  typeText: { fontWeight: '600' },
+  expenseActive: { backgroundColor: colors.expense, borderColor: colors.expense },
+  incomeActive: { backgroundColor: colors.income, borderColor: colors.income },
+  typeText: { fontWeight: '600', color: colors.textPrimary },
   typeTextActive: { color: '#fff' },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
     fontSize: 16,
+    color: colors.textPrimary,
   },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#555' },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: colors.textSecondary },
   picker: { marginBottom: 12, maxHeight: 40 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     marginRight: 8,
   },
-  chipActive: { backgroundColor: '#2196F3', borderColor: '#2196F3' },
-  chipTextActive: { color: '#fff' },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textPrimary },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  cancelBtn: { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', alignItems: 'center' },
-  cancelText: { fontWeight: '600', color: '#666' },
-  submitBtn: { flex: 1, padding: 14, borderRadius: 8, backgroundColor: '#2196F3', alignItems: 'center' },
+  cancelBtn: { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  cancelText: { fontWeight: '600', color: colors.textMuted },
+  submitBtn: { flex: 1, padding: 14, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center' },
   submitText: { fontWeight: '600', color: '#fff' },
 });

@@ -12,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import { transactionsApi, TransactionDto } from '../../services/api';
 import { MoneyDisplay } from '../../components/MoneyDisplay';
 import { TransactionForm } from '../../components/TransactionForm';
+import { colors } from '@/constants/theme';
 
 export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
@@ -111,24 +112,24 @@ export default function TransactionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: colors.background },
   list: { padding: 16 },
   item: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 10,
     marginBottom: 8,
     elevation: 1,
   },
   itemLeft: { flex: 1, marginRight: 12 },
-  itemDesc: { fontSize: 15, fontWeight: '500' },
-  itemMeta: { fontSize: 12, color: '#888', marginTop: 3 },
-  income: { fontSize: 16, fontWeight: '600', color: '#4CAF50' },
-  expense: { fontSize: 16, fontWeight: '600', color: '#F44336' },
-  empty: { textAlign: 'center', color: '#888', marginTop: 40, fontStyle: 'italic' },
+  itemDesc: { fontSize: 15, fontWeight: '500', color: colors.textPrimary },
+  itemMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 3 },
+  income: { fontSize: 16, fontWeight: '600', color: colors.income },
+  expense: { fontSize: 16, fontWeight: '600', color: colors.expense },
+  empty: { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontStyle: 'italic' },
   fab: {
     position: 'absolute',
     bottom: 20,
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,

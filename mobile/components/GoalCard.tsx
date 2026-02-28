@@ -2,14 +2,16 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { GoalDto } from '../services/api';
 import { MoneyDisplay } from './MoneyDisplay';
+import { colors } from '@/constants/theme';
 
 type Props = {
   goal: GoalDto;
   onAddProgress: (goal: GoalDto) => void;
   onComplete: (goal: GoalDto) => void;
+  onDelete: (goal: GoalDto) => void;
 };
 
-export function GoalCard({ goal, onAddProgress, onComplete }: Props) {
+export function GoalCard({ goal, onAddProgress, onComplete, onDelete }: Props) {
   const progressWidth = Math.min(goal.progressPercent, 100);
 
   return (
@@ -48,6 +50,11 @@ export function GoalCard({ goal, onAddProgress, onComplete }: Props) {
             onPress={() => onComplete(goal)}>
             <Text style={styles.btnText}>Concluir</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnDelete]}
+            onPress={() => onDelete(goal)}>
+            <Text style={styles.btnText}>Remover</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -56,7 +63,7 @@ export function GoalCard({ goal, onAddProgress, onComplete }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -67,31 +74,32 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 18, fontWeight: '600' },
-  status: { fontSize: 12, color: '#888', textTransform: 'uppercase' },
-  completed: { color: '#4CAF50' },
+  name: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  status: { fontSize: 12, color: colors.textSecondary, textTransform: 'uppercase' },
+  completed: { color: colors.income },
   progressContainer: {
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.surfaceLight,
     borderRadius: 4,
     marginTop: 12,
     overflow: 'hidden',
   },
-  progressBar: { height: '100%', backgroundColor: '#4CAF50', borderRadius: 4 },
-  progressText: { fontSize: 12, color: '#666', marginTop: 4, textAlign: 'right' },
+  progressBar: { height: '100%', backgroundColor: colors.income, borderRadius: 4 },
+  progressText: { fontSize: 12, color: colors.textMuted, marginTop: 4, textAlign: 'right' },
   amounts: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  current: { fontSize: 14, fontWeight: '600' },
-  separator: { color: '#888' },
-  target: { fontSize: 14, color: '#888' },
-  deadline: { fontSize: 12, color: '#888', marginTop: 4 },
+  current: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  separator: { color: colors.textSecondary },
+  target: { fontSize: 14, color: colors.textSecondary },
+  deadline: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   btn: {
     flex: 1,
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 10,
     alignItems: 'center',
   },
-  btnComplete: { backgroundColor: '#4CAF50' },
+  btnComplete: { backgroundColor: colors.income },
+  btnDelete: { backgroundColor: colors.expense },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

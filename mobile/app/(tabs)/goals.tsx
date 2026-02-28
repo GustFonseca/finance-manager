@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { goalsApi, GoalDto } from '../../services/api';
 import { GoalCard } from '../../components/GoalCard';
+import { colors } from '@/constants/theme';
 
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<GoalDto[]>([]);
@@ -87,6 +88,24 @@ export default function GoalsScreen() {
     ]);
   }
 
+  async function handleDelete(goal: GoalDto) {
+    Alert.alert('Confirmar', `Deseja remover a meta "${goal.name}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await goalsApi.delete(goal.id);
+            loadData();
+          } catch (error) {
+            Alert.alert('Erro', 'Não foi possível remover a meta');
+          }
+        },
+      },
+    ]);
+  }
+
   function onAddProgress(goal: GoalDto) {
     setSelectedGoal(goal);
     setShowProgress(true);
@@ -103,7 +122,7 @@ export default function GoalsScreen() {
       <FlatList
         data={goals}
         renderItem={({ item }) => (
-          <GoalCard goal={item} onAddProgress={onAddProgress} onComplete={handleComplete} />
+          <GoalCard goal={item} onAddProgress={onAddProgress} onComplete={handleComplete} onDelete={handleDelete} />
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -123,12 +142,14 @@ export default function GoalsScreen() {
             <TextInput
               style={styles.input}
               placeholder="Nome da meta"
+              placeholderTextColor={colors.textMuted}
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={styles.input}
               placeholder="Valor alvo (ex: 5000,00)"
+              placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               value={target}
               onChangeText={setTarget}
@@ -157,6 +178,7 @@ export default function GoalsScreen() {
             <TextInput
               style={styles.input}
               placeholder="Valor (ex: 100,00)"
+              placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               value={progressAmount}
               onChangeText={setProgressAmount}
@@ -182,9 +204,9 @@ export default function GoalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: colors.background },
   list: { padding: 16 },
-  empty: { textAlign: 'center', color: '#888', marginTop: 40, fontStyle: 'italic' },
+  empty: { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontStyle: 'italic' },
   fab: {
     position: 'absolute',
     bottom: 20,
@@ -192,22 +214,23 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modal: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 20 },
+  modal: { backgroundColor: colors.surface, borderRadius: 16, padding: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.textPrimary },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
     fontSize: 16,
+    color: colors.textPrimary,
   },
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
   cancelBtn: {
@@ -215,15 +238,15 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     alignItems: 'center',
   },
-  cancelText: { fontWeight: '600', color: '#666' },
+  cancelText: { fontWeight: '600', color: colors.textMuted },
   submitBtn: {
     flex: 1,
     padding: 14,
     borderRadius: 8,
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
   submitText: { fontWeight: '600', color: '#fff' },

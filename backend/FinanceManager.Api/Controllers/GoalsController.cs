@@ -3,6 +3,7 @@ using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Goals.Commands.CompleteGoal;
 using FinanceManager.Aplication.UseCases.Goals.Commands.CreateGoal;
+using FinanceManager.Aplication.UseCases.Goals.Commands.DeleteGoal;
 using FinanceManager.Aplication.UseCases.Goals.Commands.UpdateGoal;
 using FinanceManager.Aplication.UseCases.Goals.Queries.GetAllGoals;
 using Microsoft.AspNetCore.Authorization;
@@ -64,5 +65,13 @@ public class GoalsController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _mediator.Send(new DeleteGoalCommand(GetUserId(), id));
+        if (!deleted) return NotFound();
+        return NoContent();
     }
 }
