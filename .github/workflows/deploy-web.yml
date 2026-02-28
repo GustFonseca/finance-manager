@@ -40,6 +40,8 @@ jobs:
       - name: Export Expo web
         run: npx expo export --platform web
         working-directory: mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://finance-manager-api-gufds.azurewebsites.net/api
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
