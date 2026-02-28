@@ -1,5 +1,6 @@
-using FinanceManager.Api.DTOs.Auth;
-using FinanceManager.Api.Services;
+using FinanceManager.Aplication.DTOs.Auth;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Auth.Commands.GoogleLogin;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinanceManager.Api.Controllers;
@@ -8,11 +9,11 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly AuthService _authService;
+    private readonly IMediator _mediator;
 
-    public AuthController(AuthService authService)
+    public AuthController(IMediator mediator)
     {
-        _authService = authService;
+        _mediator = mediator;
     }
 
     [HttpPost("google")]
@@ -20,13 +21,8 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var (user, token) = await _authService.AuthenticateWithGoogle(request.IdToken);
-            return Ok(new LoginResponse
-            {
-                Token = token,
-                Email = user.Email,
-                Name = user.Name
-            });
+            var response = await _mediator.Send(new GoogleLoginCommand(request.IdToken));
+            return Ok(response);
         }
         catch (Exception ex)
         {

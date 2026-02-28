@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="FinaceManager.Aplication/FinanceManager.Aplication.csproj" Id="b2fdaaa0-56d1-4635-8c1a-8a2c0ffa6cae" />
   <Project Path="FinanceManager.Api/FinanceManager.Api.csproj" />
+  <Project Path="FinanceManager.Domain/FinanceManager.Domain.csproj" Id="655a4daa-a183-434e-be94-11f0ccf628bc" />
+  <Project Path="FinanceManager.Infrastructure/FinanceManager.Infrastructure.csproj" Id="122f75b5-29a2-4539-bb73-27a47d31b0e3" />
+  <Project Path="FinanceManager.Tests/FinanceManager.Tests.csproj" Id="22bf5d01-77c3-4451-90b0-2578cda4468d" />
 </Solution>

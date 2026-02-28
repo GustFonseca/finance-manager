@@ -1,6 +1,7 @@
 using System.Security.Claims;
-using FinanceManager.Api.DTOs;
-using FinanceManager.Api.Services;
+using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,11 +12,11 @@ namespace FinanceManager.Api.Controllers;
 [Authorize]
 public class SummaryController : ControllerBase
 {
-    private readonly SummaryService _summaryService;
+    private readonly IMediator _mediator;
 
-    public SummaryController(SummaryService summaryService)
+    public SummaryController(IMediator mediator)
     {
-        _summaryService = summaryService;
+        _mediator = mediator;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -25,7 +26,7 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? start,
         [FromQuery] DateTime? end)
     {
-        var summary = await _summaryService.GetSummary(GetUserId(), start, end);
+        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), start, end));
         return Ok(summary);
     }
 }

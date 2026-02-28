@@ -1,7 +1,10 @@
 using System.Security.Claims;
-using FinanceManager.Api.DTOs;
-using FinanceManager.Api.Models;
-using FinanceManager.Api.Services;
+using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Goals.Commands.CompleteGoal;
+using FinanceManager.Aplication.UseCases.Goals.Commands.CreateGoal;
+using FinanceManager.Aplication.UseCases.Goals.Commands.UpdateGoal;
+using FinanceManager.Aplication.UseCases.Goals.Queries.GetAllGoals;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +15,11 @@ namespace FinanceManager.Api.Controllers;
 [Authorize]
 public class GoalsController : ControllerBase
 {
-    private readonly GoalService _goalService;
+    private readonly IMediator _mediator;
 
-    public GoalsController(GoalService goalService)
+    public GoalsController(IMediator mediator)
     {
-        _goalService = goalService;
+        _mediator = mediator;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -24,36 +27,15 @@ public class GoalsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<GoalDto>>> GetAll()
     {
-        var goals = await _goalService.GetAll(GetUserId());
-
-        var dtos = goals.Select(g => new GoalDto
-        {
-            Id = g.Id,
-            Name = g.Name,
-            TargetCents = g.TargetCents,
-            CurrentCents = g.CurrentCents,
-            Deadline = g.Deadline,
-            Status = g.Status,
-            ProgressPercent = g.TargetCents > 0 ? Math.Round((double)g.CurrentCents / g.TargetCents * 100, 1) : 0
-        }).ToList();
-
-        return Ok(dtos);
+        var goals = await _mediator.Send(new GetAllGoalsQuery(GetUserId()));
+        return Ok(goals);
     }
 
     [HttpPost]
     public async Task<ActionResult<GoalDto>> Create([FromBody] CreateGoalRequest request)
     {
-        var goal = await _goalService.Create(GetUserId(), request);
-        return Created($"/api/goals/{goal.Id}", new GoalDto
-        {
-            Id = goal.Id,
-            Name = goal.Name,
-            TargetCents = goal.TargetCents,
-            CurrentCents = goal.CurrentCents,
-            Deadline = goal.Deadline,
-            Status = goal.Status,
-            ProgressPercent = 0
-        });
+        var goal = await _mediator.Send(new CreateGoalCommand(GetUserId(), request.Name, request.TargetCents, request.Deadline));
+        return Created($"/api/goals/{goal.Id}", goal);
     }
 
     [HttpPut("{id}/progress")]
@@ -61,17 +43,8 @@ public class GoalsController : ControllerBase
     {
         try
         {
-            var goal = await _goalService.UpdateProgress(GetUserId(), id, request.AmountCents);
-            return Ok(new GoalDto
-            {
-                Id = goal.Id,
-                Name = goal.Name,
-                TargetCents = goal.TargetCents,
-                CurrentCents = goal.CurrentCents,
-                Deadline = goal.Deadline,
-                Status = goal.Status,
-                ProgressPercent = goal.TargetCents > 0 ? Math.Round((double)goal.CurrentCents / goal.TargetCents * 100, 1) : 0
-            });
+            var goal = await _mediator.Send(new UpdateGoalProgressCommand(GetUserId(), id, request.AmountCents));
+            return Ok(goal);
         }
         catch (InvalidOperationException ex)
         {
@@ -84,17 +57,8 @@ public class GoalsController : ControllerBase
     {
         try
         {
-            var goal = await _goalService.Complete(GetUserId(), id);
-            return Ok(new GoalDto
-            {
-                Id = goal.Id,
-                Name = goal.Name,
-                TargetCents = goal.TargetCents,
-                CurrentCents = goal.CurrentCents,
-                Deadline = goal.Deadline,
-                Status = goal.Status,
-                ProgressPercent = goal.TargetCents > 0 ? Math.Round((double)goal.CurrentCents / goal.TargetCents * 100, 1) : 0
-            });
+            var goal = await _mediator.Send(new CompleteGoalCommand(GetUserId(), id));
+            return Ok(goal);
         }
         catch (InvalidOperationException ex)
         {

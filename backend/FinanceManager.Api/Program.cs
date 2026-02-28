@@ -1,6 +1,7 @@
 using System.Text;
-using FinanceManager.Api.Data;
-using FinanceManager.Api.Services;
+using FinanceManager.Aplication;
+using FinanceManager.Infrastructure;
+using FinanceManager.Infrastructure.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,9 +9,11 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Infrastructure (DbContext, Repositories)
+builder.Services.AddInfrastructure(builder.Configuration);
+
+// Application (Handlers, AutoMapper)
+builder.Services.AddApplication();
 
 // Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -30,12 +33,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
-// Services
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<TransactionService>();
-builder.Services.AddScoped<GoalService>();
-builder.Services.AddScoped<SummaryService>();
 
 // Controllers + Swagger
 builder.Services.AddControllers()

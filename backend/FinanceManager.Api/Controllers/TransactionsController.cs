@@ -1,6 +1,9 @@
 using System.Security.Claims;
-using FinanceManager.Api.DTOs;
-using FinanceManager.Api.Services;
+using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteTransaction;
+using FinanceManager.Aplication.UseCases.Transactions.Queries.GetTransactionByDateRange;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,11 +14,11 @@ namespace FinanceManager.Api.Controllers;
 [Authorize]
 public class TransactionsController : ControllerBase
 {
-    private readonly TransactionService _transactionService;
+    private readonly IMediator _mediator;
 
-    public TransactionsController(TransactionService transactionService)
+    public TransactionsController(IMediator mediator)
     {
-        _transactionService = transactionService;
+        _mediator = mediator;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -25,23 +28,8 @@ public class TransactionsController : ControllerBase
         [FromQuery] DateTime? start,
         [FromQuery] DateTime? end)
     {
-        var transactions = await _transactionService.GetByDateRange(GetUserId(), start, end);
-
-        var dtos = transactions.Select(t => new TransactionDto
-        {
-            Id = t.Id,
-            AccountId = t.AccountId,
-            AccountName = t.Account.Name,
-            CategoryId = t.CategoryId,
-            CategoryName = t.Category.Name,
-            Type = t.Type,
-            AmountCents = t.AmountCents,
-            Description = t.Description,
-            Date = t.Date,
-            Recurrence = t.Recurrence
-        }).ToList();
-
-        return Ok(dtos);
+        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start, end));
+        return Ok(transactions);
     }
 
     [HttpPost]
@@ -49,18 +37,16 @@ public class TransactionsController : ControllerBase
     {
         try
         {
-            var transaction = await _transactionService.Add(GetUserId(), request);
-            return Created($"/api/transactions/{transaction.Id}", new TransactionDto
-            {
-                Id = transaction.Id,
-                AccountId = transaction.AccountId,
-                CategoryId = transaction.CategoryId,
-                Type = transaction.Type,
-                AmountCents = transaction.AmountCents,
-                Description = transaction.Description,
-                Date = transaction.Date,
-                Recurrence = transaction.Recurrence
-            });
+            var transaction = await _mediator.Send(new CreateTransactionCommand(
+                GetUserId(),
+                request.AccountId,
+                request.CategoryId,
+                request.Type,
+                request.AmountCents,
+                request.Description,
+                request.Date,
+                request.Recurrence));
+            return Created($"/api/transactions/{transaction.Id}", transaction);
         }
         catch (InvalidOperationException ex)
         {
@@ -73,7 +59,7 @@ public class TransactionsController : ControllerBase
     {
         try
         {
-            await _transactionService.Remove(GetUserId(), id);
+            await _mediator.Send(new DeleteTransactionCommand(GetUserId(), id));
             return NoContent();
         }
         catch (InvalidOperationException ex)
