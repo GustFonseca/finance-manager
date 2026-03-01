@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import { getItem, setItem, deleteItem } from '../services/storage';
 import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '../services/api';
@@ -63,9 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
-    redirectUri: Platform.OS === 'web'
-      ? WEB_REDIRECT_URI
-      : makeRedirectUri({ useProxy: true }),
+    redirectUri: WEB_REDIRECT_URI,
   });
 
   useEffect(() => {
@@ -118,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       webSignIn();
       return;
     }
-    await promptAsync({ useProxy: true });
+    await promptAsync();
   }
 
   async function signOut() {

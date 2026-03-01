@@ -91,11 +91,14 @@ export default function AccountsScreen() {
 
   function renderItem({ item }: { item: AccountDto }) {
     return (
-      <TouchableOpacity style={styles.item} onPress={() => openEdit(item)} onLongPress={() => handleDelete(item)}>
+      <TouchableOpacity style={styles.item} onPress={() => openEdit(item)}>
         <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.name}</Text>
           <MoneyDisplay amountCents={item.balanceCents} style={styles.balance} />
         </View>
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+          <Text style={styles.deleteText}>✕</Text>
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   }
@@ -174,6 +177,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
+  deleteBtn: {
+    marginLeft: 8,
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: colors.expense + '20',
+  },
+  deleteText: { fontSize: 14, color: colors.expense, fontWeight: '700' },
   overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 20 },
   modal: { backgroundColor: colors.surface, borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.textPrimary },

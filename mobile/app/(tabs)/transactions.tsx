@@ -76,7 +76,7 @@ export default function TransactionsScreen() {
 
   function renderItem({ item }: { item: TransactionDto }) {
     return (
-      <TouchableOpacity style={styles.item} onLongPress={() => handleDelete(item.id)}>
+      <View style={styles.item}>
         <View style={styles.itemLeft}>
           <Text style={styles.itemDesc}>{item.description || item.categoryName}</Text>
           <Text style={styles.itemMeta}>
@@ -87,7 +87,10 @@ export default function TransactionsScreen() {
           amountCents={item.type === 'EXPENSE' ? -item.amountCents : item.amountCents}
           style={item.type === 'EXPENSE' ? styles.expense : styles.income}
         />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+          <Text style={styles.deleteText}>✕</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -147,4 +150,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
+  deleteBtn: {
+    marginLeft: 8,
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: colors.expense + '20',
+  },
+  deleteText: { fontSize: 14, color: colors.expense, fontWeight: '700' },
 });
