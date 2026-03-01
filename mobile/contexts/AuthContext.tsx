@@ -26,9 +26,9 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-const GOOGLE_WEB_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
-const GOOGLE_ANDROID_CLIENT_ID = '932365675532-p644l5eb60n0qgs1o0vp4e0rv4o61h4t.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 const WEB_REDIRECT_URI = 'https://gustfonseca.github.io/finance-manager';
+const EXPO_PROXY_REDIRECT_URI = 'https://auth.expo.io/@anonymous/mobile';
 
 function extractIdTokenFromHash(): string | null {
   if (Platform.OS !== 'web') return null;
@@ -44,7 +44,7 @@ function extractIdTokenFromHash(): string | null {
 
 function webSignIn() {
   const params = new URLSearchParams({
-    client_id: GOOGLE_WEB_CLIENT_ID,
+    client_id: GOOGLE_CLIENT_ID,
     redirect_uri: WEB_REDIRECT_URI,
     response_type: 'id_token',
     scope: 'openid profile email',
@@ -62,9 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hashTokenRef = useRef(extractIdTokenFromHash());
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    ...(Platform.OS === 'web' ? { redirectUri: WEB_REDIRECT_URI } : {}),
+    clientId: GOOGLE_CLIENT_ID,
+    redirectUri: Platform.OS === 'web' ? WEB_REDIRECT_URI : EXPO_PROXY_REDIRECT_URI,
   });
 
   useEffect(() => {

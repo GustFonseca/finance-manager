@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Pressable,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -75,9 +74,20 @@ export default function TransactionsScreen() {
     setRefreshing(false);
   }
 
+  function showOptions(item: TransactionDto) {
+    Alert.alert(item.description || item.categoryName, '', [
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => handleDelete(item.id),
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
   function renderItem({ item }: { item: TransactionDto }) {
     return (
-      <View style={styles.item}>
+      <TouchableOpacity style={styles.item} onPress={() => showOptions(item)}>
         <View style={styles.itemLeft}>
           <Text style={styles.itemDesc}>{item.description || item.categoryName}</Text>
           <Text style={styles.itemMeta}>
@@ -88,10 +98,7 @@ export default function TransactionsScreen() {
           amountCents={item.type === 'EXPENSE' ? -item.amountCents : item.amountCents}
           style={item.type === 'EXPENSE' ? styles.expense : styles.income}
         />
-        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
-          <Text style={styles.deleteText}>✕</Text>
-        </Pressable>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -151,11 +158,4 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
-  deleteBtn: {
-    marginLeft: 8,
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: colors.expense + '20',
-  },
-  deleteText: { fontSize: 14, color: colors.expense, fontWeight: '700' },
 });

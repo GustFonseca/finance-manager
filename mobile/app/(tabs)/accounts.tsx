@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -90,17 +89,26 @@ export default function AccountsScreen() {
     setRefreshing(false);
   }
 
+  function showOptions(account: AccountDto) {
+    Alert.alert(account.name, '', [
+      { text: 'Editar', onPress: () => openEdit(account) },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => handleDelete(account),
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
   function renderItem({ item }: { item: AccountDto }) {
     return (
-      <View style={styles.item}>
-        <Pressable style={styles.itemInfo} onPress={() => openEdit(item)}>
+      <TouchableOpacity style={styles.item} onPress={() => showOptions(item)}>
+        <View style={styles.itemInfo}>
           <Text style={styles.itemName}>{item.name}</Text>
           <MoneyDisplay amountCents={item.balanceCents} style={styles.balance} />
-        </Pressable>
-        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-          <Text style={styles.deleteText}>✕</Text>
-        </Pressable>
-      </View>
+        </View>
+      </TouchableOpacity>
     );
   }
 
@@ -178,13 +186,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
-  deleteBtn: {
-    marginLeft: 8,
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: colors.expense + '20',
-  },
-  deleteText: { fontSize: 14, color: colors.expense, fontWeight: '700' },
   overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 20 },
   modal: { backgroundColor: colors.surface, borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.textPrimary },

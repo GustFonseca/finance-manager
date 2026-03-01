@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -97,20 +96,27 @@ export default function CategoriesScreen() {
     setRefreshing(false);
   }
 
+  function showOptions(cat: CategoryDto) {
+    Alert.alert(cat.name, '', [
+      { text: 'Editar', onPress: () => openEdit(cat) },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => handleDelete(cat),
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
   function renderItem({ item }: { item: CategoryDto }) {
     return (
-      <View style={styles.item}>
-        <Pressable style={styles.itemContent} onPress={() => openEdit(item)}>
-          <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemType}>{item.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
-          </View>
-        </Pressable>
-        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-          <Text style={styles.deleteText}>✕</Text>
-        </Pressable>
-      </View>
+      <TouchableOpacity style={styles.item} onPress={() => showOptions(item)}>
+        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemType}>{item.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
+        </View>
+      </TouchableOpacity>
     );
   }
 
@@ -198,8 +204,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
     elevation: 1,
+    gap: 12,
   },
-  itemContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   colorDot: { width: 16, height: 16, borderRadius: 8 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '500', color: colors.textPrimary },
@@ -218,13 +224,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 30 },
-  deleteBtn: {
-    marginLeft: 8,
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: colors.expense + '20',
-  },
-  deleteText: { fontSize: 14, color: colors.expense, fontWeight: '700' },
   overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 20 },
   modal: { backgroundColor: colors.surface, borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.textPrimary },
