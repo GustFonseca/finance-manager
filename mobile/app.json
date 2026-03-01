@@ -22,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.dfrog.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,12 @@
       "expo-router",
       "expo-web-browser",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4e0df32b-f09c-4439-97a2-56f079b2b2ea"
+      }
+    }
   }
 }
