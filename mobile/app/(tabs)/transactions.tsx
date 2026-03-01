@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -87,9 +88,9 @@ export default function TransactionsScreen() {
           amountCents={item.type === 'EXPENSE' ? -item.amountCents : item.amountCents}
           style={item.type === 'EXPENSE' ? styles.expense : styles.income}
         />
-        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
           <Text style={styles.deleteText}>✕</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }

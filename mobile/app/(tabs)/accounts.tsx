@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -91,15 +92,15 @@ export default function AccountsScreen() {
 
   function renderItem({ item }: { item: AccountDto }) {
     return (
-      <TouchableOpacity style={styles.item} onPress={() => openEdit(item)}>
-        <View style={styles.itemInfo}>
+      <View style={styles.item}>
+        <Pressable style={styles.itemInfo} onPress={() => openEdit(item)}>
           <Text style={styles.itemName}>{item.name}</Text>
           <MoneyDisplay amountCents={item.balanceCents} style={styles.balance} />
-        </View>
-        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+        </Pressable>
+        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item)}>
           <Text style={styles.deleteText}>✕</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </Pressable>
+      </View>
     );
   }
 

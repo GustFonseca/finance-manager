@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -98,16 +99,18 @@ export default function CategoriesScreen() {
 
   function renderItem({ item }: { item: CategoryDto }) {
     return (
-      <TouchableOpacity style={styles.item} onPress={() => openEdit(item)}>
-        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemType}>{item.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
-        </View>
-        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+      <View style={styles.item}>
+        <Pressable style={styles.itemContent} onPress={() => openEdit(item)}>
+          <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemType}>{item.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
+          </View>
+        </Pressable>
+        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item)}>
           <Text style={styles.deleteText}>✕</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </Pressable>
+      </View>
     );
   }
 
@@ -195,8 +198,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
     elevation: 1,
-    gap: 12,
   },
+  itemContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   colorDot: { width: 16, height: 16, borderRadius: 8 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '500', color: colors.textPrimary },
