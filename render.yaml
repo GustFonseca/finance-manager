@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: finance-manager-api
+    runtime: docker
+    plan: free
+    region: virginia # same AWS region as the Neon database (us-east-1)
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /swagger/index.html
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # Neon connection string, set in the Render dashboard
+      - key: Jwt__Secret
+        generateValue: true
+      - key: Google__ClientId
+        value: 932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com

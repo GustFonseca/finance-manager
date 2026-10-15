@@ -56,6 +56,8 @@ The API base URL is read from the `EXPO_PUBLIC_API_URL` environment variable
 - **Frontend**: the static export (`./dist`) is published to GitHub Pages via
   [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) on every
   push to `main` that touches `web/`.
-- **Backend**: deployed to Azure App Service via
-  [`.github/workflows/deploy-api.yml`](.github/workflows/deploy-api.yml) on every
-  push to `main` that touches `backend/`.
+- **Backend**: built from [`backend/Dockerfile`](backend/Dockerfile) and deployed
+  to Render (free plan) as defined in [`render.yaml`](render.yaml). Render
+  redeploys on every push to `main` that touches `backend/`. The database is
+  PostgreSQL on Neon; its connection string is set as
+  `ConnectionStrings__DefaultConnection` in the Render dashboard.

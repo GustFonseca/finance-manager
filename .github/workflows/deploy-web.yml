@@ -49,7 +49,7 @@ jobs:
         run: npx expo export --platform web
         working-directory: web
         env:
-          EXPO_PUBLIC_API_URL: https://finance-manager-api-gufds.azurewebsites.net/api
+          EXPO_PUBLIC_API_URL: https://finance-manager-api.onrender.com/api
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

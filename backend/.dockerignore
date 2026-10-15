@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/publish/
+**/*.user
+**/*.Backup.tmp
+FinanceManager.Api/deploy.zip
+FinanceManager.Tests/
