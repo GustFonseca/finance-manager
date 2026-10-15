@@ -19,7 +19,7 @@ public class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand, Accoun
     {
         var account = await _accountRepository.GetByIdAsync(request.accountId);
 
-        if (account == null) 
+        if (account == null || account.UserId != request.userId)
         {
             return null;
         }

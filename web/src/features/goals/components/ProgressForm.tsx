@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Input, Modal } from '@/components/ui';
+import { DialogButtons, Input, Modal } from '@/components/ui';
 import { parseToCents } from '@/lib/money';
-import { spacing } from '@/theme';
 import { GoalDto } from '../types';
 
 type Props = {
@@ -29,23 +27,22 @@ export function ProgressForm({ goal, saving, onClose, onSubmit }: Props) {
     <Modal
       visible={!!goal}
       onClose={onClose}
+      icon="bullseye"
       title={goal ? `Adicionar Valor — ${goal.name}` : ''}>
       <Input
-        placeholder="Valor (ex: 100,00)"
+        label="Valor:"
+        placeholder="ex: 100,00"
         keyboardType="decimal-pad"
         value={amount}
         onChangeText={setAmount}
         autoFocus
       />
-      <View style={styles.actions}>
-        <Button label="Cancelar" variant="secondary" onPress={onClose} style={styles.grow} />
-        <Button label="Adicionar" onPress={handleSubmit} loading={saving} style={styles.grow} />
-      </View>
+      <DialogButtons
+        confirmLabel="Adicionar"
+        onConfirm={handleSubmit}
+        onCancel={onClose}
+        loading={saving}
+      />
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
-  grow: { flex: 1 },
-});

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet } from 'react-native';
-import { EmptyState, Fab, Screen, useDialog } from '@/components/ui';
+import { FlatList, RefreshControl } from 'react-native';
+import { EmptyState, useDialog } from '@/components/ui';
+import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
-import { spacing } from '@/theme';
 import { AccountForm } from './components/AccountForm';
 import { AccountListItem } from './components/AccountListItem';
 import { useAccounts, useDeleteAccount, useSaveAccount } from './queries';
@@ -62,17 +62,21 @@ export function AccountsScreen() {
   }
 
   return (
-    <Screen>
-      <FlatList
-        data={accounts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => <AccountListItem account={item} onPress={openOptions} />}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-        ListEmptyComponent={<EmptyState message="Nenhuma conta" />}
-      />
-
-      <Fab onPress={openCreate} />
+    <>
+      <Window
+        title="Contas"
+        icon="bank"
+        actions={[{ label: 'Nova conta', icon: 'plus-circle', onPress: openCreate }]}
+        onRefresh={refetch}
+        status={`${accounts.length} conta(s)`}>
+        <FlatList
+          data={accounts}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <AccountListItem account={item} onPress={openOptions} />}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+          ListEmptyComponent={<EmptyState message="Nenhuma conta" />}
+        />
+      </Window>
 
       <AccountForm
         visible={formVisible}
@@ -81,10 +85,6 @@ export function AccountsScreen() {
         onClose={() => setFormVisible(false)}
         onSubmit={handleSubmit}
       />
-    </Screen>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { padding: spacing.lg },
-});

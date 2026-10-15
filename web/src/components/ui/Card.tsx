@@ -1,10 +1,16 @@
 import React from 'react';
-import { StyleSheet, View, ViewProps } from 'react-native';
-import { colors, radius, spacing, shadow } from '@/theme';
+import { StyleSheet, Text, View, ViewProps } from 'react-native';
+import { colors, fontSize, radius, spacing } from '@/theme';
 
-export function Card({ style, children, ...rest }: ViewProps) {
+type Props = ViewProps & {
+  /** Renders the card as an XP group box with this caption on its border. */
+  title?: string;
+};
+
+export function Card({ title, style, children, ...rest }: Props) {
   return (
-    <View style={[styles.card, style]} {...rest}>
+    <View style={[styles.card, title ? styles.group : null, style]} {...rest}>
+      {title ? <Text style={styles.caption}>{title}</Text> : null}
       {children}
     </View>
   );
@@ -13,8 +19,24 @@ export function Card({ style, children, ...rest }: ViewProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    ...shadow.card,
+    borderWidth: 1,
+    borderColor: '#D0D0BF',
+    borderRadius: radius.sm,
+    padding: spacing.md,
+  },
+  group: {
+    backgroundColor: 'transparent',
+    marginTop: spacing.sm,
+    paddingTop: spacing.lg,
+  },
+  caption: {
+    position: 'absolute',
+    top: -8,
+    left: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    // Group boxes sit on the white window content area.
+    backgroundColor: colors.surface,
+    color: '#0046D5',
+    fontSize: fontSize.sm,
   },
 });

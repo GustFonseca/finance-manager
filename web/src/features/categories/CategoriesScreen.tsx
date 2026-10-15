@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet } from 'react-native';
-import { EmptyState, Fab, Screen, useDialog } from '@/components/ui';
+import { FlatList, RefreshControl } from 'react-native';
+import { EmptyState, useDialog } from '@/components/ui';
+import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
-import { spacing } from '@/theme';
 import { CategoryForm } from './components/CategoryForm';
 import { CategoryListItem } from './components/CategoryListItem';
 import { useCategories, useDeleteCategory, useSaveCategory } from './queries';
@@ -62,17 +62,21 @@ export function CategoriesScreen() {
   }
 
   return (
-    <Screen>
-      <FlatList
-        data={categories}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => <CategoryListItem category={item} onPress={openOptions} />}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-        ListEmptyComponent={<EmptyState message="Nenhuma categoria" />}
-      />
-
-      <Fab onPress={openCreate} />
+    <>
+      <Window
+        title="Categorias"
+        icon="tags"
+        actions={[{ label: 'Nova categoria', icon: 'plus-circle', onPress: openCreate }]}
+        onRefresh={refetch}
+        status={`${categories.length} categoria(s)`}>
+        <FlatList
+          data={categories}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <CategoryListItem category={item} onPress={openOptions} />}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+          ListEmptyComponent={<EmptyState message="Nenhuma categoria" />}
+        />
+      </Window>
 
       <CategoryForm
         visible={formVisible}
@@ -81,10 +85,6 @@ export function CategoriesScreen() {
         onClose={() => setFormVisible(false)}
         onSubmit={handleSubmit}
       />
-    </Screen>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { padding: spacing.lg },
-});

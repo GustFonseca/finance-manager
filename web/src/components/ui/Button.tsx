@@ -7,7 +7,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { colors, radius, spacing, fontSize } from '@/theme';
+import { bevels, colors, fontSize, gradients, PressState, radius, spacing, webStyle } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'success' | 'danger';
 type Size = 'md' | 'sm';
@@ -22,6 +22,11 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+/**
+ * Classic XP push button. `primary` is the dialog's default button (blue
+ * glow); `success`/`danger` only tint the label, as XP buttons were never
+ * colored.
+ */
 export function Button({
   label,
   onPress,
@@ -32,24 +37,28 @@ export function Button({
   style,
 }: Props) {
   const isDisabled = disabled || loading;
-  const variantStyle = VARIANTS[variant];
 
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
-        styles.base,
-        size === 'sm' && styles.sm,
-        variantStyle.container,
-        pressed && styles.pressed,
-        isDisabled && styles.disabled,
-        style,
-      ]}>
+      accessibilityRole="button"
+      style={(state) => {
+        const { pressed, hovered } = state as PressState;
+        return [
+          styles.base,
+          size === 'sm' && styles.sm,
+          variant === 'primary' && styles.default,
+          hovered && !isDisabled && styles.hovered,
+          pressed && styles.pressed,
+          isDisabled && styles.disabled,
+          style,
+        ];
+      }}>
       {loading ? (
-        <ActivityIndicator color={variantStyle.text.color} />
+        <ActivityIndicator size="small" color={colors.textPrimary} />
       ) : (
-        <Text style={[styles.label, size === 'sm' && styles.labelSm, variantStyle.text]}>
+        <Text style={[styles.label, LABEL_TONE[variant], isDisabled && styles.labelDisabled]}>
           {label}
         </Text>
       )}
@@ -57,29 +66,31 @@ export function Button({
   );
 }
 
+const LABEL_TONE: Record<Variant, { color: string; fontWeight?: '700' }> = {
+  primary: { color: colors.textPrimary },
+  secondary: { color: colors.textPrimary },
+  success: { color: colors.income, fontWeight: '700' },
+  danger: { color: colors.expense, fontWeight: '700' },
+};
+
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.lg,
+    minWidth: 75,
+    minHeight: 23,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: '#003C74',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    ...webStyle({ backgroundImage: gradients.button, cursor: 'pointer' }),
   },
-  sm: { paddingVertical: spacing.sm + 2 },
-  pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.5 },
-  label: { fontWeight: '600', fontSize: fontSize.md },
-  labelSm: { fontSize: fontSize.sm },
+  sm: { minWidth: 0, paddingHorizontal: spacing.sm, minHeight: 21 },
+  default: webStyle({ boxShadow: bevels.buttonDefault }),
+  hovered: webStyle({ boxShadow: bevels.buttonHover }),
+  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: 'none' }),
+  disabled: webStyle({ borderColor: '#C9C7BA', backgroundImage: 'none', cursor: 'default' }),
+  label: { fontSize: fontSize.sm },
+  labelDisabled: { color: '#A19E8F' },
 });
-
-const VARIANTS: Record<Variant, { container: ViewStyle; text: { color: string } }> = {
-  primary: { container: { backgroundColor: colors.primary }, text: { color: colors.textOnAccent } },
-  success: { container: { backgroundColor: colors.income }, text: { color: colors.textOnAccent } },
-  danger: { container: { backgroundColor: colors.expense }, text: { color: colors.textOnAccent } },
-  secondary: {
-    container: { backgroundColor: 'transparent', borderColor: colors.border },
-    text: { color: colors.textMuted },
-  },
-};

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet } from 'react-native';
-import { EmptyState, Fab, Screen, useDialog } from '@/components/ui';
+import { FlatList, RefreshControl } from 'react-native';
+import { EmptyState, useDialog } from '@/components/ui';
+import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
-import { spacing } from '@/theme';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
 import { useCreateTransaction, useDeleteTransaction, useTransactions } from './queries';
@@ -50,19 +50,25 @@ export function TransactionsScreen() {
   }
 
   return (
-    <Screen>
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <TransactionListItem transaction={item} onPress={openOptions} />
-        )}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-        ListEmptyComponent={<EmptyState message="Nenhuma transação encontrada" />}
-      />
-
-      <Fab onPress={() => setFormVisible(true)} />
+    <>
+      <Window
+        title="Transações"
+        icon="exchange"
+        actions={[
+          { label: 'Nova transação', icon: 'plus-circle', onPress: () => setFormVisible(true) },
+        ]}
+        onRefresh={refetch}
+        status={`${transactions.length} transação(ões)`}>
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TransactionListItem transaction={item} onPress={openOptions} />
+          )}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+          ListEmptyComponent={<EmptyState message="Nenhuma transação encontrada" />}
+        />
+      </Window>
 
       <TransactionForm
         visible={formVisible}
@@ -70,10 +76,6 @@ export function TransactionsScreen() {
         onClose={() => setFormVisible(false)}
         onSubmit={handleCreate}
       />
-    </Screen>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { padding: spacing.lg },
-});

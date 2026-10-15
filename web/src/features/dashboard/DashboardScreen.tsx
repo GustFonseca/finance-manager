@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, MoneyText, ProgressBar } from '@/components/ui';
+import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useTransactions } from '@/features/transactions/queries';
@@ -17,7 +18,7 @@ function currentMonthRange() {
 }
 
 export function DashboardScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   // Computed once on mount so the query key stays stable across renders.
   const range = useMemo(currentMonthRange, []);
 
@@ -36,102 +37,86 @@ export function DashboardScreen() {
 
   const recentTransactions = (transactionsQuery.data ?? []).slice(0, 5);
   const activeGoals = (goalsQuery.data ?? []).filter((g) => g.status === 'ACTIVE');
+  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
-      <View style={styles.header}>
+    <Window
+      title="Painel"
+      icon="line-chart"
+      onRefresh={refetchAll}
+      status={isFetching ? 'Atualizando...' : `Resumo de ${monthName}`}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
         <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
-        <Pressable onPress={signOut}>
-          <Text style={styles.signOut}>Sair</Text>
-        </Pressable>
-      </View>
 
-      {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+        {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
 
-      {activeGoals.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Metas Ativas</Text>
-          {activeGoals.map((goal) => (
-            <View key={goal.id} style={styles.goalMini}>
-              <Text style={styles.goalName} numberOfLines={1}>
-                {goal.name}
-              </Text>
-              <View style={styles.goalBar}>
-                <ProgressBar percent={goal.progressPercent} height={6} />
+        {activeGoals.length > 0 && (
+          <Card title="Metas ativas" style={styles.section}>
+            {activeGoals.map((goal) => (
+              <View key={goal.id} style={styles.goalRow}>
+                <Text style={styles.goalName} numberOfLines={1}>
+                  {goal.name}
+                </Text>
+                <View style={styles.goalBar}>
+                  <ProgressBar percent={goal.progressPercent} height={12} />
+                </View>
+                <Text style={styles.goalPercent}>{goal.progressPercent.toFixed(0)}%</Text>
               </View>
-              <Text style={styles.goalPercent}>{goal.progressPercent.toFixed(0)}%</Text>
+            ))}
+          </Card>
+        )}
+
+        <Card title="Últimas transações" style={styles.section}>
+          {recentTransactions.length === 0 && (
+            <Text style={styles.empty}>Nenhuma transação este mês</Text>
+          )}
+          {recentTransactions.map((txn) => (
+            <View key={txn.id} style={styles.txnRow}>
+              <View style={styles.txnInfo}>
+                <Text style={styles.txnDesc}>{txn.description || txn.categoryName}</Text>
+                <Text style={styles.txnDate}>
+                  {new Date(txn.date).toLocaleDateString('pt-BR')} · {txn.accountName}
+                </Text>
+              </View>
+              <MoneyText
+                cents={txn.type === 'EXPENSE' ? -txn.amountCents : txn.amountCents}
+                tone={txn.type === 'EXPENSE' ? 'expense' : 'income'}
+                style={styles.txnValue}
+              />
             </View>
           ))}
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Últimas Transações</Text>
-        {recentTransactions.length === 0 && (
-          <Text style={styles.empty}>Nenhuma transação este mês</Text>
-        )}
-        {recentTransactions.map((txn) => (
-          <Card key={txn.id} style={styles.txnRow}>
-            <View style={styles.txnInfo}>
-              <Text style={styles.txnDesc}>{txn.description || txn.categoryName}</Text>
-              <Text style={styles.txnDate}>
-                {new Date(txn.date).toLocaleDateString('pt-BR')} · {txn.accountName}
-              </Text>
-            </View>
-            <MoneyText
-              cents={txn.type === 'EXPENSE' ? -txn.amountCents : txn.amountCents}
-              tone={txn.type === 'EXPENSE' ? 'expense' : 'income'}
-              style={styles.txnValue}
-            />
-          </Card>
-        ))}
-      </View>
-    </ScrollView>
+        </Card>
+      </ScrollView>
+    </Window>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  greeting: { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary },
-  signOut: { color: colors.expense, fontWeight: '600' },
-  section: { padding: spacing.lg },
-  sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    marginBottom: spacing.md,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontStyle: 'italic' },
-  goalMini: {
+  content: { padding: spacing.md, gap: spacing.md },
+  greeting: { fontSize: fontSize.xl, fontWeight: '700', color: '#0046D5' },
+  section: { marginTop: spacing.sm },
+  empty: { color: colors.textSecondary, fontStyle: 'italic', fontSize: fontSize.sm },
+  goalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  goalName: { width: 100, fontSize: fontSize.sm, fontWeight: '500', color: colors.textPrimary },
+  goalName: { width: 120, fontSize: fontSize.sm, color: colors.textPrimary },
   goalBar: { flex: 1 },
   goalPercent: { width: 40, fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'right' },
   txnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.md + 2,
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFE7',
   },
   txnInfo: { flex: 1, marginRight: spacing.md },
-  txnDesc: { fontSize: fontSize.sm + 1, fontWeight: '500', color: colors.textPrimary },
+  txnDesc: { fontSize: fontSize.md, color: colors.textPrimary },
   txnDate: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
-  txnValue: { fontSize: fontSize.md, fontWeight: '600' },
+  txnValue: { fontSize: fontSize.md, fontWeight: '700' },
 });

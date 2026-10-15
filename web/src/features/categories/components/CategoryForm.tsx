@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import {
-  Button,
   CATEGORY_COLORS,
   ColorPicker,
+  DialogButtons,
   Input,
   Modal,
-  SegmentedControl,
+  RadioGroup,
 } from '@/components/ui';
-import { colors, spacing } from '@/theme';
 import { CategoryDto, CategoryInput, CategoryType } from '../types';
 
 type Props = {
@@ -41,26 +39,24 @@ export function CategoryForm({ visible, category, saving, onClose, onSubmit }: P
     <Modal
       visible={visible}
       onClose={onClose}
+      icon="tags"
       title={category ? 'Editar Categoria' : 'Nova Categoria'}>
-      <Input placeholder="Nome" value={name} onChangeText={setName} />
-      <SegmentedControl
+      <Input label="Nome:" value={name} onChangeText={setName} />
+      <RadioGroup
         value={type}
         onChange={setType}
-        segments={[
-          { value: 'EXPENSE', label: 'Despesa', activeColor: colors.expense },
-          { value: 'INCOME', label: 'Receita', activeColor: colors.income },
+        options={[
+          { value: 'EXPENSE', label: 'Despesa' },
+          { value: 'INCOME', label: 'Receita' },
         ]}
       />
-      <ColorPicker label="Cor" value={color} onChange={setColor} />
-      <View style={styles.actions}>
-        <Button label="Cancelar" variant="secondary" onPress={onClose} style={styles.grow} />
-        <Button label="Salvar" onPress={handleSubmit} loading={saving} style={styles.grow} />
-      </View>
+      <ColorPicker label="Cor:" value={color} onChange={setColor} />
+      <DialogButtons
+        confirmLabel="Salvar"
+        onConfirm={handleSubmit}
+        onCancel={onClose}
+        loading={saving}
+      />
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
-  grow: { flex: 1 },
-});

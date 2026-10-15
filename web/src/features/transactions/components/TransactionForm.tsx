@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import {
-  Button,
-  ChipSelect,
-  Input,
-  Modal,
-  SegmentedControl,
-} from '@/components/ui';
-import { colors, spacing, fontSize } from '@/theme';
+import { DialogButtons, Input, Modal, RadioGroup, Select } from '@/components/ui';
 import { parseToCents } from '@/lib/money';
 import { useAccounts } from '@/features/accounts/queries';
 import { useCategories } from '@/features/categories/queries';
@@ -64,53 +56,44 @@ export function TransactionForm({ visible, submitting, onClose, onSubmit }: Prop
   }
 
   return (
-    <Modal visible={visible} onClose={onClose} title="Nova Transação" position="bottom">
-      <SegmentedControl
+    <Modal visible={visible} onClose={onClose} icon="exchange" title="Nova Transação">
+      <RadioGroup
         value={type}
         onChange={setType}
-        segments={[
-          { value: 'EXPENSE', label: 'Despesa', activeColor: colors.expense },
-          { value: 'INCOME', label: 'Receita', activeColor: colors.income },
+        options={[
+          { value: 'EXPENSE', label: 'Despesa' },
+          { value: 'INCOME', label: 'Receita' },
         ]}
       />
 
       <Input
-        placeholder="Valor (ex: 150,00)"
+        label="Valor:"
+        placeholder="ex: 150,00"
         keyboardType="decimal-pad"
         value={amount}
         onChangeText={setAmount}
       />
-      <Input placeholder="Descrição" value={description} onChangeText={setDescription} />
+      <Input label="Descrição:" value={description} onChangeText={setDescription} />
 
-      <Text style={styles.label}>Conta</Text>
-      <ChipSelect
-        items={accounts.map((a) => ({ id: a.id, label: a.name }))}
+      <Select
+        label="Conta:"
+        options={accounts.map((a) => ({ id: a.id, label: a.name }))}
         selectedId={accountId}
         onSelect={setAccountId}
       />
-
-      <Text style={styles.label}>Categoria</Text>
-      <ChipSelect
-        items={categories.map((c) => ({ id: c.id, label: c.name, color: c.color }))}
+      <Select
+        label="Categoria:"
+        options={categories.map((c) => ({ id: c.id, label: c.name }))}
         selectedId={categoryId}
         onSelect={setCategoryId}
       />
 
-      <View style={styles.actions}>
-        <Button label="Cancelar" variant="secondary" onPress={onClose} style={styles.grow} />
-        <Button label="Salvar" onPress={handleSubmit} loading={submitting} style={styles.grow} />
-      </View>
+      <DialogButtons
+        confirmLabel="Salvar"
+        onConfirm={handleSubmit}
+        onCancel={onClose}
+        loading={submitting}
+      />
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  label: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  grow: { flex: 1 },
-});

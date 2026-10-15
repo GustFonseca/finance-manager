@@ -1,0 +1,63 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, fontSize, spacing, webStyle } from '@/theme';
+
+export type RadioOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+type Props<T extends string> = {
+  options: RadioOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+};
+
+/** Horizontal group of XP radio buttons (green dot when checked). */
+export function RadioGroup<T extends string>({ options, value, onChange }: Props<T>) {
+  return (
+    <View style={styles.row} accessibilityRole="radiogroup">
+      {options.map((option) => {
+        const checked = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            onPress={() => onChange(option.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked }}
+            style={styles.option}>
+            <View style={styles.circle}>{checked ? <View style={styles.dot} /> : null}</View>
+            <Text style={styles.label}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.lg, marginBottom: spacing.md },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    ...webStyle({ cursor: 'pointer' }),
+  },
+  circle: {
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#1C5180',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...webStyle({ backgroundImage: 'linear-gradient(135deg, #DCDCD7 0%, #FFFFFF 100%)' }),
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    ...webStyle({ backgroundImage: 'linear-gradient(135deg, #55D551 0%, #009E00 100%)' }),
+  },
+  label: { fontSize: fontSize.sm, color: colors.textPrimary },
+});

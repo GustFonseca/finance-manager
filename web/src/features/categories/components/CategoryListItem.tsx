@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Card } from '@/components/ui';
-import { colors, spacing, fontSize } from '@/theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { ListItem } from '@/components/ui';
+import { colors, fontSize } from '@/theme';
 import { CategoryDto } from '../types';
 
 type Props = {
@@ -11,28 +11,16 @@ type Props = {
 
 export function CategoryListItem({ category, onPress }: Props) {
   return (
-    <Pressable onPress={() => onPress(category)}>
-      <Card style={styles.card}>
-        <View style={[styles.dot, { backgroundColor: category.color }]} />
-        <View style={styles.info}>
-          <Text style={styles.name}>{category.name}</Text>
-          <Text style={styles.type}>{category.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
-        </View>
-      </Card>
-    </Pressable>
+    <ListItem onPress={() => onPress(category)}>
+      <View style={[styles.swatch, { backgroundColor: category.color }]} />
+      <Text style={styles.name}>{category.name}</Text>
+      <Text style={styles.type}>{category.type === 'INCOME' ? 'Receita' : 'Despesa'}</Text>
+    </ListItem>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md + 2,
-    marginBottom: spacing.sm,
-  },
-  dot: { width: 16, height: 16, borderRadius: 8 },
-  info: { flex: 1 },
-  name: { fontSize: fontSize.md, fontWeight: '500', color: colors.textPrimary },
-  type: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  swatch: { width: 14, height: 14, borderWidth: 1, borderColor: '#808080' },
+  name: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary },
+  type: { width: 80, fontSize: fontSize.sm, color: colors.textSecondary },
 });

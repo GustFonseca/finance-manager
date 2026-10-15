@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Card, MoneyText, ProgressBar } from '@/components/ui';
 import { colors, spacing, fontSize } from '@/theme';
-import { GoalDto } from '../types';
+import { GoalDto, GoalStatus } from '../types';
 
 type Props = {
   goal: GoalDto;
@@ -11,25 +11,29 @@ type Props = {
   onDelete: (goal: GoalDto) => void;
 };
 
+const STATUS_LABELS: Record<GoalStatus, string> = {
+  ACTIVE: 'Ativa',
+  COMPLETED: 'Concluída',
+  CANCELLED: 'Cancelada',
+};
+
 export function GoalCard({ goal, onAddProgress, onComplete, onDelete }: Props) {
   return (
-    <Card style={styles.card}>
+    <Card title={goal.name} style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.name}>{goal.name}</Text>
+        <View style={styles.amounts}>
+          <MoneyText cents={goal.currentCents} tone="neutral" style={styles.current} />
+          <Text style={styles.separator}> de </Text>
+          <MoneyText cents={goal.targetCents} tone="neutral" style={styles.target} />
+        </View>
         <Text style={[styles.status, goal.status === 'COMPLETED' && styles.completed]}>
-          {goal.status}
+          {STATUS_LABELS[goal.status]}
         </Text>
       </View>
 
       <View style={styles.progress}>
         <ProgressBar percent={goal.progressPercent} />
-      </View>
-      <Text style={styles.progressText}>{goal.progressPercent.toFixed(1)}%</Text>
-
-      <View style={styles.amounts}>
-        <MoneyText cents={goal.currentCents} tone="neutral" style={styles.current} />
-        <Text style={styles.separator}> / </Text>
-        <MoneyText cents={goal.targetCents} tone="neutral" style={styles.target} />
+        <Text style={styles.progressText}>{goal.progressPercent.toFixed(1)}% concluído</Text>
       </View>
 
       {goal.deadline ? (
@@ -40,21 +44,9 @@ export function GoalCard({ goal, onAddProgress, onComplete, onDelete }: Props) {
 
       {goal.status === 'ACTIVE' && (
         <View style={styles.actions}>
-          <Button label="Adicionar" size="sm" onPress={() => onAddProgress(goal)} style={styles.grow} />
-          <Button
-            label="Concluir"
-            size="sm"
-            variant="success"
-            onPress={() => onComplete(goal)}
-            style={styles.grow}
-          />
-          <Button
-            label="Remover"
-            size="sm"
-            variant="danger"
-            onPress={() => onDelete(goal)}
-            style={styles.grow}
-          />
+          <Button label="Adicionar..." onPress={() => onAddProgress(goal)} />
+          <Button label="Concluir" variant="success" onPress={() => onComplete(goal)} />
+          <Button label="Remover" variant="danger" onPress={() => onDelete(goal)} />
         </View>
       )}
     </Card>
@@ -62,18 +54,22 @@ export function GoalCard({ goal, onAddProgress, onComplete, onDelete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: spacing.md },
+  card: { marginBottom: spacing.lg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: fontSize.lg, fontWeight: '600', color: colors.textPrimary },
-  status: { fontSize: fontSize.xs, color: colors.textSecondary, textTransform: 'uppercase' },
-  completed: { color: colors.income },
-  progress: { marginTop: spacing.md },
-  progressText: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'right' },
-  amounts: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
-  current: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textPrimary },
-  separator: { color: colors.textSecondary },
+  amounts: { flexDirection: 'row', alignItems: 'baseline' },
+  current: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
+  separator: { fontSize: fontSize.sm, color: colors.textSecondary },
   target: { fontSize: fontSize.sm, color: colors.textSecondary },
+  status: { fontSize: fontSize.sm, color: colors.textSecondary },
+  completed: { color: colors.income, fontWeight: '700' },
+  progress: { marginTop: spacing.sm },
+  progressText: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 3 },
   deadline: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.xs },
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  grow: { flex: 1 },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
 });

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Input, Modal } from '@/components/ui';
-import { spacing } from '@/theme';
+import { DialogButtons, Input, Modal } from '@/components/ui';
 import { AccountDto } from '../types';
 
 type Props = {
@@ -26,17 +24,18 @@ export function AccountForm({ visible, account, saving, onClose, onSubmit }: Pro
   }
 
   return (
-    <Modal visible={visible} onClose={onClose} title={account ? 'Editar Conta' : 'Nova Conta'}>
-      <Input placeholder="Nome" value={name} onChangeText={setName} autoFocus />
-      <View style={styles.actions}>
-        <Button label="Cancelar" variant="secondary" onPress={onClose} style={styles.grow} />
-        <Button label="Salvar" onPress={handleSubmit} loading={saving} style={styles.grow} />
-      </View>
+    <Modal
+      visible={visible}
+      onClose={onClose}
+      icon="bank"
+      title={account ? 'Editar Conta' : 'Nova Conta'}>
+      <Input label="Nome:" value={name} onChangeText={setName} autoFocus />
+      <DialogButtons
+        confirmLabel="Salvar"
+        onConfirm={handleSubmit}
+        onCancel={onClose}
+        loading={saving}
+      />
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
-  grow: { flex: 1 },
-});

@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
-import { colors, radius, spacing, fontSize } from '@/theme';
+import { colors, spacing, fontSize, webStyle } from '@/theme';
 
 type Props = TextInputProps & {
   label?: string;
 };
 
+/** XP text box: square, white, thin blue-grey border. */
 export function Input({ label, style, ...rest }: Props) {
   return (
     <View style={styles.wrapper}>
@@ -23,16 +24,17 @@ const styles = StyleSheet.create({
   wrapper: { marginBottom: spacing.md },
   label: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.md,
-    fontSize: fontSize.md,
+    borderColor: colors.inputBorder,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs + 2,
+    fontSize: fontSize.sm,
     color: colors.textPrimary,
+    ...webStyle({ outlineColor: colors.primary }),
   },
 });

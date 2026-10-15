@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: '(desktop)',
 };
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -50,7 +50,7 @@ export default function RootLayout() {
       <AuthGuard>
         <Stack>
           <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(desktop)" options={{ headerShown: false }} />
         </Stack>
       </AuthGuard>
     </AppProviders>

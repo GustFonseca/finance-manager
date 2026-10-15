@@ -1,34 +1,27 @@
 import React from 'react';
-import {
-  Modal as RNModal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { colors, radius, spacing, fontSize } from '@/theme';
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { TitleBar, IconName } from '@/components/xp/TitleBar';
+import { bevels, colors, spacing, webStyle } from '@/theme';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   title?: string;
-  /** `center` for dialogs, `bottom` for sheet-like forms. */
-  position?: 'center' | 'bottom';
+  icon?: IconName;
   children: React.ReactNode;
 };
 
-export function Modal({ visible, onClose, title, position = 'center', children }: Props) {
+/** XP dialog box: a small window with only the close button, centered. */
+export function Modal({ visible, onClose, title, icon, children }: Props) {
   return (
-    <RNModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable
-        style={[styles.overlay, position === 'bottom' ? styles.overlayBottom : styles.overlayCenter]}
-        onPress={onClose}>
-        {/* Stop propagation so taps inside the card don't dismiss the modal. */}
-        <Pressable
-          style={[styles.card, position === 'bottom' && styles.cardBottom]}
-          onPress={() => {}}>
-          {title ? <Text style={styles.title}>{title}</Text> : null}
-          {children}
+    <RNModal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        {/* Stop propagation so clicks inside the dialog don't dismiss it. */}
+        <Pressable style={styles.window} onPress={() => {}}>
+          <TitleBar title={title ?? ''} icon={icon} onClose={onClose} />
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
+            <View>{children}</View>
+          </ScrollView>
         </Pressable>
       </Pressable>
     </RNModal>
@@ -36,22 +29,25 @@ export function Modal({ visible, onClose, title, position = 'center', children }
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: colors.overlay },
-  overlayCenter: { justifyContent: 'center', padding: spacing.xl },
-  overlayBottom: { justifyContent: 'flex-end' },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
   },
-  cardBottom: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+  window: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '90%',
+    backgroundColor: colors.background,
+    borderWidth: 3,
+    borderTopWidth: 0,
+    borderColor: colors.windowFrame,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    ...webStyle({ boxShadow: bevels.window, cursor: 'default' }),
   },
-  title: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-  },
+  scroll: { flexGrow: 0 },
+  body: { padding: spacing.md },
 });

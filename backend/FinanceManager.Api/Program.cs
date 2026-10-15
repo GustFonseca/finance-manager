@@ -16,6 +16,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
 // Authentication
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "";
+if (!builder.Environment.IsDevelopment() && (jwtSecret.StartsWith("CHANGE-THIS") || jwtSecret.Length < 32))
+    throw new InvalidOperationException("Jwt:Secret must be set to a private value of at least 32 characters (env var Jwt__Secret).");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -28,7 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
+                Encoding.UTF8.GetBytes(jwtSecret))
         };
     });
 

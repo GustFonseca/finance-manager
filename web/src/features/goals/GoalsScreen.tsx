@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet } from 'react-native';
-import { EmptyState, Fab, Screen, useDialog } from '@/components/ui';
+import { EmptyState, useDialog } from '@/components/ui';
+import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
 import { spacing } from '@/theme';
 import { GoalCard } from './components/GoalCard';
@@ -75,24 +76,29 @@ export function GoalsScreen() {
   }
 
   return (
-    <Screen>
-      <FlatList
-        data={goals}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <GoalCard
-            goal={item}
-            onAddProgress={setProgressGoal}
-            onComplete={handleComplete}
-            onDelete={handleDelete}
-          />
-        )}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-        ListEmptyComponent={<EmptyState message="Nenhuma meta criada" />}
-      />
-
-      <Fab onPress={() => setCreateVisible(true)} />
+    <>
+      <Window
+        title="Metas"
+        icon="bullseye"
+        actions={[{ label: 'Nova meta', icon: 'plus-circle', onPress: () => setCreateVisible(true) }]}
+        onRefresh={refetch}
+        status={`${goals.length} meta(s)`}>
+        <FlatList
+          data={goals}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <GoalCard
+              goal={item}
+              onAddProgress={setProgressGoal}
+              onComplete={handleComplete}
+              onDelete={handleDelete}
+            />
+          )}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+          ListEmptyComponent={<EmptyState message="Nenhuma meta criada" />}
+        />
+      </Window>
 
       <GoalForm
         visible={createVisible}
@@ -107,10 +113,10 @@ export function GoalsScreen() {
         onClose={() => setProgressGoal(null)}
         onSubmit={handleAddProgress}
       />
-    </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { padding: spacing.lg },
+  list: { padding: spacing.md },
 });

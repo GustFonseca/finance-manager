@@ -15,16 +15,20 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Keeps ScrollView components, rather than the document, owning the scroll. */}
         <ScrollViewStyleReset />
 
-        {/* Painted before hydration so the dark UI never flashes a light background. */}
-        <style dangerouslySetInnerHTML={{ __html: rootBackground }} />
+        <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
       </head>
       <body>{children}</body>
     </html>
   );
 }
 
-// Must stay in sync with `colors.background` in src/theme.
-const rootBackground = `
+// `colors.desktop` and `fonts.body` in src/theme must stay in sync with these.
+// The font rule outranks react-native-web's default `System` font class, while
+// inline styles (icon fonts, window titles) still win over it.
+const globalStyles = `
 body {
-  background-color: #121212;
+  background-color: #3A6EA5;
+}
+html body [dir], html body input, html body textarea, html body select {
+  font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
 }`;

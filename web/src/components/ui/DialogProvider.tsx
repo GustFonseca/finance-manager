@@ -1,8 +1,10 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, spacing, fontSize } from '@/theme';
 import { Modal } from './Modal';
 import { Button } from './Button';
+import { DialogButtons } from './DialogButtons';
 
 type ConfirmOptions = {
   title: string;
@@ -111,36 +113,23 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       <Modal visible={!!state} onClose={close} title={state?.options.title}>
         {state?.kind === 'confirm' && (
           <>
-            {state.options.message ? (
-              <Text style={styles.message}>{state.options.message}</Text>
-            ) : null}
-            <View style={styles.row}>
-              <Button
-                label={state.options.cancelLabel ?? 'Cancelar'}
-                variant="secondary"
-                onPress={() => resolveConfirm(false)}
-                style={styles.grow}
-              />
-              <Button
-                label={state.options.confirmLabel ?? 'Confirmar'}
-                variant={state.options.destructive ? 'danger' : 'primary'}
-                onPress={() => resolveConfirm(true)}
-                style={styles.grow}
-              />
-            </View>
+            <DialogMessage text={state.options.message} icon="question" />
+            <DialogButtons
+              confirmLabel={state.options.confirmLabel ?? 'OK'}
+              cancelLabel={state.options.cancelLabel}
+              destructive={state.options.destructive}
+              onConfirm={() => resolveConfirm(true)}
+              onCancel={() => resolveConfirm(false)}
+            />
           </>
         )}
 
         {state?.kind === 'alert' && (
           <>
-            {state.options.message ? (
-              <Text style={styles.message}>{state.options.message}</Text>
-            ) : null}
-            <Button
-              label={state.options.okLabel ?? 'OK'}
-              variant="primary"
-              onPress={close}
-            />
+            <DialogMessage text={state.options.message} icon="info" />
+            <View style={styles.right}>
+              <Button label={state.options.okLabel ?? 'OK'} onPress={close} />
+            </View>
           </>
         )}
 
@@ -150,11 +139,11 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
               <Button
                 key={action.label}
                 label={action.label}
-                variant={action.destructive ? 'danger' : 'primary'}
+                variant={action.destructive ? 'danger' : 'secondary'}
                 onPress={() => runAction(action)}
               />
             ))}
-            <Button label="Cancelar" variant="secondary" onPress={close} />
+            <Button label="Cancelar" variant="secondary" onPress={close} style={styles.cancel} />
           </View>
         )}
       </Modal>
@@ -168,9 +157,30 @@ export function useDialog(): DialogApi {
   return ctx;
 }
 
+/** Message line with the classic XP balloon icon on its left. */
+function DialogMessage({ text, icon }: { text?: string; icon: 'question' | 'info' }) {
+  if (!text) return null;
+  return (
+    <View style={styles.messageRow}>
+      <FontAwesome
+        name={icon === 'question' ? 'question-circle' : 'info-circle'}
+        size={32}
+        color={colors.primary}
+      />
+      <Text style={styles.message}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  message: { color: colors.textSecondary, fontSize: fontSize.md, marginBottom: spacing.lg },
-  row: { flexDirection: 'row', gap: spacing.md },
-  grow: { flex: 1 },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  message: { flex: 1, color: colors.textPrimary, fontSize: fontSize.sm },
+  right: { flexDirection: 'row', justifyContent: 'flex-end' },
   stack: { gap: spacing.sm },
+  cancel: { marginTop: spacing.xs },
 });

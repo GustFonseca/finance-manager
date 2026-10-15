@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText } from '@/components/ui';
-import { colors, spacing, fontSize } from '@/theme';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { StyleSheet, Text } from 'react-native';
+import { ListItem, MoneyText } from '@/components/ui';
+import { colors, fontSize } from '@/theme';
 import { AccountDto } from '../types';
 
 type Props = {
@@ -11,20 +12,15 @@ type Props = {
 
 export function AccountListItem({ account, onPress }: Props) {
   return (
-    <Pressable onPress={() => onPress(account)}>
-      <Card style={styles.card}>
-        <View style={styles.info}>
-          <Text style={styles.name}>{account.name}</Text>
-          <MoneyText cents={account.balanceCents} style={styles.balance} />
-        </View>
-      </Card>
-    </Pressable>
+    <ListItem onPress={() => onPress(account)}>
+      <FontAwesome name="bank" size={18} color="#6D4C41" />
+      <Text style={styles.name}>{account.name}</Text>
+      <MoneyText cents={account.balanceCents} style={styles.balance} />
+    </ListItem>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md + 2, marginBottom: spacing.sm },
-  info: { flex: 1 },
-  name: { fontSize: fontSize.md, fontWeight: '500', color: colors.textPrimary },
-  balance: { fontSize: fontSize.sm, marginTop: spacing.xs },
+  name: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary },
+  balance: { fontSize: fontSize.md },
 });
