@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
 import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
+import { isolateContextMenu } from './ContextMenu';
 import { MenuBar, MenuDef, MenuEntry } from './MenuBar';
 import { TASKBAR_HEIGHT } from './StartMenu';
 import { IconName, TitleBar } from './TitleBar';
 import { Toolbar, ToolbarButton } from './Toolbar';
 import { Point, useWindowDrag } from './useWindowDrag';
-import { useWindowManager, useWindowRoute } from './WindowManager';
+import { useWindowId, useWindowManager } from './WindowManager';
 
 /** Below this width windows are always maximized (phones, small tablets). */
 const COMPACT_WIDTH = 720;
@@ -39,19 +40,23 @@ type Props = {
 };
 
 /**
- * An XP application window for one program. Its open / minimized / maximized
- * state, position and stacking live in the WindowManager, so the screen only
- * describes its content and actions.
+ * An XP window (a program, a folder…). Its open / minimized / maximized state,
+ * position and stacking live in the WindowManager, so the content only
+ * describes itself and its actions.
  */
 export function Window({ title, icon, actions = [], onRefresh, status, children }: Props) {
   const wm = useWindowManager();
   const { alert } = useDialog();
   const { width, height } = useWindowDimensions();
-  const route = useWindowRoute();
-  const active = wm.activeRoute === route;
+  const id = useWindowId();
+  const active = wm.activeWindow === id;
+  const { setMeta } = wm;
+
+  // The taskbar shows whatever title and icon the window has right now.
+  useEffect(() => setMeta(id, { title, icon }), [setMeta, id, title, icon]);
 
   const compact = width < COMPACT_WIDTH;
-  const maximized = compact || wm.isMaximized(route);
+  const maximized = compact || wm.isMaximized(id);
 
   // Restored windows have a fixed size and open cascaded from the center.
   const desktopHeight = height - TASKBAR_HEIGHT;
@@ -63,7 +68,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     x: Math.min(Math.max(point.x, MIN_VISIBLE - size.width), width - MIN_VISIBLE),
     y: Math.min(Math.max(point.y, 0), desktopHeight - TITLE_BAR_HEIGHT),
   });
-  const cascade = Math.max(0, wm.openRoutes.indexOf(route)) * CASCADE_STEP;
+  const cascade = Math.max(0, wm.openWindows.indexOf(id)) * CASCADE_STEP;
   const initial = {
     x: (width - size.width) / 2 - CASCADE_STEP * 2 + cascade,
     y: (desktopHeight - size.height) / 2 - CASCADE_STEP * 2 + cascade,
@@ -71,16 +76,16 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
 
   const drag = useWindowDrag({
     // Re-clamped every render so a smaller browser window can't strand it off-screen.
-    position: clamp(wm.positionOf(route) ?? initial),
+    position: clamp(wm.positionOf(id) ?? initial),
     clamp,
-    onDragEnd: (point) => wm.setPosition(route, point),
-    onDoubleClick: () => !compact && wm.toggleMaximize(route),
+    onDragEnd: (point) => wm.setPosition(id, point),
+    onDoubleClick: () => !compact && wm.toggleMaximize(id),
     draggable: !maximized,
   });
 
-  if (!wm.isOpen(route) || wm.isMinimized(route)) return null;
+  if (!wm.isOpen(id) || wm.isMinimized(id)) return null;
 
-  const close = () => wm.close(route);
+  const close = () => wm.close(id);
 
   const fileEntries: MenuEntry[] = [
     ...actions.map((action) => ({ label: `${action.label}...`, onPress: action.onPress })),
@@ -91,8 +96,8 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     ...(onRefresh ? [{ label: 'Atualizar', onPress: onRefresh }] : []),
     ...(compact
       ? []
-      : [{ label: maximized ? 'Restaurar' : 'Maximizar', onPress: () => wm.toggleMaximize(route) }]),
-    { label: 'Minimizar', onPress: () => wm.minimize(route) },
+      : [{ label: maximized ? 'Restaurar' : 'Maximizar', onPress: () => wm.toggleMaximize(id) }]),
+    { label: 'Minimizar', onPress: () => wm.minimize(id) },
   ];
   const menus: MenuDef[] = [
     { label: 'Arquivo', entries: fileEntries },
@@ -122,10 +127,11 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   return (
     <View
       // Any click inside a background window brings it to the front.
-      onPointerDown={active ? undefined : () => wm.open(route)}
+      onPointerDown={active ? undefined : () => wm.open(id)}
+      {...isolateContextMenu}
       style={[
         styles.frame,
-        { zIndex: wm.zIndexOf(route) },
+        { zIndex: wm.zIndexOf(id) },
         !active && styles.inactiveFrame,
         maximized
           ? styles.maximized
@@ -138,8 +144,8 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
         title={title}
         icon={icon}
         maximized={maximized}
-        onMinimize={() => wm.minimize(route)}
-        onMaximize={compact ? undefined : () => wm.toggleMaximize(route)}
+        onMinimize={() => wm.minimize(id)}
+        onMaximize={compact ? undefined : () => wm.toggleMaximize(id)}
         onClose={close}
       />
       <View style={styles.inner}>

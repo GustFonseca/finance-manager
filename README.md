@@ -61,3 +61,10 @@ The API base URL is read from the `EXPO_PUBLIC_API_URL` environment variable
   redeploys on every push to `main` that touches `backend/`. The database is
   PostgreSQL on Neon; its connection string is set as
   `ConnectionStrings__DefaultConnection` in the Render dashboard.
+- **Files** (desktop folders and the Lixeira) are stored in a private
+  Supabase Storage bucket (`files`). The API talks to it with the project's
+  secret key, set as `Supabase__Url` and `Supabase__SecretKey` in the Render
+  dashboard; users only ever get short-lived signed download links.
+- **Database migrations** run automatically only in Development. For
+  production, apply them to Neon with an idempotent script:
+  `dotnet ef migrations script --idempotent --project FinanceManager.Infrastructure --startup-project FinanceManager.Api`.

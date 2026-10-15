@@ -6,6 +6,8 @@ import { Button, Checkbox, Modal, MoneyText, ProgressBar, Select } from '@/compo
 import { useAccounts } from '@/features/accounts/queries';
 import { useCategories } from '@/features/categories/queries';
 import { transactionsApi } from '@/features/transactions/api';
+import { foldersApi } from '@/features/files/api';
+import { invalidateFiles } from '@/features/files/queries';
 import { invalidateMoney } from '@/features/transactions/queries';
 import { getErrorMessage } from '@/lib/http';
 import { colors, fontSize, spacing } from '@/theme';
@@ -24,7 +26,12 @@ type RowChoice = {
   note?: string;
 };
 
-type Result = { imported: number; failures: string[] };
+type Result = {
+  imported: number;
+  failures: string[];
+  /** Folder the statement file was saved to, or null if saving it failed. */
+  savedTo: string | null;
+};
 
 const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
   file: {
@@ -52,20 +59,20 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
   const { data: categories = [] } = useCategories();
 
   const [step, setStep] = useState<Step>('file');
-  const [fileName, setFileName] = useState('');
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [statement, setStatement] = useState<ParsedStatement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [choices, setChoices] = useState<Record<string, RowChoice>>({});
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<Result>({ imported: 0, failures: [] });
+  const [result, setResult] = useState<Result>({ imported: 0, failures: [], savedTo: null });
 
   // Every opening starts a fresh import.
   useEffect(() => {
     if (!visible) return;
     setStep('file');
-    setFileName('');
+    setSourceFile(null);
     setStatement(null);
     setError(null);
     setChoices({});
@@ -87,7 +94,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     setStatement(null);
     setError(null);
     if (!file) return;
-    setFileName(file.name);
+    setSourceFile(file);
     try {
       const parsed = parseStatement(decodeStatement(await file.arrayBuffer()));
       if (parsed.rows.length === 0) throw new StatementError('O arquivo não tem transações.');
@@ -153,8 +160,22 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
       setProgress(((index + 1) / selected.length) * 100);
     }
     invalidateMoney(qc);
-    setResult({ imported, failures });
+    setResult({ imported, failures, savedTo: await saveStatementFile() });
     setStep('done');
+  }
+
+  /** Keeps the imported file in the "Extratos importados" folder of the desktop. */
+  async function saveStatementFile(): Promise<string | null> {
+    if (!sourceFile) return null;
+    try {
+      const folder = (await foldersApi.getAll()).find((f) => f.isSystem);
+      if (!folder) return null;
+      await foldersApi.upload(folder.id, [sourceFile]);
+      invalidateFiles(qc);
+      return folder.name;
+    } catch {
+      return null;
+    }
   }
 
   function updateChoice(key: string, change: Partial<RowChoice>) {
@@ -196,7 +217,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
             />
             {statement ? (
               <Text style={[styles.info, styles.fileInfo]}>
-                {SOURCE_LABELS[statement.source]}: {statement.rows.length} lançamento(s) em "{fileName}".
+                {SOURCE_LABELS[statement.source]}: {statement.rows.length} lançamento(s) em "{sourceFile?.name}".
               </Text>
             ) : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -258,6 +279,11 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
         {step === 'done' && (
           <>
             <Text style={styles.info}>{result.imported} transação(ões) importada(s).</Text>
+            <Text style={result.savedTo ? styles.info : styles.error}>
+              {result.savedTo
+                ? `O arquivo foi salvo na pasta "${result.savedTo}" da área de trabalho.`
+                : 'Não foi possível salvar uma cópia do arquivo na área de trabalho.'}
+            </Text>
             {result.failures.length > 0 ? (
               <>
                 <Text style={styles.error}>{result.failures.length} não puderam ser importadas:</Text>

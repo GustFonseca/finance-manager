@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Goal> Goals => Set<Goal>();
+    public DbSet<Folder> Folders => Set<Folder>();
+    public DbSet<StoredFile> Files => Set<StoredFile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +62,29 @@ public class AppDbContext : DbContext
             e.HasIndex(g => g.UserId);
             e.Property(g => g.Status).HasConversion<string>();
             e.HasOne(g => g.User).WithMany(u => u.Goals).HasForeignKey(g => g.UserId);
+        });
+
+        // Folder
+        modelBuilder.Entity<Folder>(e =>
+        {
+            e.HasKey(f => f.Id);
+            e.HasIndex(f => f.UserId);
+            e.Property(f => f.Name).HasMaxLength(100);
+            e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
+        });
+
+        // StoredFile
+        modelBuilder.Entity<StoredFile>(e =>
+        {
+            e.ToTable("Files");
+            e.HasKey(f => f.Id);
+            e.HasIndex(f => f.UserId);
+            e.HasIndex(f => f.FolderId);
+            e.Property(f => f.Name).HasMaxLength(255);
+            e.Property(f => f.ContentType).HasMaxLength(255);
+            e.Property(f => f.StorageKey).HasMaxLength(100);
+            e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
+            e.HasOne(f => f.Folder).WithMany(d => d.Files).HasForeignKey(f => f.FolderId);
         });
     }
 }

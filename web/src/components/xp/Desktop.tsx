@@ -1,9 +1,13 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fontSize, gradients, PressState, spacing, webStyle } from '@/theme';
+import { Image, StyleSheet, View } from 'react-native';
+import { queryClient } from '@/lib/queryClient';
+import { gradients, webStyle } from '@/theme';
+import { onContextMenu, useContextMenu } from './ContextMenu';
+import { DesktopProvider, useDesktop } from './DesktopContext';
+import { DesktopIcon } from './DesktopIcon';
+import type { MenuEntry } from './MenuBar';
 import { PROGRAMS } from './programs';
-import { useWindowManager, WindowRouteProvider } from './WindowManager';
+import { useWindowManager, WindowIdProvider } from './WindowManager';
 
 /** The Windows XP "Bliss" photo, resized to 1920px for the web. */
 const WALLPAPER = require('../../../assets/images/bliss.jpg');
@@ -13,48 +17,63 @@ export type ProgramScreens = Record<string, React.ComponentType>;
 type Props = {
   /** Screen component for each program route; every open one is rendered as a window. */
   screens: ProgramScreens;
+  /** Icons and windows other features put on the desktop (folders, Lixeira…). */
+  extras?: React.ReactNode;
   children: React.ReactNode;
 };
 
-/** Wallpaper with one shortcut icon per program, and every open window on top. */
-export function Desktop({ screens, children }: Props) {
-  const { open, openRoutes } = useWindowManager();
+/** Wallpaper with the desktop icons, and every open window on top. */
+export function Desktop(props: Props) {
+  return (
+    <DesktopProvider>
+      <DesktopSurface {...props} />
+    </DesktopProvider>
+  );
+}
+
+function DesktopSurface({ screens, extras, children }: Props) {
+  const { open, openWindows } = useWindowManager();
+  const desktop = useDesktop();
+  const contextMenu = useContextMenu();
+
+  const showDesktopMenu = (point: { x: number; y: number }) => {
+    desktop.selectIcon(null);
+    const extraEntries = desktop.backgroundMenu(point);
+    const entries: MenuEntry[] = [
+      { label: 'Organizar ícones', onPress: desktop.arrangeIcons },
+      { label: 'Atualizar', onPress: () => queryClient.invalidateQueries() },
+      ...(extraEntries.length ? (['separator', ...extraEntries] as MenuEntry[]) : []),
+    ];
+    contextMenu.show(point, entries);
+  };
 
   return (
-    <View style={styles.desktop}>
+    <View
+      style={styles.desktop}
+      // Clicking the wallpaper clears the icon selection, as in XP.
+      onPointerDown={() => desktop.selectIcon(null)}
+      {...onContextMenu(showDesktopMenu)}>
       <Image source={WALLPAPER} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      <View style={styles.icons}>
-        {PROGRAMS.map((program) => (
-          <Pressable
-            key={program.route}
-            onPress={() => open(program.route)}
-            accessibilityRole="button"
-            accessibilityLabel={`Abrir ${program.title}`}
-            style={styles.icon}>
-            {(state) => {
-              const { hovered } = state as PressState;
-              return (
-                <>
-                  <View style={styles.iconTile}>
-                    <FontAwesome name={program.icon} size={26} color={program.color} />
-                  </View>
-                  <Text style={[styles.iconLabel, hovered && styles.iconLabelHover]}>
-                    {program.title}
-                  </Text>
-                </>
-              );
-            }}
-          </Pressable>
-        ))}
-      </View>
-      {openRoutes.map((route) => {
-        const Screen = screens[route];
+      {PROGRAMS.map((program, index) => (
+        <DesktopIcon
+          key={program.route}
+          id={`program:${program.route}`}
+          slot={index}
+          label={program.title}
+          icon={program.icon}
+          color={program.color}
+          onOpen={() => open(program.route)}
+        />
+      ))}
+      {openWindows.map((id) => {
+        const Screen = screens[id];
         return Screen ? (
-          <WindowRouteProvider key={route} value={route}>
+          <WindowIdProvider key={id} value={id}>
             <Screen />
-          </WindowRouteProvider>
+          </WindowIdProvider>
         ) : null;
       })}
+      {extras}
       {children}
     </View>
   );
@@ -68,25 +87,4 @@ const styles = StyleSheet.create({
     // Drawn while the wallpaper photo loads.
     ...webStyle({ backgroundImage: gradients.wallpaper, backgroundColor: '#5A9A2E' }),
   },
-  icons: { padding: spacing.sm, gap: spacing.md, alignItems: 'center', width: 88 },
-  icon: { width: 76, alignItems: 'center', gap: 3, ...webStyle({ cursor: 'pointer' }) },
-  iconTile: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...webStyle({ boxShadow: '1px 1px 3px rgba(0,0,0,0.4)' }),
-  },
-  iconLabel: {
-    color: '#FFFFFF',
-    fontSize: fontSize.xs,
-    textAlign: 'center',
-    paddingHorizontal: 2,
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-  iconLabelHover: { backgroundColor: '#0B61FF', textShadowColor: 'transparent' },
 });

@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { bevels, colors, fontSize, PressState, spacing, webStyle } from '@/theme';
 
-export type MenuEntry = { label: string; onPress: () => void } | 'separator';
+export type MenuEntry =
+  | {
+      label: string;
+      onPress: () => void;
+      /** The default action, drawn in bold (e.g. "Abrir"), as in XP. */
+      bold?: boolean;
+      disabled?: boolean;
+    }
+  | 'separator';
 
 export type MenuDef = {
   label: string;
@@ -47,15 +55,7 @@ export function MenuBar({ menus }: { menus: MenuDef[] }) {
               )}
             </Pressable>
             {isOpen ? (
-              <View style={styles.dropdown}>
-                {menu.entries.map((entry, i) =>
-                  entry === 'separator' ? (
-                    <View key={`sep-${i}`} style={styles.separator} />
-                  ) : (
-                    <MenuItem key={entry.label} label={entry.label} onPress={() => run(entry)} />
-                  )
-                )}
-              </View>
+              <MenuPanel entries={menu.entries} onRun={run} style={styles.dropdown} />
             ) : null}
           </View>
         );
@@ -64,15 +64,52 @@ export function MenuBar({ menus }: { menus: MenuDef[] }) {
   );
 }
 
+type MenuPanelProps = {
+  entries: MenuEntry[];
+  onRun: (entry: Exclude<MenuEntry, 'separator'>) => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+/** The white XP menu box: items and separators. Used by drop-downs and context menus. */
+export function MenuPanel({ entries, onRun, style }: MenuPanelProps) {
+  return (
+    <View style={[styles.panel, style]} accessibilityRole="menu">
+      {entries.map((entry, i) =>
+        entry === 'separator' ? (
+          <View key={`sep-${i}`} style={styles.separator} />
+        ) : (
+          <MenuItem key={entry.label} entry={entry} onPress={() => onRun(entry)} />
+        )
+      )}
+    </View>
+  );
+}
+
+type MenuItemProps = {
+  entry: Exclude<MenuEntry, 'separator'>;
+  onPress: () => void;
+};
+
 /** One clickable row of a drop-down or context menu. */
-export function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
+export function MenuItem({ entry, onPress }: MenuItemProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={(state) => [styles.item, (state as PressState).hovered && styles.itemHover]}>
+      disabled={entry.disabled}
+      accessibilityRole="menuitem"
+      style={(state) => [
+        styles.item,
+        !entry.disabled && (state as PressState).hovered && styles.itemHover,
+      ]}>
       {(state) => (
-        <Text style={[styles.itemText, (state as PressState).hovered && styles.itemTextHover]}>
-          {label}
+        <Text
+          style={[
+            styles.itemText,
+            entry.bold && styles.itemTextBold,
+            entry.disabled && styles.itemTextDisabled,
+            !entry.disabled && (state as PressState).hovered && styles.itemTextHover,
+          ]}>
+          {entry.label}
         </Text>
       )}
     </Pressable>
@@ -94,10 +131,8 @@ const styles = StyleSheet.create({
   titleActive: { backgroundColor: colors.selection },
   titleText: { fontSize: fontSize.sm, color: colors.textPrimary },
   titleTextActive: { color: colors.textOnAccent },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
+  dropdown: { position: 'absolute', top: '100%', left: 0 },
+  panel: {
     minWidth: 180,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -110,4 +145,6 @@ const styles = StyleSheet.create({
   itemHover: { backgroundColor: colors.selection },
   itemText: { fontSize: fontSize.sm, color: colors.textPrimary },
   itemTextHover: { color: colors.textOnAccent },
+  itemTextBold: { fontWeight: '700' },
+  itemTextDisabled: { color: '#ACA899' },
 });

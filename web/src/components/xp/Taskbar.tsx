@@ -41,14 +41,14 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
       </Pressable>
 
       <View style={styles.tasks}>
-        {wm.openRoutes.map((route) => {
-          const program = findProgram(route);
-          if (!program) return null;
-          const active = wm.activeRoute === route;
+        {wm.openWindows.map((id) => {
+          const meta = wm.metaOf(id) ?? findProgram(id);
+          if (!meta) return null;
+          const active = wm.activeWindow === id;
           return (
             <Pressable
-              key={route}
-              onPress={() => wm.toggleFromTaskbar(route)}
+              key={id}
+              onPress={() => wm.toggleFromTaskbar(id)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={(state) => [
@@ -56,9 +56,9 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
                 webStyle({ backgroundImage: active ? gradients.taskButtonActive : gradients.taskButton }),
                 active ? styles.taskActive : (state as PressState).hovered && styles.taskHover,
               ]}>
-              <FontAwesome name={program.icon} size={13} color="#FFFFFF" />
+              <FontAwesome name={meta.icon} size={13} color="#FFFFFF" />
               <Text style={styles.taskLabel} numberOfLines={1}>
-                {program.title}
+                {meta.title}
               </Text>
             </Pressable>
           );

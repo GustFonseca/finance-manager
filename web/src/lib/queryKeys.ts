@@ -9,4 +9,8 @@ export const queryKeys = {
   transactions: ['transactions'] as const,
   goals: ['goals'] as const,
   summary: ['summary'] as const,
+  folders: ['folders'] as const,
+  /** Files of one folder: `[...queryKeys.files, folderId]`. */
+  files: ['files'] as const,
+  trash: ['trash'] as const,
 };

@@ -22,3 +22,9 @@ services:
         generateValue: true
       - key: Google__ClientId
         value: 932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com
+      - key: Supabase__Url
+        sync: false # https://<project>.supabase.co, set in the Render dashboard
+      - key: Supabase__SecretKey
+        sync: false # Supabase secret (service role) key, set in the Render dashboard
+      - key: Supabase__Bucket
+        value: files

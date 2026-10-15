@@ -6,6 +6,8 @@ using FinanceManager.Domain.Interfaces.Repositories;
 using FinanceManager.Infrastructure.Repositories;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Infrastructure.Messaging;
+using FinanceManager.Aplication.Storage;
+using FinanceManager.Infrastructure.Storage;
 
 namespace FinanceManager.Infrastructure;
 
@@ -25,6 +27,10 @@ public static class DependencyInjection
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IGoalRepository, GoalRepository>();
+        services.AddScoped<IFolderRepository, FolderRepository>();
+        services.AddScoped<IStoredFileRepository, StoredFileRepository>();
+
+        services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
 
         return services;
     }

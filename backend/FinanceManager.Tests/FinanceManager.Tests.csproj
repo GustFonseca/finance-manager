@@ -18,4 +18,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FinaceManager.Aplication\FinanceManager.Aplication.csproj" />
+    <ProjectReference Include="..\FinanceManager.Domain\FinanceManager.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

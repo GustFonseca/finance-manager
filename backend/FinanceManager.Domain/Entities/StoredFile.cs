@@ -1,0 +1,19 @@
+namespace FinanceManager.Domain.Entities;
+
+public class StoredFile
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public Guid FolderId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string ContentType { get; set; } = "application/octet-stream";
+    public long SizeBytes { get; set; }
+    /// <summary>Object path in the bucket; independent of name and folder, so renames and moves are metadata-only.</summary>
+    public string StorageKey { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Set while the file is in the trash (on its own or together with its folder).</summary>
+    public DateTime? DeletedAt { get; set; }
+
+    public User User { get; set; } = null!;
+    public Folder Folder { get; set; } = null!;
+}

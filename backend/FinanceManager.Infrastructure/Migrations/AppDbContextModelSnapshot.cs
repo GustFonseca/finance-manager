@@ -22,7 +22,7 @@ namespace FinanceManager.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Account", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -48,7 +48,7 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Accounts");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Category", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -79,7 +79,37 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Goal", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Folders");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Goal", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -115,7 +145,52 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Goals");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Transaction", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.StoredFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Files", (string)null);
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -164,7 +239,7 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Transactions");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.User", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -196,9 +271,9 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Account", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Account", b =>
                 {
-                    b.HasOne("FinanceManager.Api.Models.User", "User")
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Accounts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -207,9 +282,9 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Category", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Category", b =>
                 {
-                    b.HasOne("FinanceManager.Api.Models.User", "User")
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Categories")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -218,9 +293,20 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Goal", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
                 {
-                    b.HasOne("FinanceManager.Api.Models.User", "User")
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Goal", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Goals")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -229,21 +315,40 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Transaction", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.StoredFile", b =>
                 {
-                    b.HasOne("FinanceManager.Api.Models.Account", "Account")
+                    b.HasOne("FinanceManager.Domain.Entities.Folder", "Folder")
+                        .WithMany("Files")
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Folder");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Transaction", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.Account", "Account")
                         .WithMany("Transactions")
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FinanceManager.Api.Models.Category", "Category")
+                    b.HasOne("FinanceManager.Domain.Entities.Category", "Category")
                         .WithMany("Transactions")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FinanceManager.Api.Models.User", "User")
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Transactions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -256,17 +361,22 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Account", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Account", b =>
                 {
                     b.Navigation("Transactions");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.Category", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Transactions");
                 });
 
-            modelBuilder.Entity("FinanceManager.Api.Models.User", b =>
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
+                {
+                    b.Navigation("Files");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.User", b =>
                 {
                     b.Navigation("Accounts");
 

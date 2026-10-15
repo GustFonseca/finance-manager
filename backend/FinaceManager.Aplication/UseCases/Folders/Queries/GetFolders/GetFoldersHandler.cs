@@ -1,0 +1,45 @@
+using AutoMapper;
+using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Domain.Entities;
+using FinanceManager.Domain.Interfaces.Repositories;
+
+namespace FinanceManager.Aplication.UseCases.Folders.Queries.GetFolders;
+
+public class GetFoldersHandler : IRequestHandler<GetFoldersQuery, List<FolderDto>>
+{
+    private readonly IFolderRepository _folderRepository;
+    private readonly IStoredFileRepository _fileRepository;
+    private readonly IMapper _mapper;
+
+    public GetFoldersHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository, IMapper mapper)
+    {
+        _folderRepository = folderRepository;
+        _fileRepository = fileRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<List<FolderDto>> Handle(GetFoldersQuery request, CancellationToken cancellationToken = default)
+    {
+        // Every user has the imports folder; it is created the first time it's needed.
+        if (await _folderRepository.GetSystemFolderAsync(request.UserId) == null)
+        {
+            await _folderRepository.CreateAsync(new Folder
+            {
+                UserId = request.UserId,
+                Name = Folder.ImportsFolderName,
+                IsSystem = true
+            });
+        }
+
+        var folders = await _folderRepository.GetByUserIdAsync(request.UserId, deleted: false);
+        var counts = await _fileRepository.CountActiveByFolderAsync(request.UserId);
+
+        return folders.Select(f =>
+        {
+            var dto = _mapper.Map<FolderDto>(f);
+            dto.FileCount = counts.GetValueOrDefault(f.Id);
+            return dto;
+        }).ToList();
+    }
+}
