@@ -5,6 +5,7 @@ import { fonts, fontSize, gradients, PressState, spacing, webStyle } from '@/the
 import { Clock } from './Clock';
 import { findProgram } from './programs';
 import { TASKBAR_HEIGHT } from './StartMenu';
+import { VolumeControl } from './VolumeControl';
 import { useWindowManager } from './WindowManager';
 import { WindowsLogo } from './WindowsLogo';
 
@@ -65,7 +66,7 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
       </View>
 
       <View style={styles.tray}>
-        <FontAwesome name="volume-up" size={13} color="#FFFFFF" />
+        <VolumeControl />
         <Clock />
       </View>
     </View>

@@ -6,5 +6,6 @@ export { TitleBar } from './TitleBar';
 export type { IconName } from './TitleBar';
 export { WindowsLogo } from './WindowsLogo';
 export { useWindowManager } from './WindowManager';
+export { useSound } from './sound/SoundProvider';
 export { PROGRAMS } from './programs';
 export type { Program } from './programs';

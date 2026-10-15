@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Desktop, ProgramScreens } from './Desktop';
 import { StartMenu } from './StartMenu';
 import { Taskbar } from './Taskbar';
+import { SoundProvider } from './sound/SoundProvider';
 import { WindowManagerProvider } from './WindowManager';
 
 type Props = {
@@ -16,11 +17,13 @@ export function XpShell({ screens, children }: Props) {
 
   return (
     <WindowManagerProvider>
-      <View style={styles.screen}>
-        <Desktop screens={screens}>{children}</Desktop>
-        <StartMenu visible={startOpen} onClose={() => setStartOpen(false)} />
-        <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((open) => !open)} />
-      </View>
+      <SoundProvider>
+        <View style={styles.screen}>
+          <Desktop screens={screens}>{children}</Desktop>
+          <StartMenu visible={startOpen} onClose={() => setStartOpen(false)} />
+          <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((open) => !open)} />
+        </View>
+      </SoundProvider>
     </WindowManagerProvider>
   );
 }
