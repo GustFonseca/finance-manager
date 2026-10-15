@@ -80,10 +80,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-migrate in development
-if (app.Environment.IsDevelopment())
+// Apply pending migrations on startup in every environment, so each deploy
+// brings its own schema changes. Safe because the API runs as a single
+// instance; if a migration fails, the app doesn't start.
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
