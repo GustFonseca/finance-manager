@@ -1,4 +1,4 @@
-import { formatCents, parseToCents } from '../money';
+import { formatCents, parseSignedAmountToCents, parseToCents } from '../money';
 
 /**
  * `Intl` separates the currency symbol from the digits with a non-breaking
@@ -67,5 +67,28 @@ describe('formatCents / parseToCents round-trip', () => {
       const typed = normalize(formatCents(cents)).replace('R$ ', '');
       expect(parseToCents(typed)).toBe(cents);
     }
+  });
+});
+
+describe('parseSignedAmountToCents', () => {
+  it('parses dot-decimal amounts exported by banks', () => {
+    expect(parseSignedAmountToCents('23.45')).toBe(2345);
+    expect(parseSignedAmountToCents('-1500.00')).toBe(-150000);
+    expect(parseSignedAmountToCents('7.5')).toBe(750);
+  });
+
+  it('parses pt-BR amounts with thousands separators', () => {
+    expect(parseSignedAmountToCents('-1.234,56')).toBe(-123456);
+    expect(parseSignedAmountToCents('R$ 10,00')).toBe(1000);
+  });
+
+  it('parses integers and an explicit plus sign', () => {
+    expect(parseSignedAmountToCents('42')).toBe(4200);
+    expect(parseSignedAmountToCents('+0.99')).toBe(99);
+  });
+
+  it('rejects non-numeric input', () => {
+    expect(parseSignedAmountToCents('')).toBeNull();
+    expect(parseSignedAmountToCents('abc')).toBeNull();
   });
 });

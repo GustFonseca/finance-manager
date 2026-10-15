@@ -8,16 +8,18 @@ type Props = {
   onClose: () => void;
   title?: string;
   icon?: IconName;
+  /** Max width in px; dialogs are 420 by default, wizards wider. */
+  width?: number;
   children: React.ReactNode;
 };
 
 /** XP dialog box: a small window with only the close button, centered. */
-export function Modal({ visible, onClose, title, icon, children }: Props) {
+export function Modal({ visible, onClose, title, icon, width = 420, children }: Props) {
   return (
     <RNModal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         {/* Stop propagation so clicks inside the dialog don't dismiss it. */}
-        <Pressable style={styles.window} onPress={() => {}}>
+        <Pressable style={[styles.window, { maxWidth: width }]} onPress={() => {}}>
           <TitleBar title={title ?? ''} icon={icon} onClose={onClose} />
           <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
             <View>{children}</View>
@@ -38,7 +40,6 @@ const styles = StyleSheet.create({
   },
   window: {
     width: '100%',
-    maxWidth: 420,
     maxHeight: '90%',
     backgroundColor: colors.background,
     borderWidth: 3,

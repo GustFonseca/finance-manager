@@ -7,6 +7,7 @@ export { DialogButtons } from './DialogButtons';
 export { RadioGroup } from './RadioGroup';
 export type { RadioOption } from './RadioGroup';
 export { Select } from './Select';
+export { Checkbox } from './Checkbox';
 export type { SelectOption } from './Select';
 export { ColorPicker, CATEGORY_COLORS } from './ColorPicker';
 export { MoneyText } from './MoneyText';

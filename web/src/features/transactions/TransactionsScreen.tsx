@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
 import { EmptyState, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
+import { ImportWizard } from '@/features/import/ImportWizard';
 import { getErrorMessage } from '@/lib/http';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
@@ -15,6 +16,7 @@ export function TransactionsScreen() {
   const deleteTransaction = useDeleteTransaction();
 
   const [formVisible, setFormVisible] = useState(false);
+  const [importVisible, setImportVisible] = useState(false);
 
   async function handleCreate(data: CreateTransactionRequest) {
     try {
@@ -56,6 +58,7 @@ export function TransactionsScreen() {
         icon="exchange"
         actions={[
           { label: 'Nova transação', icon: 'plus-circle', onPress: () => setFormVisible(true) },
+          { label: 'Importar extrato', icon: 'upload', onPress: () => setImportVisible(true) },
         ]}
         onRefresh={refetch}
         status={`${transactions.length} transação(ões)`}>
@@ -76,6 +79,8 @@ export function TransactionsScreen() {
         onClose={() => setFormVisible(false)}
         onSubmit={handleCreate}
       />
+
+      <ImportWizard visible={importVisible} onClose={() => setImportVisible(false)} />
     </>
   );
 }

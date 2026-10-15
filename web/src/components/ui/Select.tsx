@@ -12,20 +12,22 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   label?: string;
+  /** Inline in a table row: no label spacing, narrower text. */
+  compact?: boolean;
 };
 
 /**
  * XP drop-down list. The app is web-only, so this renders a native
  * `<select>`, which the browser draws much like the XP combo box.
  */
-export function Select({ options, selectedId, onSelect, label }: Props) {
+export function Select({ options, selectedId, onSelect, label, compact }: Props) {
   return (
-    <View style={styles.wrapper}>
+    <View style={compact ? undefined : styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <select
         value={selectedId ?? ''}
         onChange={(event) => onSelect(event.target.value)}
-        style={selectStyle}>
+        style={compact ? compactStyle : selectStyle}>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.label}
@@ -44,6 +46,8 @@ const selectStyle: React.CSSProperties = {
   color: colors.textPrimary,
   borderRadius: 0,
 };
+
+const compactStyle: React.CSSProperties = { ...selectStyle, padding: '1px 2px', maxWidth: 150 };
 
 const styles = StyleSheet.create({
   wrapper: { marginBottom: spacing.md },

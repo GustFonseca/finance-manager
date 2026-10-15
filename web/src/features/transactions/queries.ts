@@ -11,7 +11,7 @@ export function useTransactions(range: DateRange = {}) {
 }
 
 /** Transactions move money, so accounts and the summary are invalidated too. */
-function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
+export function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.transactions });
   qc.invalidateQueries({ queryKey: queryKeys.accounts });
   qc.invalidateQueries({ queryKey: queryKeys.summary });

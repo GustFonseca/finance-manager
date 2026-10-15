@@ -30,3 +30,27 @@ export function parseToCents(input: string): number | null {
   if (!Number.isFinite(value) || value <= 0) return null;
   return Math.round(value * 100);
 }
+
+/**
+ * Parses a signed amount as exported by banks into integer cents, accepting
+ * both `"-1234.56"` (CSV/OFX) and `"-1.234,56"` (pt-BR). The decimal separator
+ * is the last `.` or `,` followed by one or two digits. Returns `null` when the
+ * input is not a number. Works on the digits as text, so no float rounding.
+ */
+export function parseSignedAmountToCents(input: string): number | null {
+  let text = input.trim().replace(/R\$|\s/g, '');
+  let sign = 1;
+  if (text.startsWith('-') || text.endsWith('-')) {
+    sign = -1;
+    text = text.replace(/-/g, '');
+  } else if (text.startsWith('+')) {
+    text = text.slice(1);
+  }
+
+  const decimal = /[.,](\d{1,2})$/.exec(text);
+  const integerPart = (decimal ? text.slice(0, decimal.index) : text).replace(/[.,]/g, '');
+  const fraction = decimal ? decimal[1].padEnd(2, '0') : '00';
+  if (!/^\d+$/.test(integerPart)) return null;
+
+  return sign * (Number(integerPart) * 100 + Number(fraction));
+}
