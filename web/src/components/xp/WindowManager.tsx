@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Href, usePathname, useRouter } from 'expo-router';
 import { findProgram } from './programs';
+import type { Point } from './useWindowDrag';
 
 type WindowManagerApi = {
   /** Open windows, in the order they appear on the taskbar. */
@@ -17,6 +18,9 @@ type WindowManagerApi = {
   toggleMaximize: (route: string) => void;
   /** Taskbar click: restore/focus the window, or minimize it if it's already in front. */
   toggleFromTaskbar: (route: string) => void;
+  /** Where the user dragged the restored window; undefined = centered. */
+  positionOf: (route: string) => Point | undefined;
+  setPosition: (route: string, point: Point) => void;
 };
 
 const WindowManagerContext = createContext<WindowManagerApi | null>(null);
@@ -32,6 +36,7 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
   const [openRoutes, setOpenRoutes] = useState<string[]>([]);
   const [minimized, setMinimized] = useState<string[]>([]);
   const [restored, setRestored] = useState<string[]>([]);
+  const [positions, setPositions] = useState<Record<string, Point>>({});
 
   const addOpen = useCallback((route: string) => {
     setOpenRoutes((prev) => (prev.includes(route) ? prev : [...prev, route]));
@@ -77,6 +82,10 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
     );
   }, []);
 
+  const setPosition = useCallback((route: string, point: Point) => {
+    setPositions((prev) => ({ ...prev, [route]: point }));
+  }, []);
+
   const api = useMemo<WindowManagerApi>(() => {
     const isMinimized = (route: string) => minimized.includes(route);
     const isVisible = (route: string) =>
@@ -93,8 +102,21 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
       minimize,
       toggleMaximize,
       toggleFromTaskbar: (route) => (isVisible(route) ? minimize(route) : open(route)),
+      positionOf: (route) => positions[route],
+      setPosition,
     };
-  }, [openRoutes, minimized, restored, pathname, open, close, minimize, toggleMaximize]);
+  }, [
+    openRoutes,
+    minimized,
+    restored,
+    positions,
+    pathname,
+    open,
+    close,
+    minimize,
+    toggleMaximize,
+    setPosition,
+  ]);
 
   return <WindowManagerContext.Provider value={api}>{children}</WindowManagerContext.Provider>;
 }

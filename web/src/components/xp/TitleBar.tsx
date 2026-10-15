@@ -1,6 +1,6 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ViewProps } from 'react-native';
 import { fonts, gradients, PressState, radius, webStyle } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof FontAwesome>['name'];
@@ -13,6 +13,10 @@ type Props = {
   onMinimize?: () => void;
   onMaximize?: () => void;
   onClose?: () => void;
+  /** Starts a window drag (see useWindowDrag). */
+  onPointerDown?: ViewProps['onPointerDown'];
+  /** Shows the move cursor when the window can be dragged. */
+  draggable?: boolean;
 };
 
 /** Blue Luna caption bar with the minimize / maximize / close buttons. */
@@ -24,11 +28,15 @@ export function TitleBar({
   onMinimize,
   onMaximize,
   onClose,
+  onPointerDown,
+  draggable,
 }: Props) {
   return (
     <View
+      onPointerDown={onPointerDown}
       style={[
         styles.bar,
+        draggable && styles.draggable,
         webStyle({ backgroundImage: active ? gradients.titleBar : gradients.titleBarInactive }),
       ]}>
       {icon ? <FontAwesome name={icon} size={14} color="#FFFFFF" style={styles.icon} /> : null}
@@ -105,6 +113,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     ...webStyle({ userSelect: 'none' }),
   },
+  // touchAction lets touch screens drag the window instead of scrolling.
+  draggable: webStyle({ cursor: 'move', touchAction: 'none' }),
   icon: { marginRight: 6 },
   title: {
     flex: 1,

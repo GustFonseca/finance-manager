@@ -3,13 +3,19 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
 import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
 import { MenuBar, MenuDef, MenuEntry } from './MenuBar';
+import { TASKBAR_HEIGHT } from './StartMenu';
 import { IconName, TitleBar } from './TitleBar';
 import { Toolbar, ToolbarButton } from './Toolbar';
+import { Point, useWindowDrag } from './useWindowDrag';
 import { useWindowManager } from './WindowManager';
 
 /** Below this width windows are always maximized (phones, small tablets). */
 const COMPACT_WIDTH = 720;
 const RESTORED_MAX_WIDTH = 920;
+const RESTORED_MAX_HEIGHT = 620;
+/** How much of a dragged window must stay on screen so it can be grabbed back. */
+const MIN_VISIBLE = 100;
+const TITLE_BAR_HEIGHT = 28;
 
 export type WindowAction = {
   /** Menu/toolbar label, e.g. "Nova conta". */
@@ -38,14 +44,34 @@ type Props = {
 export function Window({ title, icon, actions = [], onRefresh, status, children }: Props) {
   const wm = useWindowManager();
   const { alert } = useDialog();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const route = wm.currentRoute;
-
-  if (!wm.isVisible(route)) return null;
 
   const compact = width < COMPACT_WIDTH;
   const maximized = compact || wm.isMaximized(route);
-  const sideInset = Math.max(spacing.xxl, (width - RESTORED_MAX_WIDTH) / 2);
+
+  // Restored windows have a fixed size and start centered on the desktop.
+  const desktopHeight = height - TASKBAR_HEIGHT;
+  const size = {
+    width: Math.min(RESTORED_MAX_WIDTH, width - spacing.xxl * 2),
+    height: Math.min(RESTORED_MAX_HEIGHT, desktopHeight - spacing.xxl * 2),
+  };
+  const clamp = (point: Point): Point => ({
+    x: Math.min(Math.max(point.x, MIN_VISIBLE - size.width), width - MIN_VISIBLE),
+    y: Math.min(Math.max(point.y, 0), desktopHeight - TITLE_BAR_HEIGHT),
+  });
+  const centered = { x: (width - size.width) / 2, y: (desktopHeight - size.height) / 2 };
+
+  const drag = useWindowDrag({
+    // Re-clamped every render so a smaller browser window can't strand it off-screen.
+    position: clamp(wm.positionOf(route) ?? centered),
+    clamp,
+    onDragEnd: (point) => wm.setPosition(route, point),
+    onDoubleClick: () => !compact && wm.toggleMaximize(route),
+    draggable: !maximized,
+  });
+
+  if (!wm.isVisible(route)) return null;
 
   const close = () => wm.close(route);
 
@@ -90,9 +116,13 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     <View
       style={[
         styles.frame,
-        maximized ? styles.maximized : [styles.restored, { left: sideInset, right: sideInset }],
+        maximized
+          ? styles.maximized
+          : { left: drag.position.x, top: drag.position.y, ...size },
       ]}>
       <TitleBar
+        onPointerDown={drag.onPointerDown}
+        draggable={!maximized}
         title={title}
         icon={icon}
         maximized={maximized}
@@ -125,7 +155,6 @@ const styles = StyleSheet.create({
     ...webStyle({ boxShadow: bevels.window }),
   },
   maximized: { top: 0, left: 0, right: 0, bottom: 0 },
-  restored: { top: spacing.xxl, bottom: spacing.xxl },
   inner: {
     flex: 1,
     marginHorizontal: 3,
