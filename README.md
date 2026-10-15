@@ -1,12 +1,26 @@
 # Finance Manager
 
-Personal finance management app with a C# API backend and React Native mobile frontend.
+Personal finance management web app with a C# API backend and a React (Expo Web) frontend.
 
 ## Architecture
 
 - **Backend**: ASP.NET Core Web API (C#) with Entity Framework Core + PostgreSQL
-- **Frontend**: React Native (Expo) with TypeScript
+- **Frontend**: React web app built with Expo (react-native-web) + expo-router + TypeScript
 - **Auth**: Google OAuth 2.0 → JWT
+
+## Features
+
+- Google sign-in (OAuth 2.0)
+- Accounts, categories, transactions and savings goals management
+- Financial summary dashboard with breakdown by category
+
+## Project structure
+
+```
+finance-manager/
+├── backend/   # ASP.NET Core Web API
+└── web/       # React web frontend (Expo Web)
+```
 
 ## Getting Started
 
@@ -24,11 +38,24 @@ dotnet run                  # Start API (default: http://localhost:5000)
 
 API docs available at `/swagger` when running.
 
-### Mobile
+### Web frontend
 
 ```bash
-cd mobile
+cd web
 npm install
-npx expo start
+npm start            # dev server (expo start --web)
+npm test             # unit tests (jest)
+npm run build        # static export to ./dist (expo export --platform web)
 ```
 
+The API base URL is read from the `EXPO_PUBLIC_API_URL` environment variable
+(defaults to `http://localhost:5101/api`).
+
+## Deployment
+
+- **Frontend**: the static export (`./dist`) is published to GitHub Pages via
+  [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) on every
+  push to `main` that touches `web/`.
+- **Backend**: deployed to Azure App Service via
+  [`.github/workflows/deploy-api.yml`](.github/workflows/deploy-api.yml) on every
+  push to `main` that touches `backend/`.
