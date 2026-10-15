@@ -1,9 +1,12 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { fontSize, gradients, PressState, spacing, webStyle } from '@/theme';
 import { PROGRAMS } from './programs';
 import { useWindowManager, WindowRouteProvider } from './WindowManager';
+
+/** The Windows XP "Bliss" photo, resized to 1920px for the web. */
+const WALLPAPER = require('../../../assets/images/bliss.jpg');
 
 export type ProgramScreens = Record<string, React.ComponentType>;
 
@@ -19,6 +22,7 @@ export function Desktop({ screens, children }: Props) {
 
   return (
     <View style={styles.desktop}>
+      <Image source={WALLPAPER} style={StyleSheet.absoluteFill} resizeMode="cover" />
       <View style={styles.icons}>
         {PROGRAMS.map((program) => (
           <Pressable
@@ -61,6 +65,7 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
+    // Drawn while the wallpaper photo loads.
     ...webStyle({ backgroundImage: gradients.wallpaper, backgroundColor: '#5A9A2E' }),
   },
   icons: { padding: spacing.sm, gap: spacing.md, alignItems: 'center', width: 88 },

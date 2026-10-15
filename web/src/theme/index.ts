@@ -84,7 +84,7 @@ export const gradients = {
   buttonPressed: 'linear-gradient(to bottom, #CDCAC3 0%, #E3E3DB 8%, #E5E5DE 94%, #F2F2F1 100%)',
   progress:
     'repeating-linear-gradient(to right, transparent 0px, transparent 8px, #FFFFFF 8px, #FFFFFF 10px), linear-gradient(to bottom, #ACEDAD 0%, #7BE47D 14%, #4CDA50 28%, #2ED330 42%, #42D845 57%, #76E275 71%, #8FE791 85%, #FFFFFF 100%)',
-  /** Approximation of the "Bliss" wallpaper: blue sky, clouds and green hills. */
+  /** CSS approximation of "Bliss", shown until the wallpaper photo loads. */
   wallpaper: [
     'radial-gradient(ellipse 18% 6% at 22% 22%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 100%)',
     'radial-gradient(ellipse 14% 4% at 30% 26%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%)',
