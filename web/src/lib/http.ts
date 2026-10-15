@@ -23,6 +23,24 @@ http.interceptors.request.use(async (config) => {
   return config;
 });
 
+let onUnauthorized: (() => void) | null = null;
+
+/**
+ * Registers the callback run when the API rejects the stored JWT (expired, or
+ * signed with a different secret), so the app can sign out instead of
+ * silently showing empty screens.
+ */
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
+http.interceptors.response.use(undefined, (error) => {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    onUnauthorized?.();
+  }
+  return Promise.reject(error);
+});
+
 /** Extracts a human-friendly message from an axios error. */
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {

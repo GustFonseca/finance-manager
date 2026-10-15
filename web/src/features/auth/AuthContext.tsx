@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { getItem, setItem, deleteItem } from '@/lib/storage';
-import { TOKEN_KEY } from '@/lib/http';
+import { TOKEN_KEY, setUnauthorizedHandler } from '@/lib/http';
 import { authApi } from './api';
 
 const USER_KEY = 'user_data';
@@ -76,6 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadToken();
+    setUnauthorizedHandler(signOut);
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   async function loadToken() {
