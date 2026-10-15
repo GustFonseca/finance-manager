@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Desktop } from './Desktop';
+import { Desktop, ProgramScreens } from './Desktop';
 import { StartMenu } from './StartMenu';
 import { Taskbar } from './Taskbar';
 import { WindowManagerProvider } from './WindowManager';
 
+type Props = {
+  screens: ProgramScreens;
+  children: React.ReactNode;
+};
+
 /** The whole XP desktop: wallpaper + windows, Start menu and taskbar. */
-export function XpShell({ children }: { children: React.ReactNode }) {
+export function XpShell({ screens, children }: Props) {
   const [startOpen, setStartOpen] = useState(false);
 
   return (
     <WindowManagerProvider>
       <View style={styles.screen}>
-        <Desktop>{children}</Desktop>
+        <Desktop screens={screens}>{children}</Desktop>
         <StartMenu visible={startOpen} onClose={() => setStartOpen(false)} />
         <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((open) => !open)} />
       </View>

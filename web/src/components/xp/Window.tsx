@@ -7,12 +7,14 @@ import { TASKBAR_HEIGHT } from './StartMenu';
 import { IconName, TitleBar } from './TitleBar';
 import { Toolbar, ToolbarButton } from './Toolbar';
 import { Point, useWindowDrag } from './useWindowDrag';
-import { useWindowManager } from './WindowManager';
+import { useWindowManager, useWindowRoute } from './WindowManager';
 
 /** Below this width windows are always maximized (phones, small tablets). */
 const COMPACT_WIDTH = 720;
-const RESTORED_MAX_WIDTH = 920;
-const RESTORED_MAX_HEIGHT = 620;
+const RESTORED_MAX_WIDTH = 860;
+const RESTORED_MAX_HEIGHT = 560;
+/** Offset between windows opened in a row, like XP's cascade. */
+const CASCADE_STEP = 28;
 /** How much of a dragged window must stay on screen so it can be grabbed back. */
 const MIN_VISIBLE = 100;
 const TITLE_BAR_HEIGHT = 28;
@@ -37,20 +39,21 @@ type Props = {
 };
 
 /**
- * An XP application window for the current route. Its open / minimized /
- * maximized state lives in the WindowManager, so the screen only describes
- * its content and actions.
+ * An XP application window for one program. Its open / minimized / maximized
+ * state, position and stacking live in the WindowManager, so the screen only
+ * describes its content and actions.
  */
 export function Window({ title, icon, actions = [], onRefresh, status, children }: Props) {
   const wm = useWindowManager();
   const { alert } = useDialog();
   const { width, height } = useWindowDimensions();
-  const route = wm.currentRoute;
+  const route = useWindowRoute();
+  const active = wm.activeRoute === route;
 
   const compact = width < COMPACT_WIDTH;
   const maximized = compact || wm.isMaximized(route);
 
-  // Restored windows have a fixed size and start centered on the desktop.
+  // Restored windows have a fixed size and open cascaded from the center.
   const desktopHeight = height - TASKBAR_HEIGHT;
   const size = {
     width: Math.min(RESTORED_MAX_WIDTH, width - spacing.xxl * 2),
@@ -60,18 +63,22 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     x: Math.min(Math.max(point.x, MIN_VISIBLE - size.width), width - MIN_VISIBLE),
     y: Math.min(Math.max(point.y, 0), desktopHeight - TITLE_BAR_HEIGHT),
   });
-  const centered = { x: (width - size.width) / 2, y: (desktopHeight - size.height) / 2 };
+  const cascade = Math.max(0, wm.openRoutes.indexOf(route)) * CASCADE_STEP;
+  const initial = {
+    x: (width - size.width) / 2 - CASCADE_STEP * 2 + cascade,
+    y: (desktopHeight - size.height) / 2 - CASCADE_STEP * 2 + cascade,
+  };
 
   const drag = useWindowDrag({
     // Re-clamped every render so a smaller browser window can't strand it off-screen.
-    position: clamp(wm.positionOf(route) ?? centered),
+    position: clamp(wm.positionOf(route) ?? initial),
     clamp,
     onDragEnd: (point) => wm.setPosition(route, point),
     onDoubleClick: () => !compact && wm.toggleMaximize(route),
     draggable: !maximized,
   });
 
-  if (!wm.isVisible(route)) return null;
+  if (!wm.isOpen(route) || wm.isMinimized(route)) return null;
 
   const close = () => wm.close(route);
 
@@ -114,13 +121,18 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
 
   return (
     <View
+      // Any click inside a background window brings it to the front.
+      onPointerDown={active ? undefined : () => wm.open(route)}
       style={[
         styles.frame,
+        { zIndex: wm.zIndexOf(route) },
+        !active && styles.inactiveFrame,
         maximized
           ? styles.maximized
           : { left: drag.position.x, top: drag.position.y, ...size },
       ]}>
       <TitleBar
+        active={active}
         onPointerDown={drag.onPointerDown}
         draggable={!maximized}
         title={title}
@@ -154,6 +166,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     ...webStyle({ boxShadow: bevels.window }),
   },
+  // XP fades the whole frame of background windows, not just the title bar.
+  inactiveFrame: { backgroundColor: '#7B9CF0' },
   maximized: { top: 0, left: 0, right: 0, bottom: 0 },
   inner: {
     flex: 1,

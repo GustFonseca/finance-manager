@@ -6,117 +6,112 @@ import type { Point } from './useWindowDrag';
 type WindowManagerApi = {
   /** Open windows, in the order they appear on the taskbar. */
   openRoutes: string[];
-  /** Route of the window currently shown (the URL); may be closed/minimized. */
-  currentRoute: string;
+  /** The focused window: topmost one that isn't minimized. */
+  activeRoute: string | undefined;
+  /** Stacking order for the window frame (higher = in front). */
+  zIndexOf: (route: string) => number;
+  isOpen: (route: string) => boolean;
   isMinimized: (route: string) => boolean;
   isMaximized: (route: string) => boolean;
-  /** True when `route` is the current URL and its window is open and not minimized. */
-  isVisible: (route: string) => boolean;
+  /** Opens the window if needed, restores it and brings it to the front. */
   open: (route: string) => void;
   close: (route: string) => void;
   minimize: (route: string) => void;
   toggleMaximize: (route: string) => void;
-  /** Taskbar click: restore/focus the window, or minimize it if it's already in front. */
+  /** Taskbar click: focus the window, or minimize it if it's already focused. */
   toggleFromTaskbar: (route: string) => void;
-  /** Where the user dragged the restored window; undefined = centered. */
+  /** Where the user dragged the restored window; undefined = default cascade. */
   positionOf: (route: string) => Point | undefined;
   setPosition: (route: string, point: Point) => void;
 };
 
 const WindowManagerContext = createContext<WindowManagerApi | null>(null);
 
+const without = (list: string[], route: string) => list.filter((r) => r !== route);
+
 /**
- * Keeps XP-style window state (open, minimized, maximized) on top of the
- * router: each program is a route, and the window in front is the current URL.
+ * XP-style window state: several program windows open at once, stacked in
+ * z-order. The focused window and the URL are kept in sync, so links, reloads
+ * and the back button still work.
  */
 export function WindowManagerProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const [openRoutes, setOpenRoutes] = useState<string[]>([]);
+  /** Back-to-front stacking order of the open windows. */
+  const [zOrder, setZOrder] = useState<string[]>([]);
   const [minimized, setMinimized] = useState<string[]>([]);
-  const [restored, setRestored] = useState<string[]>([]);
+  const [maximized, setMaximized] = useState<string[]>([]);
   const [positions, setPositions] = useState<Record<string, Point>>({});
 
-  const addOpen = useCallback((route: string) => {
+  const activeRoute = [...zOrder].reverse().find((r) => !minimized.includes(r));
+
+  const open = useCallback((route: string) => {
     setOpenRoutes((prev) => (prev.includes(route) ? prev : [...prev, route]));
-    setMinimized((prev) => prev.filter((r) => r !== route));
+    setZOrder((prev) => [...without(prev, route), route]);
+    setMinimized((prev) => without(prev, route));
   }, []);
 
-  // Arriving at a program's URL (link, reload, back button) opens its window.
+  // Arriving at a program's URL (link, reload, back button) focuses its window…
   useEffect(() => {
-    if (findProgram(pathname)) addOpen(pathname);
-  }, [pathname, addOpen]);
+    if (findProgram(pathname)) open(pathname);
+  }, [pathname, open]);
 
-  const navigate = useCallback((route: string) => router.navigate(route as Href), [router]);
+  // …and focusing a window moves the URL to it.
+  useEffect(() => {
+    if (activeRoute && activeRoute !== pathname) router.navigate(activeRoute as Href);
+    // `pathname` is left out on purpose: only a focus change should navigate.
+  }, [activeRoute, router]);
 
-  const open = useCallback(
-    (route: string) => {
-      addOpen(route);
-      if (route !== pathname) navigate(route);
-    },
-    [addOpen, navigate, pathname]
-  );
-
-  const close = useCallback(
-    (route: string) => {
-      const remaining = openRoutes.filter((r) => r !== route);
-      setOpenRoutes(remaining);
-      setMinimized((prev) => prev.filter((r) => r !== route));
-      // Bring the most recently opened, non-minimized window to the front.
-      if (route === pathname) {
-        const next = [...remaining].reverse().find((r) => !minimized.includes(r));
-        if (next) navigate(next);
-      }
-    },
-    [openRoutes, minimized, pathname, navigate]
-  );
+  const close = useCallback((route: string) => {
+    setOpenRoutes((prev) => without(prev, route));
+    setZOrder((prev) => without(prev, route));
+    setMinimized((prev) => without(prev, route));
+  }, []);
 
   const minimize = useCallback((route: string) => {
     setMinimized((prev) => (prev.includes(route) ? prev : [...prev, route]));
   }, []);
 
   const toggleMaximize = useCallback((route: string) => {
-    setRestored((prev) =>
-      prev.includes(route) ? prev.filter((r) => r !== route) : [...prev, route]
-    );
+    setMaximized((prev) => (prev.includes(route) ? without(prev, route) : [...prev, route]));
   }, []);
 
   const setPosition = useCallback((route: string, point: Point) => {
     setPositions((prev) => ({ ...prev, [route]: point }));
   }, []);
 
-  const api = useMemo<WindowManagerApi>(() => {
-    const isMinimized = (route: string) => minimized.includes(route);
-    const isVisible = (route: string) =>
-      route === pathname && openRoutes.includes(route) && !isMinimized(route);
-    return {
+  const api = useMemo<WindowManagerApi>(
+    () => ({
       openRoutes,
-      currentRoute: pathname,
-      isMinimized,
-      // Windows open maximized; the button toggles them to the restored size.
-      isMaximized: (route) => !restored.includes(route),
-      isVisible,
+      activeRoute,
+      zIndexOf: (route) => zOrder.indexOf(route) + 1,
+      isOpen: (route) => openRoutes.includes(route),
+      isMinimized: (route) => minimized.includes(route),
+      isMaximized: (route) => maximized.includes(route),
       open,
       close,
       minimize,
       toggleMaximize,
-      toggleFromTaskbar: (route) => (isVisible(route) ? minimize(route) : open(route)),
+      toggleFromTaskbar: (route) => (route === activeRoute ? minimize(route) : open(route)),
       positionOf: (route) => positions[route],
       setPosition,
-    };
-  }, [
-    openRoutes,
-    minimized,
-    restored,
-    positions,
-    pathname,
-    open,
-    close,
-    minimize,
-    toggleMaximize,
-    setPosition,
-  ]);
+    }),
+    [
+      openRoutes,
+      activeRoute,
+      zOrder,
+      minimized,
+      maximized,
+      positions,
+      open,
+      close,
+      minimize,
+      toggleMaximize,
+      setPosition,
+    ]
+  );
 
   return <WindowManagerContext.Provider value={api}>{children}</WindowManagerContext.Provider>;
 }
@@ -125,4 +120,15 @@ export function useWindowManager(): WindowManagerApi {
   const ctx = useContext(WindowManagerContext);
   if (!ctx) throw new Error('useWindowManager must be used within a WindowManagerProvider');
   return ctx;
+}
+
+const WindowRouteContext = createContext<string | null>(null);
+
+/** Tells a program's `<Window>` which window (route) it is. */
+export const WindowRouteProvider = WindowRouteContext.Provider;
+
+export function useWindowRoute(): string {
+  const route = useContext(WindowRouteContext);
+  if (route === null) throw new Error('useWindowRoute must be used within a WindowRouteProvider');
+  return route;
 }

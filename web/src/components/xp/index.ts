@@ -1,4 +1,5 @@
 export { XpShell } from './XpShell';
+export type { ProgramScreens } from './Desktop';
 export { Window } from './Window';
 export type { WindowAction } from './Window';
 export { TitleBar } from './TitleBar';

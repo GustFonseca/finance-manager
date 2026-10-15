@@ -1,1 +1,4 @@
-export { DashboardScreen as default } from '@/features/dashboard/DashboardScreen';
+/** Rendered as a window by the desktop layout; the route only sets the URL. */
+export default function DashboardRoute() {
+  return null;
+}

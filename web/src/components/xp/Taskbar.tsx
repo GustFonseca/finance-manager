@@ -43,7 +43,7 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
         {wm.openRoutes.map((route) => {
           const program = findProgram(route);
           if (!program) return null;
-          const active = wm.isVisible(route);
+          const active = wm.activeRoute === route;
           return (
             <Pressable
               key={route}

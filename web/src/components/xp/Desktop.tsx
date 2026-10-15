@@ -3,11 +3,19 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fontSize, gradients, PressState, spacing, webStyle } from '@/theme';
 import { PROGRAMS } from './programs';
-import { useWindowManager } from './WindowManager';
+import { useWindowManager, WindowRouteProvider } from './WindowManager';
 
-/** Wallpaper with one shortcut icon per program; windows render on top. */
-export function Desktop({ children }: { children: React.ReactNode }) {
-  const { open } = useWindowManager();
+export type ProgramScreens = Record<string, React.ComponentType>;
+
+type Props = {
+  /** Screen component for each program route; every open one is rendered as a window. */
+  screens: ProgramScreens;
+  children: React.ReactNode;
+};
+
+/** Wallpaper with one shortcut icon per program, and every open window on top. */
+export function Desktop({ screens, children }: Props) {
+  const { open, openRoutes } = useWindowManager();
 
   return (
     <View style={styles.desktop}>
@@ -35,6 +43,14 @@ export function Desktop({ children }: { children: React.ReactNode }) {
           </Pressable>
         ))}
       </View>
+      {openRoutes.map((route) => {
+        const Screen = screens[route];
+        return Screen ? (
+          <WindowRouteProvider key={route} value={route}>
+            <Screen />
+          </WindowRouteProvider>
+        ) : null;
+      })}
       {children}
     </View>
   );
