@@ -9,6 +9,7 @@ import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
 import { GoalsScreen } from '@/features/goals/GoalsScreen';
 import { SavingsScreen } from '@/features/savings/SavingsScreen';
+import { SpendingScreen } from '@/features/spending/SpendingScreen';
 import { TransactionsScreen } from '@/features/transactions/TransactionsScreen';
 
 /** Screen rendered inside each program's window, keyed by its route. */
@@ -18,6 +19,7 @@ const SCREENS: ProgramScreens = {
   '/accounts': AccountsScreen,
   '/goals': GoalsScreen,
   '/categories': CategoriesScreen,
+  '/spending': SpendingScreen,
   '/savings': SavingsScreen,
   '/events': ActivityScreen,
 };

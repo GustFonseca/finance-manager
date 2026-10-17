@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
@@ -11,7 +10,7 @@ namespace FinanceManager.Aplication.Analysis;
 /// never carry a recurrence). Known subscriptions and bills need less evidence
 /// than an unknown merchant, so a monthly dinner out isn't taken for a bill.
 /// </summary>
-public static partial class RecurringExpenseDetector
+public static class RecurringExpenseDetector
 {
     /// <summary>How far back to look for repeated charges.</summary>
     public const int LookbackMonths = 4;
@@ -69,7 +68,7 @@ public static partial class RecurringExpenseDetector
         AccountName = latest.Account?.Name ?? string.Empty,
         MonthlyCents = monthlyCents,
         LastDate = latest.Date,
-        Kind = SubscriptionMerchants().IsMatch(MoneyText.Key(latest.Description))
+        Kind = MerchantPatterns.Subscriptions().IsMatch(MoneyText.Key(latest.Description))
             ? RecurringKind.SUBSCRIPTION
             : RecurringKind.FIXED,
         Detected = detected,
@@ -86,8 +85,8 @@ public static partial class RecurringExpenseDetector
     private static readonly DetectionRule Unknown = new(0.10, 3);
 
     private static DetectionRule RuleFor(string key) =>
-        SubscriptionMerchants().IsMatch(key) ? Subscription
-        : Bills().IsMatch(key) ? Bill
+        MerchantPatterns.Subscriptions().IsMatch(key) ? Subscription
+        : MerchantPatterns.Bills().IsMatch(key) ? Bill
         : Unknown;
 
     private static long MonthlyEquivalent(Transaction t) => t.Recurrence switch
@@ -103,12 +102,4 @@ public static partial class RecurringExpenseDetector
         var sorted = values.Order().ToList();
         return sorted[sorted.Count / 2];
     }
-
-    /// <summary>Streaming, cloud, apps and gyms, matched on the normalized description.</summary>
-    [GeneratedRegex(@"netflix|spotify|disney|hbo|\bmax\b|prime video|amazon prime|youtube|deezer|globoplay|paramount|crunchyroll|apple com|icloud|google one|microsoft|xbox|playstation|nintendo|adobe|canva|chatgpt|openai|gympass|wellhub|smart ?fit|totalpass|dropbox|notion|github")]
-    private static partial Regex SubscriptionMerchants();
-
-    /// <summary>Housing, utilities, insurance, schooling and loans.</summary>
-    [GeneratedRegex(@"aluguel|condominio|imobiliaria|energia|enel|\blight\b|cemig|copel|celesc|sabesp|\bagua\b|comgas|internet|fibra|\bvivo\b|\bclaro\b|\btim\b|\bnet\b|iptu|ipva|seguro|plano de saude|unimed|amil|sulamerica|escola|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo")]
-    private static partial Regex Bills();
 }

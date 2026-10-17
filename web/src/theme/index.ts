@@ -28,6 +28,22 @@ export const colors = {
   desktop: '#3A6EA5',
 } as const;
 
+/**
+ * Chart colors. The three spending classes use the first slots of a palette
+ * validated for color-blind separation on the white window surface
+ * (dataviz validate_palette: all checks pass; the aqua is below 3:1 contrast,
+ * so charts always carry visible labels or a table).
+ */
+export const chart = {
+  essential: '#2a78d6',
+  variable: '#1baf7a',
+  superfluous: '#eb6834',
+  /** Hairline gridlines, one step off the surface. */
+  grid: '#E6E3D6',
+  /** Gaps between touching marks are drawn in the surface color. */
+  surface: '#FFFFFF',
+} as const;
+
 export const spacing = {
   xs: 4,
   sm: 8,

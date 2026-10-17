@@ -17,6 +17,9 @@ public static partial class MoneyText
         return cents < 0 ? $"- {text}" : $"+ {text}";
     }
 
+    /// <summary>"2,5" — one optional decimal, pt-BR.</summary>
+    public static string Decimal(double value) => value.ToString("0.#", PtBr);
+
     /// <summary>"25%" — pt-BR, whatever the server's culture.</summary>
     public static string Percent(double ratio) => ratio.ToString("P0", PtBr);
 

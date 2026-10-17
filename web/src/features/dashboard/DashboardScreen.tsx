@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, ProgressBar, Select } from '@/components/ui';
+import { Card, MoneyText, ProgressBar } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
+import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
 import { useAuth } from '@/features/auth/AuthContext';
 import { currentMonth } from '@/features/savings/queries';
@@ -11,9 +12,6 @@ import { useGoals } from '@/features/goals/queries';
 import { RecurringExpenses } from './components/RecurringExpenses';
 import { SummaryCards } from './components/SummaryCards';
 import { useRecurringExpenses, useSummary } from './queries';
-
-/** Select value for "every account". */
-const ALL_ACCOUNTS = '';
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -57,18 +55,7 @@ export function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
-          <View style={styles.accountPicker}>
-            <Text style={styles.accountLabel}>Conta:</Text>
-            <Select
-              compact
-              options={[
-                { id: ALL_ACCOUNTS, label: 'Todas as contas' },
-                ...accounts.map((account) => ({ id: account.id, label: account.name })),
-              ]}
-              selectedId={accountId}
-              onSelect={setAccountId}
-            />
-          </View>
+          <AccountSelect value={accountId} onChange={setAccountId} />
         </View>
 
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
@@ -126,8 +113,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   greeting: { fontSize: fontSize.xl, fontWeight: '700', color: '#0046D5' },
-  accountPicker: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  accountLabel: { fontSize: fontSize.sm, color: colors.textPrimary },
   section: { marginTop: spacing.sm },
   empty: { color: colors.textSecondary, fontStyle: 'italic', fontSize: fontSize.sm },
   goalRow: {

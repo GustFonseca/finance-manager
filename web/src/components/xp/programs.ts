@@ -51,6 +51,13 @@ export const PROGRAMS: Program[] = [
     description: 'Organize receitas e despesas',
   },
   {
+    route: '/spending',
+    title: 'Análise de gastos',
+    icon: 'pie-chart',
+    color: '#6A1B9A',
+    description: 'Onde você mais gasta e o que reduzir',
+  },
+  {
     route: '/savings',
     title: 'Plano de economia',
     icon: 'money',

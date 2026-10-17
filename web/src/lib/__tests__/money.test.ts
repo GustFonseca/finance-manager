@@ -1,4 +1,4 @@
-import { formatCents, formatCentsForInput, parseSignedAmountToCents, parseToCents } from '../money';
+import { formatCents, formatCentsCompact, formatCentsForInput, parseSignedAmountToCents, parseToCents } from '../money';
 
 /**
  * `Intl` separates the currency symbol from the digits with a non-breaking
@@ -98,5 +98,14 @@ describe('formatCentsForInput', () => {
     expect(formatCentsForInput(123450)).toBe('1.234,50');
     expect(parseToCents(formatCentsForInput(123450))).toBe(123450);
     expect(formatCentsForInput(5)).toBe('0,05');
+  });
+});
+
+describe('formatCentsCompact', () => {
+  it('abbreviates thousands for chart axes', () => {
+    expect(formatCentsCompact(320000)).toBe('R$ 3,2 mil');
+    expect(formatCentsCompact(1500000)).toBe('R$ 15 mil');
+    expect(formatCentsCompact(45050)).toBe('R$ 451');
+    expect(formatCentsCompact(0)).toBe('R$ 0');
   });
 });

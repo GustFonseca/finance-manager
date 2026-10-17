@@ -1,0 +1,16 @@
+namespace FinanceManager.Api.Models;
+
+/// <summary>
+/// The "current month" of a request. The web app sends its local first day of
+/// the month as <c>start</c> and the current instant as <c>end</c>, so months
+/// follow the user's time zone; without them, the current UTC month is used.
+/// </summary>
+public static class MonthPeriod
+{
+    public static (DateTime MonthStart, DateTime Now) Resolve(DateTime? start, DateTime? end)
+    {
+        var now = (end ?? DateTime.UtcNow).ToUniversalTime();
+        var monthStart = start?.ToUniversalTime() ?? new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (monthStart, now);
+    }
+}

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FinanceManager.Api.Models;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Savings.Commands.ApplySuggestedBudgets;
@@ -31,7 +32,7 @@ public class SavingsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<SavingsPlanDto>> Get([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
-        var (monthStart, now) = Period(start, end);
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
         var plan = await _mediator.Send(new GetSavingsPlanQuery(GetUserId(), monthStart, now));
         return Ok(plan);
     }
@@ -69,15 +70,8 @@ public class SavingsController : ControllerBase
     [HttpPost("budgets/apply-suggested")]
     public async Task<ActionResult<int>> ApplySuggested([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
-        var (monthStart, now) = Period(start, end);
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
         var applied = await _mediator.Send(new ApplySuggestedBudgetsCommand(GetUserId(), monthStart, now));
         return Ok(applied);
-    }
-
-    private static (DateTime MonthStart, DateTime Now) Period(DateTime? start, DateTime? end)
-    {
-        var now = (end ?? DateTime.UtcNow).ToUniversalTime();
-        var monthStart = start?.ToUniversalTime() ?? new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        return (monthStart, now);
     }
 }

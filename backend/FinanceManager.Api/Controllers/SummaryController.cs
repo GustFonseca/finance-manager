@@ -1,8 +1,10 @@
 using System.Security.Claims;
+using FinanceManager.Api.Models;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetRecurringExpenses;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetSpendingAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,5 +43,17 @@ public class SummaryController : ControllerBase
         var now = (end ?? DateTime.UtcNow).ToUniversalTime();
         var recurring = await _mediator.Send(new GetRecurringExpensesQuery(GetUserId(), now, accountId));
         return Ok(recurring);
+    }
+
+    /// <summary>The spending dashboard: by class, category and merchant, the trend, and what could be reduced.</summary>
+    [HttpGet("spending")]
+    public async Task<ActionResult<SpendingAnalysisDto>> GetSpending(
+        [FromQuery] DateTime? start,
+        [FromQuery] DateTime? end,
+        [FromQuery] Guid? accountId)
+    {
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
+        var analysis = await _mediator.Send(new GetSpendingAnalysisQuery(GetUserId(), monthStart, now, accountId));
+        return Ok(analysis);
     }
 }

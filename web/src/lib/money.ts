@@ -19,6 +19,13 @@ export function formatCents(cents: number, options: { signed?: boolean } = {}): 
   return formatted;
 }
 
+/** Short form for chart axes: `320000` -> `"R$ 3,2 mil"`; small values stay whole. */
+export function formatCentsCompact(cents: number): string {
+  const reais = cents / 100;
+  if (Math.abs(reais) < 1000) return `R$ ${Math.round(reais).toLocaleString('pt-BR')}`;
+  return `R$ ${(reais / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`;
+}
+
 /** Cents as the text an amount input expects back: `123450` -> `"1.234,50"`. */
 export function formatCentsForInput(cents: number): string {
   return (Math.abs(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
