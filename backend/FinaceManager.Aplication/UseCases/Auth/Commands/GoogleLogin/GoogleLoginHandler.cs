@@ -17,17 +17,20 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
     private readonly IUserRepository _userRepository;
     private readonly IAccountRepository _accountRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IActivityLogRepository _activityLogRepository;
     private readonly IConfiguration _config;
 
     public GoogleLoginHandler(
         IUserRepository userRepository,
         IAccountRepository accountRepository,
         ICategoryRepository categoryRepository,
+        IActivityLogRepository activityLogRepository,
         IConfiguration config)
     {
         _userRepository = userRepository;
         _accountRepository = accountRepository;
         _categoryRepository = categoryRepository;
+        _activityLogRepository = activityLogRepository;
         _config = config;
     }
 
@@ -50,6 +53,14 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
             await _userRepository.CreateAsync(user);
             await SeedUserData(user.Id);
         }
+
+        // Signing in changes no data, so it's the one entry written explicitly.
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = user.Id,
+            Source = "Sessão",
+            Description = "Entrou no sistema com a conta Google"
+        });
 
         var token = GenerateJwt(user);
 

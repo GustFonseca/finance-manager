@@ -67,3 +67,18 @@ The API base URL is read from the `EXPO_PUBLIC_API_URL` environment variable
   dashboard; users only ever get short-lived signed download links.
 - **Database migrations** are applied by the API on startup, so each deploy
   brings its own schema changes (the API runs as a single instance).
+
+## Logs
+
+- **API**: Serilog writes structured events — one JSON object per line in
+  production (Render → *Logs*), readable text in development. Each request
+  logs method, path, status, duration and user; Render's health check is
+  left out. Levels are set in the `Serilog` section of `appsettings.json`.
+- **Errors**: unhandled exceptions return an RFC 7807 body with a `traceId`
+  (also in the `X-Trace-Id` header). The web app shows it as *Código do erro*,
+  so a user's report can be matched to its log lines by searching that id.
+- **Web app errors** (crashes, uncaught exceptions) are sent to
+  `POST /api/client-logs` and land in the same API logs; the endpoint is rate
+  limited per IP. A crash shows the XP "precisa ser fechado" dialog.
+- **User history**: an EF Core interceptor records every create, change and
+  delete in `ActivityLogs`, shown in the *Visualizar eventos* program.

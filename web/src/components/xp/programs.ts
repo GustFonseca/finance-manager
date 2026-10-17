@@ -50,6 +50,13 @@ export const PROGRAMS: Program[] = [
     color: '#EF6C00',
     description: 'Organize receitas e despesas',
   },
+  {
+    route: '/events',
+    title: 'Visualizar eventos',
+    icon: 'list-alt',
+    color: '#455A64',
+    description: 'Histórico das suas ações',
+  },
 ];
 
 export function findProgram(route: string): Program | undefined {

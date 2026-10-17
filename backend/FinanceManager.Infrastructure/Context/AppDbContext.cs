@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<StoredFile> Files => Set<StoredFile>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +86,18 @@ public class AppDbContext : DbContext
             e.Property(f => f.StorageKey).HasMaxLength(100);
             e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
             e.HasOne(f => f.Folder).WithMany(d => d.Files).HasForeignKey(f => f.FolderId);
+        });
+
+        // ActivityLog
+        modelBuilder.Entity<ActivityLog>(e =>
+        {
+            e.HasKey(a => a.Id);
+            // The event viewer always reads one user's entries, newest first.
+            e.HasIndex(a => new { a.UserId, a.CreatedAt });
+            e.Property(a => a.Type).HasConversion<string>().HasMaxLength(20);
+            e.Property(a => a.Source).HasMaxLength(50);
+            e.Property(a => a.Description).HasMaxLength(500);
+            e.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
         });
     }
 }

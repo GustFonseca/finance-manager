@@ -22,13 +22,13 @@ public class TrashFolderHandler : IRequestHandler<TrashFolderCommand, bool>
             throw new InvalidOperationException("A pasta padrão não pode ser excluída.");
 
         // Files go to the trash with the folder's timestamp, so restoring the
-        // folder brings back exactly the files that were in it.
+        // folder brings back exactly the files that were in it. Marking the
+        // folder first saves everything together, as one history entry.
         var now = DateTime.UtcNow;
+        folder.DeletedAt = now;
         var files = (await _fileRepository.GetByFolderIdAsync(folder.Id)).Where(f => f.DeletedAt == null).ToList();
         files.ForEach(f => f.DeletedAt = now);
         await _fileRepository.UpdateRangeAsync(files);
-
-        folder.DeletedAt = now;
         await _folderRepository.UpdateAsync(folder);
         return true;
     }

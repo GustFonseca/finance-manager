@@ -3,6 +3,7 @@ import { Slot } from 'expo-router';
 import { ProgramScreens, XpShell } from '@/components/xp';
 import { useAuth } from '@/features/auth/AuthContext';
 import { AccountsScreen } from '@/features/accounts/AccountsScreen';
+import { ActivityScreen } from '@/features/activity/ActivityScreen';
 import { CategoriesScreen } from '@/features/categories/CategoriesScreen';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
@@ -16,6 +17,7 @@ const SCREENS: ProgramScreens = {
   '/accounts': AccountsScreen,
   '/goals': GoalsScreen,
   '/categories': CategoriesScreen,
+  '/events': ActivityScreen,
 };
 
 /**

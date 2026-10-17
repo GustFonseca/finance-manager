@@ -1,13 +1,17 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { ErrorBoundaryProps, Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { CrashDialog } from '@/components/xp/CrashDialog';
 import { AppProviders } from '@/providers/AppProviders';
 import { useAuth } from '@/features/auth/AuthContext';
 
-export { ErrorBoundary } from 'expo-router';
+/** A crash shows the XP "needs to close" dialog and is reported to the API logs. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <CrashDialog error={error} retry={retry} />;
+}
 
 export const unstable_settings = {
   initialRouteName: '(desktop)',

@@ -41,10 +41,19 @@ http.interceptors.response.use(undefined, (error) => {
   return Promise.reject(error);
 });
 
-/** Extracts a human-friendly message from an axios error. */
+/**
+ * Extracts a human-friendly message from an axios error. Unexpected server
+ * errors carry the request's trace id, shown so the user can quote it and it
+ * can be found in the API logs.
+ */
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.message ?? fallback;
+    const data = error.response?.data;
+    if (data?.message) return data.message;
+    const traceId = data?.traceId ?? error.response?.headers['x-trace-id'];
+    if (error.response && error.response.status >= 500 && traceId) {
+      return `${fallback}.\nCódigo do erro: ${traceId}`;
+    }
   }
   return fallback;
 }

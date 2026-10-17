@@ -13,4 +13,5 @@ export const queryKeys = {
   /** Files of one folder: `[...queryKeys.files, folderId]`. */
   files: ['files'] as const,
   trash: ['trash'] as const,
+  activity: ['activity'] as const,
 };

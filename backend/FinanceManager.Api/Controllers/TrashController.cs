@@ -35,7 +35,7 @@ public class TrashController : ControllerBase
 
     /// <summary>Permanently deletes everything in the trash.</summary>
     [HttpDelete]
-    public async Task<IActionResult> Empty()
+    public async Task<IActionResult> EmptyTrash()
     {
         await _mediator.Send(new EmptyTrashCommand(GetUserId()));
         return NoContent();

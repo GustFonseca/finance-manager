@@ -10,10 +10,12 @@ namespace FinanceManager.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IMediator mediator)
+    public AuthController(IMediator mediator, ILogger<AuthController> logger)
     {
         _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpPost("google")]
@@ -26,6 +28,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Google sign-in rejected");
             return Unauthorized(new { message = ex.Message });
         }
     }
