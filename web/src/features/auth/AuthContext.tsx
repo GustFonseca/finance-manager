@@ -30,7 +30,7 @@ const GOOGLE_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
   '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 
-/** Inlined by Expo from `experiments.baseUrl` in app.json (e.g. `/finance-manager`). */
+/** Inlined by Expo from `experiments.baseUrl` in app.json; empty now that the site is served from the root of finance.dev.br. */
 const BASE_PATH = process.env.EXPO_BASE_URL ?? '';
 
 /**

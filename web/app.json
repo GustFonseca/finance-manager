@@ -13,8 +13,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "experiments": {
-      "typedRoutes": true,
-      "baseUrl": "/finance-manager"
+      "typedRoutes": true
     },
     "plugins": ["expo-router"],
     "extra": {
