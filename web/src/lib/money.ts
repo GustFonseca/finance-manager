@@ -19,6 +19,11 @@ export function formatCents(cents: number, options: { signed?: boolean } = {}): 
   return formatted;
 }
 
+/** Cents as the text an amount input expects back: `123450` -> `"1.234,50"`. */
+export function formatCentsForInput(cents: number): string {
+  return (Math.abs(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 /**
  * Parses a user-typed pt-BR amount (e.g. `"1.234,56"` or `"150,00"`) into
  * integer cents. Returns `null` when the input is not a valid positive number.

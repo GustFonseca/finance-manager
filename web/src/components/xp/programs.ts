@@ -51,6 +51,13 @@ export const PROGRAMS: Program[] = [
     description: 'Organize receitas e despesas',
   },
   {
+    route: '/savings',
+    title: 'Plano de economia',
+    icon: 'money',
+    color: '#2E7D32',
+    description: 'Meta, orçamento e onde cortar',
+  },
+  {
     route: '/events',
     title: 'Visualizar eventos',
     icon: 'list-alt',

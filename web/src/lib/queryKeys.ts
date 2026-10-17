@@ -14,4 +14,5 @@ export const queryKeys = {
   files: ['files'] as const,
   trash: ['trash'] as const,
   activity: ['activity'] as const,
+  savings: ['savings'] as const,
 };

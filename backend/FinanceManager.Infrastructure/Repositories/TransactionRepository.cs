@@ -9,7 +9,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 {
     public TransactionRepository(AppDbContext _context) : base(_context){}
 
-    public async Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end)
+    public async Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null)
     {
         var query = _dbSet
             .Include(t => t.Account)
@@ -24,6 +24,11 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         if (end.HasValue)
         {
             query = query.Where(t => t.Date <= end.Value);
+        }
+
+        if (accountId.HasValue)
+        {
+            query = query.Where(t => t.AccountId == accountId.Value);
         }
 
         return await query.OrderByDescending(t => t.Date).ToListAsync();

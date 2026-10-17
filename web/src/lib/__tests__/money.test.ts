@@ -1,4 +1,4 @@
-import { formatCents, parseSignedAmountToCents, parseToCents } from '../money';
+import { formatCents, formatCentsForInput, parseSignedAmountToCents, parseToCents } from '../money';
 
 /**
  * `Intl` separates the currency symbol from the digits with a non-breaking
@@ -90,5 +90,13 @@ describe('parseSignedAmountToCents', () => {
   it('rejects non-numeric input', () => {
     expect(parseSignedAmountToCents('')).toBeNull();
     expect(parseSignedAmountToCents('abc')).toBeNull();
+  });
+});
+
+describe('formatCentsForInput', () => {
+  it('formats cents the way parseToCents reads them back', () => {
+    expect(formatCentsForInput(123450)).toBe('1.234,50');
+    expect(parseToCents(formatCentsForInput(123450))).toBe(123450);
+    expect(formatCentsForInput(5)).toBe('0,05');
   });
 });

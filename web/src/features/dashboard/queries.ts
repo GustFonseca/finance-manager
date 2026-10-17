@@ -1,11 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
-import { DateRange } from '@/features/transactions/types';
+import { PeriodFilter } from '@/features/transactions/types';
 import { summaryApi } from './api';
 
-export function useSummary(range: DateRange = {}) {
+export function useSummary(filter: PeriodFilter = {}) {
   return useQuery({
-    queryKey: [...queryKeys.summary, range],
-    queryFn: () => summaryApi.get(range),
+    queryKey: [...queryKeys.summary, filter],
+    queryFn: () => summaryApi.get(filter),
+  });
+}
+
+/** Under the summary key, so any transaction change refreshes it too. */
+export function useRecurringExpenses(filter: PeriodFilter = {}) {
+  return useQuery({
+    queryKey: [...queryKeys.summary, 'recurring', filter],
+    queryFn: () => summaryApi.recurring(filter),
   });
 }

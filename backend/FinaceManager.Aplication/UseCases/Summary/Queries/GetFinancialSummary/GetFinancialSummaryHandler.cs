@@ -16,7 +16,7 @@ public class GetFinancialSummaryHandler : IRequestHandler<GetFinancialSummaryQue
 
     public async Task<FinancialSummaryDto> Handle(GetFinancialSummaryQuery request, CancellationToken cancellationToken = default)
     {
-        var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, request.Start, request.End);
+        var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, request.Start, request.End, request.AccountId);
 
         var totalIncome = transactions.Where(t => t.Type == TransactionType.INCOME).Sum(t => t.AmountCents);
         var totalExpense = transactions.Where(t => t.Type == TransactionType.EXPENSE).Sum(t => t.AmountCents);

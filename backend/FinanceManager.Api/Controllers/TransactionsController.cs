@@ -26,9 +26,10 @@ public class TransactionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<TransactionDto>>> GetAll(
         [FromQuery] DateTime? start,
-        [FromQuery] DateTime? end)
+        [FromQuery] DateTime? end,
+        [FromQuery] Guid? accountId)
     {
-        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start, end));
+        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start, end, accountId));
         return Ok(transactions);
     }
 

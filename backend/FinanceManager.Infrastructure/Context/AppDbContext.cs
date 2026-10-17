@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<StoredFile> Files => Set<StoredFile>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<SavingsPlan> SavingsPlans => Set<SavingsPlan>();
+    public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -98,6 +100,23 @@ public class AppDbContext : DbContext
             e.Property(a => a.Source).HasMaxLength(50);
             e.Property(a => a.Description).HasMaxLength(500);
             e.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
+        });
+
+        // SavingsPlan
+        modelBuilder.Entity<SavingsPlan>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.HasIndex(p => p.UserId).IsUnique();
+            e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId);
+        });
+
+        // CategoryBudget
+        modelBuilder.Entity<CategoryBudget>(e =>
+        {
+            e.HasKey(b => b.Id);
+            e.HasIndex(b => new { b.UserId, b.CategoryId }).IsUnique();
+            e.HasOne(b => b.User).WithMany().HasForeignKey(b => b.UserId);
+            e.HasOne(b => b.Category).WithMany().HasForeignKey(b => b.CategoryId);
         });
     }
 }

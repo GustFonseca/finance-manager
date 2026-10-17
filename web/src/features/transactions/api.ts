@@ -1,9 +1,11 @@
 import { http } from '@/lib/http';
-import { CreateTransactionRequest, DateRange, TransactionDto } from './types';
+import { CreateTransactionRequest, PeriodFilter, TransactionDto } from './types';
 
 export const transactionsApi = {
-  getAll: ({ start, end }: DateRange = {}) =>
-    http.get<TransactionDto[]>('/transactions', { params: { start, end } }).then((r) => r.data),
+  getAll: ({ start, end, accountId }: PeriodFilter = {}) =>
+    http
+      .get<TransactionDto[]>('/transactions', { params: { start, end, accountId } })
+      .then((r) => r.data),
   create: (data: CreateTransactionRequest) =>
     http.post<TransactionDto>('/transactions', data).then((r) => r.data),
   remove: (id: string) => http.delete(`/transactions/${id}`).then(() => undefined),

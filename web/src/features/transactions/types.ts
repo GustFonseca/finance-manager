@@ -24,3 +24,6 @@ export type CreateTransactionRequest = {
 };
 
 export type DateRange = { start?: string; end?: string };
+
+/** A period, optionally narrowed to one account. */
+export type PeriodFilter = DateRange & { accountId?: string };

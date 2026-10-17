@@ -1,4 +1,5 @@
 using System.Globalization;
+using FinanceManager.Aplication.Analysis;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,8 @@ public static class ActivityDescriber
         Goal goal => DescribeGoal(entry, goal),
         Folder folder => DescribeFolder(entry, folder),
         StoredFile file => DescribeFile(entry, file, context),
+        SavingsPlan plan => DescribeSavingsPlan(entry, plan),
+        CategoryBudget budget => DescribeBudget(entry, budget, context),
         _ => [],
     };
 
@@ -147,6 +150,30 @@ public static class ActivityDescriber
         }
     }
 
+    private static IEnumerable<ActivityLog> DescribeSavingsPlan(EntityEntry entry, SavingsPlan plan)
+    {
+        var changed = entry.State == EntityState.Added
+            || (entry.State == EntityState.Modified && Changed(entry, nameof(SavingsPlan.MonthlyGoalCents)));
+        if (changed)
+            yield return Log(plan.UserId, "Economia", $"Meta de economia definida: {Money(plan.MonthlyGoalCents)} por mês");
+    }
+
+    private static IEnumerable<ActivityLog> DescribeBudget(EntityEntry entry, CategoryBudget budget, DbContext context)
+    {
+        var category = context.ChangeTracker.Entries<Category>()
+            .FirstOrDefault(e => e.Entity.Id == budget.CategoryId)?.Entity.Name ?? "categoria";
+        switch (entry.State)
+        {
+            case EntityState.Added:
+            case EntityState.Modified when Changed(entry, nameof(CategoryBudget.LimitCents)):
+                yield return Log(budget.UserId, "Economia", $"Orçamento de {category}: {Money(budget.LimitCents)} por mês");
+                break;
+            case EntityState.Deleted:
+                yield return Log(budget.UserId, "Economia", $"Orçamento de {category} removido");
+                break;
+        }
+    }
+
     /// <summary>
     /// True when the file goes to (or comes back from) the trash together with
     /// its folder: they share the folder's timestamp, and the folder logs it once.
@@ -178,12 +205,7 @@ public static class ActivityDescriber
     private static ActivityLog Log(Guid userId, string source, string description, ActivityType type = ActivityType.INFO) =>
         new() { UserId = userId, Source = source, Description = description, Type = type };
 
-    private static string Money(long cents, bool signed = false)
-    {
-        var text = (Math.Abs(cents) / 100m).ToString("C", PtBr);
-        if (!signed) return text;
-        return cents < 0 ? $"- {text}" : $"+ {text}";
-    }
+    private static string Money(long cents, bool signed = false) => MoneyText.Format(cents, signed);
 
     private static string Size(long bytes) => bytes switch
     {

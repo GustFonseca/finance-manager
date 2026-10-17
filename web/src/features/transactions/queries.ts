@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { transactionsApi } from './api';
-import { CreateTransactionRequest, DateRange } from './types';
+import { CreateTransactionRequest, PeriodFilter } from './types';
 
-export function useTransactions(range: DateRange = {}) {
+export function useTransactions(range: PeriodFilter = {}) {
   return useQuery({
     queryKey: [...queryKeys.transactions, range],
     queryFn: () => transactionsApi.getAll(range),
@@ -15,6 +15,7 @@ export function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.transactions });
   qc.invalidateQueries({ queryKey: queryKeys.accounts });
   qc.invalidateQueries({ queryKey: queryKeys.summary });
+  qc.invalidateQueries({ queryKey: queryKeys.savings });
 }
 
 export function useCreateTransaction() {

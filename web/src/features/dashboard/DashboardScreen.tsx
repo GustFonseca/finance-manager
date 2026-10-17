@@ -1,37 +1,44 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, ProgressBar } from '@/components/ui';
+import { Card, MoneyText, ProgressBar, Select } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
+import { useAccounts } from '@/features/accounts/queries';
 import { useAuth } from '@/features/auth/AuthContext';
+import { currentMonth } from '@/features/savings/queries';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
+import { RecurringExpenses } from './components/RecurringExpenses';
 import { SummaryCards } from './components/SummaryCards';
-import { useSummary } from './queries';
+import { useRecurringExpenses, useSummary } from './queries';
 
-function currentMonthRange() {
-  const now = new Date();
-  return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-    end: now.toISOString(),
-  };
-}
+/** Select value for "every account". */
+const ALL_ACCOUNTS = '';
 
 export function DashboardScreen() {
   const { user } = useAuth();
   // Computed once on mount so the query key stays stable across renders.
-  const range = useMemo(currentMonthRange, []);
+  const month = useMemo(currentMonth, []);
+  const { data: accounts = [] } = useAccounts();
+  const [accountId, setAccountId] = useState(ALL_ACCOUNTS);
+  const filter = { ...month, accountId: accountId || undefined };
+  const accountName = accounts.find((a) => a.id === accountId)?.name;
 
-  const summaryQuery = useSummary(range);
-  const transactionsQuery = useTransactions(range);
+  const summaryQuery = useSummary(filter);
+  const transactionsQuery = useTransactions(filter);
+  const recurringQuery = useRecurringExpenses(filter);
   const goalsQuery = useGoals();
 
   const isFetching =
-    summaryQuery.isFetching || transactionsQuery.isFetching || goalsQuery.isFetching;
+    summaryQuery.isFetching ||
+    transactionsQuery.isFetching ||
+    recurringQuery.isFetching ||
+    goalsQuery.isFetching;
 
   function refetchAll() {
     summaryQuery.refetch();
     transactionsQuery.refetch();
+    recurringQuery.refetch();
     goalsQuery.refetch();
   }
 
@@ -44,13 +51,29 @@ export function DashboardScreen() {
       title="Painel"
       icon="line-chart"
       onRefresh={refetchAll}
-      status={isFetching ? 'Atualizando...' : `Resumo de ${monthName}`}>
+      status={isFetching ? 'Atualizando...' : `Resumo de ${monthName} · ${accountName ?? 'todas as contas'}`}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
-        <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
+          <View style={styles.accountPicker}>
+            <Text style={styles.accountLabel}>Conta:</Text>
+            <Select
+              compact
+              options={[
+                { id: ALL_ACCOUNTS, label: 'Todas as contas' },
+                ...accounts.map((account) => ({ id: account.id, label: account.name })),
+              ]}
+              selectedId={accountId}
+              onSelect={setAccountId}
+            />
+          </View>
+        </View>
 
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+
+        <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
 
         {activeGoals.length > 0 && (
           <Card title="Metas ativas" style={styles.section}>
@@ -95,7 +118,16 @@ export function DashboardScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.md, gap: spacing.md },
+  header: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   greeting: { fontSize: fontSize.xl, fontWeight: '700', color: '#0046D5' },
+  accountPicker: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  accountLabel: { fontSize: fontSize.sm, color: colors.textPrimary },
   section: { marginTop: spacing.sm },
   empty: { color: colors.textSecondary, fontStyle: 'italic', fontSize: fontSize.sm },
   goalRow: {
