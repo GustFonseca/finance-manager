@@ -1,9 +1,10 @@
 namespace FinanceManager.Api.Models;
 
 /// <summary>
-/// The "current month" of a request. The web app sends its local first day of
-/// the month as <c>start</c> and the current instant as <c>end</c>, so months
-/// follow the user's time zone; without them, the current UTC month is used.
+/// The month of a request. The web app sends the local first day of the chosen
+/// month as <c>start</c> and, as <c>end</c>, the current instant (or the month's
+/// end for a past month), so months follow the user's time zone; without them,
+/// the current UTC month is used.
 /// </summary>
 public static class MonthPeriod
 {

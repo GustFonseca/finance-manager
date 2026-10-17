@@ -26,6 +26,14 @@ export function useCreateTransaction() {
   });
 }
 
+export function useDeleteAllTransactions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => transactionsApi.removeAll(),
+    onSuccess: () => invalidateMoney(qc),
+  });
+}
+
 export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({

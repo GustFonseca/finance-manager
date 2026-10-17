@@ -83,6 +83,8 @@ public static class SavingsAnalyzer
             MonthExpenseCents = monthExpense,
             MonthSavedCents = monthIncome - monthExpense,
             AverageSavedCents = averageSaved,
+            HistoryMonths = Enumerable.Range(1, HistoryMonths)
+                .Count(i => history.Any(t => t.Date >= input.MonthStart.AddMonths(-i) && t.Date < input.MonthStart.AddMonths(1 - i))),
             MonthProgress = elapsed,
             Budgets = budgets.OrderByDescending(b => b.AverageCents).ThenBy(b => b.CategoryName).ToList(),
             Suggestions = suggestions,

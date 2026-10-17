@@ -10,6 +10,7 @@ import { foldersApi } from '@/features/files/api';
 import { invalidateFiles } from '@/features/files/queries';
 import { invalidateMoney } from '@/features/transactions/queries';
 import { getErrorMessage } from '@/lib/http';
+import { reportError } from '@/lib/logger';
 import { colors, fontSize, spacing } from '@/theme';
 import { suggestCategory } from './categorize';
 import { findDuplicates } from './duplicates';
@@ -160,6 +161,13 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
       setProgress(((index + 1) / selected.length) * 100);
     }
     invalidateMoney(qc);
+    if (failures.length > 0) {
+      // Lands in the API logs (with the trace ids in the messages) so failures can be investigated.
+      reportError(
+        `Importação de extrato: ${failures.length} de ${selected.length} transações falharam (${sourceFile?.name}). ` +
+          failures.slice(0, 5).join(' | ')
+      );
+    }
     setResult({ imported, failures, savedTo: await saveStatementFile() });
     setStep('done');
   }
@@ -188,7 +196,13 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     );
   }
 
-  const header = STEP_HEADERS[step];
+  const header =
+    step === 'done' && result.failures.length > 0
+      ? {
+          title: 'Importação concluída com erros',
+          subtitle: 'Algumas transações não foram criadas. Você pode importar o mesmo arquivo de novo: as que já entraram ficam de fora.',
+        }
+      : STEP_HEADERS[step];
 
   return (
     <Modal

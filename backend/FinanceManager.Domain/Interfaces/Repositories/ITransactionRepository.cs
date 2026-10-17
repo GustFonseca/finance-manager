@@ -6,4 +6,6 @@ public interface ITransactionRepository : IRepository<Transaction>
 {
     /// <summary>The user's transactions in the period, optionally of a single account.</summary>
     Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null);
+    /// <summary>Deletes every transaction of the user and returns how many there were.</summary>
+    Task<int> DeleteByUserIdAsync(Guid userId);
 }

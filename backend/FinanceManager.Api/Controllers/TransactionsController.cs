@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteAllTransactions;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Queries.GetTransactionByDateRange;
 using Microsoft.AspNetCore.Authorization;
@@ -67,5 +68,13 @@ public class TransactionsController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+    }
+
+    /// <summary>Deletes every transaction of the user (account balances go back to zero).</summary>
+    [HttpDelete]
+    public async Task<ActionResult<object>> DeleteAll()
+    {
+        var deleted = await _mediator.Send(new DeleteAllTransactionsCommand(GetUserId()));
+        return Ok(new { deleted });
     }
 }

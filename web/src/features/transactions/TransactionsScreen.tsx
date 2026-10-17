@@ -6,7 +6,12 @@ import { ImportWizard } from '@/features/import/ImportWizard';
 import { getErrorMessage } from '@/lib/http';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
-import { useCreateTransaction, useDeleteTransaction, useTransactions } from './queries';
+import {
+  useCreateTransaction,
+  useDeleteAllTransactions,
+  useDeleteTransaction,
+  useTransactions,
+} from './queries';
 import { CreateTransactionRequest, TransactionDto } from './types';
 
 export function TransactionsScreen() {
@@ -14,6 +19,7 @@ export function TransactionsScreen() {
   const { data: transactions = [], isFetching, refetch } = useTransactions();
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const deleteAll = useDeleteAllTransactions();
 
   const [formVisible, setFormVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
@@ -42,6 +48,29 @@ export function TransactionsScreen() {
     }
   }
 
+  async function handleDeleteAll() {
+    if (transactions.length === 0) {
+      alert({ title: 'Apagar todas as transações', message: 'Não há transações para apagar.' });
+      return;
+    }
+    const ok = await confirm({
+      title: 'Confirmar exclusão de todas as transações',
+      message:
+        `Tem certeza de que deseja apagar permanentemente as ${transactions.length} transações? ` +
+        'Os saldos das contas voltam a zero. Contas, categorias e extratos salvos não são apagados.',
+      confirmLabel: 'Sim',
+      cancelLabel: 'Não',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const deleted = await deleteAll.mutateAsync();
+      alert({ title: 'Transações apagadas', message: `${deleted} transação(ões) apagada(s).` });
+    } catch (error) {
+      alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível apagar as transações') });
+    }
+  }
+
   function openOptions(transaction: TransactionDto) {
     menu({
       title: transaction.description || transaction.categoryName,
@@ -59,6 +88,7 @@ export function TransactionsScreen() {
         actions={[
           { label: 'Nova transação', icon: 'plus-circle', onPress: () => setFormVisible(true) },
           { label: 'Importar extrato', icon: 'upload', onPress: () => setImportVisible(true) },
+          { label: 'Apagar todas', icon: 'trash', onPress: handleDeleteAll },
         ]}
         onRefresh={refetch}
         status={`${transactions.length} transação(ões)`}>

@@ -117,6 +117,23 @@ function parseCardLine([date, title, amount]: string[], index: number): ImportRo
   };
 }
 
+/**
+ * Lines that move the user's own money around rather than earning or spending
+ * it. They start unchecked, with the reason shown, so they don't inflate
+ * income and expenses.
+ */
+const INTERNAL_TRANSFERS: [RegExp, string][] = [
+  // A Pix paid with the credit card shows up as this credit plus the Pix itself.
+  [/valor adicionado na conta por cartao de credito/, 'Crédito do cartão usado no Pix (não é renda)'],
+  [/pagamento de fatura/, 'Pagamento da fatura: as compras vêm da fatura do cartão'],
+  [/aplicacao rdb|resgate rdb|nuinvest|caixinha|dinheiro guardado|guardar dinheiro/, 'Movimentação entre suas contas e investimentos'],
+];
+
+function internalTransfer(description: string): string | undefined {
+  const text = normalizeText(description);
+  return INTERNAL_TRANSFERS.find(([pattern]) => pattern.test(text))?.[1];
+}
+
 /** Account statement: `Data,Valor,Identificador,Descrição` with `dd/mm/yyyy` dates. */
 function parseAccountLine([date, amount, id, description]: string[], index: number): ImportRow {
   const [day, month, year] = (date ?? '').split('/').map(Number);
@@ -124,11 +141,14 @@ function parseAccountLine([date, amount, id, description]: string[], index: numb
   if (!isoDay) throw lineError(index, `data "${date}"`);
   const cents = amountOf(amount, index);
   return {
-    key: id || `account-${index}`,
+    // Nubank repeats the Identificador on the two lines of a Pix paid with the
+    // credit card, so the line number keeps every row's key unique.
+    key: `${id || 'account'}-${index}`,
     date: isoDay,
     description: description ?? '',
     amountCents: Math.abs(cents),
     type: cents < 0 ? 'EXPENSE' : 'INCOME',
+    skipReason: internalTransfer(description ?? ''),
   };
 }
 
@@ -145,12 +165,14 @@ function parseOfx(text: string): ImportRow[] {
     if (!isoDay) throw new StatementError(`Transação ${index + 1} com data inválida: "${posted}"`);
     const cents = parseSignedAmountToCents(tag('TRNAMT'));
     if (!cents) throw new StatementError(`Transação ${index + 1} com valor inválido: "${tag('TRNAMT')}"`);
+    const description = tag('MEMO') || tag('NAME');
     return {
-      key: tag('FITID') || `ofx-${index}`,
+      key: `${tag('FITID') || 'ofx'}-${index}`,
       date: isoDay,
-      description: tag('MEMO') || tag('NAME'),
+      description,
       amountCents: Math.abs(cents),
       type: cents < 0 ? 'EXPENSE' : 'INCOME',
+      skipReason: internalTransfer(description),
     };
   });
 }

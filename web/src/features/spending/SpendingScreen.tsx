@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, StatTile } from '@/components/ui';
+import { Card, MoneyText, MonthSelect, StatTile, isCurrentMonth, monthKeyOf, monthLabel, monthRange } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
-import { currentMonth } from '@/features/savings/queries';
 import { formatCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { CategoryBreakdown } from './components/CategoryBreakdown';
@@ -16,14 +15,16 @@ import { useSpendingAnalysis } from './queries';
 
 /** "Análise de gastos": where the month's money went, how necessary it was, and what to reduce. */
 export function SpendingScreen() {
-  // Computed once on mount so the query key stays stable across renders.
-  const month = useMemo(currentMonth, []);
+  const [monthKey, setMonthKey] = useState(() => monthKeyOf(new Date()));
+  // Memoized so the query key stays stable across renders.
+  const month = useMemo(() => monthRange(monthKey), [monthKey]);
   const { data: accounts = [] } = useAccounts();
   const [accountId, setAccountId] = useState(ALL_ACCOUNTS);
   const { data, isFetching, refetch } = useSpendingAnalysis({ ...month, accountId: accountId || undefined });
 
   const accountName = accounts.find((a) => a.id === accountId)?.name ?? 'todas as contas';
-  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthName = monthLabel(monthKey);
+  const ongoing = isCurrentMonth(monthKey);
   const share = (c: string) => data?.byClass.find((t) => t.class === c);
 
   return (
@@ -37,6 +38,7 @@ export function SpendingScreen() {
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}>
         {/* Filters sit in one row above every chart. */}
         <View style={styles.filters}>
+          <MonthSelect value={monthKey} onChange={setMonthKey} />
           <AccountSelect value={accountId} onChange={setAccountId} />
         </View>
 
@@ -46,12 +48,15 @@ export function SpendingScreen() {
               <StatTile
                 label="Gasto no mês"
                 value={<MoneyText cents={data.monthExpenseCents} tone="neutral" style={styles.tileValue} />}
-                // The month isn't over, so the average is a reference, not a comparison.
-                detail={
+                // While the month isn't over, the average is a reference, not a comparison.
+                detail={[
+                  ongoing ? 'Até hoje.' : '',
                   data.averageExpenseCents > 0
-                    ? `Até hoje. Média mensal dos 3 meses anteriores: ${formatCents(data.averageExpenseCents)}`
-                    : 'Até hoje'
-                }
+                    ? `Média mensal dos 3 meses anteriores: ${formatCents(data.averageExpenseCents)}`
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               />
               <StatTile
                 label="Supérfluo"
@@ -104,7 +109,7 @@ export function SpendingScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.md, gap: spacing.md },
-  filters: { flexDirection: 'row', justifyContent: 'flex-end' },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: spacing.md },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tileValue: { fontSize: fontSize.xxl - 2, fontWeight: '700' },
   potential: { fontSize: fontSize.md, color: colors.textPrimary, marginBottom: spacing.xs },

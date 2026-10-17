@@ -30,4 +30,10 @@ public class Account
     {
         BalanceCents -= amountCents;
     }
+
+    /// <summary>The balance is the sum of the account's transactions, so with none left it is zero.</summary>
+    public void ResetBalance()
+    {
+        BalanceCents = 0;
+    }
 }

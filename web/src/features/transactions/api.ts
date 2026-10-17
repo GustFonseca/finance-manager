@@ -9,4 +9,6 @@ export const transactionsApi = {
   create: (data: CreateTransactionRequest) =>
     http.post<TransactionDto>('/transactions', data).then((r) => r.data),
   remove: (id: string) => http.delete(`/transactions/${id}`).then(() => undefined),
+  /** Deletes every transaction of the user; resolves with how many were deleted. */
+  removeAll: () => http.delete<{ deleted: number }>('/transactions').then((r) => r.data.deleted),
 };

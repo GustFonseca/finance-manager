@@ -33,4 +33,15 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 
         return await query.OrderByDescending(t => t.Date).ToListAsync();
     }
+
+    public async Task<int> DeleteByUserIdAsync(Guid userId)
+    {
+        // Loaded and removed through the change tracker (not ExecuteDelete) so the
+        // activity history sees the deletion.
+        var transactions = await _dbSet.Where(t => t.UserId == userId).ToListAsync();
+        if (transactions.Count == 0) return 0;
+        _dbSet.RemoveRange(transactions);
+        await _context.SaveChangesAsync();
+        return transactions.Count;
+    }
 }

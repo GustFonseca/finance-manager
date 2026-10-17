@@ -31,11 +31,21 @@ public sealed class ActivityLogInterceptor : SaveChangesInterceptor
         if (context == null) return;
 
         context.ChangeTracker.DetectChanges();
-        var logs = context.ChangeTracker.Entries()
+        var entries = context.ChangeTracker.Entries()
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
-            .ToList()
-            .SelectMany(e => ActivityDescriber.Describe(e, context))
             .ToList();
+
+        // Deleting many transactions at once (e.g. "apagar todas") is one event, not hundreds.
+        var deletedTransactions = entries
+            .Where(e => e.State == EntityState.Deleted && e.Entity is Transaction)
+            .ToList();
+        var logs = new List<ActivityLog>();
+        if (deletedTransactions.Count > 1)
+        {
+            logs.Add(ActivityDescriber.BulkDelete(deletedTransactions.Select(e => (Transaction)e.Entity).ToList()));
+            entries = entries.Except(deletedTransactions).ToList();
+        }
+        logs.AddRange(entries.SelectMany(e => ActivityDescriber.Describe(e, context)));
 
         if (logs.Count > 0) context.Set<ActivityLog>().AddRange(logs);
     }

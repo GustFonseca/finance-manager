@@ -14,6 +14,8 @@ export { MoneyText } from './MoneyText';
 export { ProgressBar } from './ProgressBar';
 export { EmptyState } from './EmptyState';
 export { StatTile } from './StatTile';
+export { MonthSelect, isCurrentMonth, monthKeyOf, monthLabel, monthRange } from './MonthSelect';
+export type { MonthKey } from './MonthSelect';
 export { ChartLegend } from './ChartLegend';
 export type { LegendItem } from './ChartLegend';
 export { StackedBar } from './StackedBar';

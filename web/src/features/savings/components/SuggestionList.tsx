@@ -13,11 +13,21 @@ const KINDS: Record<SuggestionKind, { icon: 'flag' | 'exclamation-triangle' | 'p
 };
 
 /** The automatic analysis: what is off track and what could be cut, with the monthly savings. */
-export function SuggestionList({ suggestions }: { suggestions: SavingsSuggestionDto[] }) {
+export function SuggestionList({
+  suggestions,
+  historyMonths,
+}: {
+  suggestions: SavingsSuggestionDto[];
+  /** Previous months with transactions; without any, there is nothing to compare with. */
+  historyMonths: number;
+}) {
   if (suggestions.length === 0) {
     return (
       <Text style={styles.empty}>
-        Ainda não há histórico suficiente. As sugestões aparecem depois de alguns meses de transações.
+        {historyMonths === 0
+          ? 'Não há transações nos 3 meses anteriores, então ainda não há com o que comparar. ' +
+            'Importe os extratos desses meses em Transações > Importar extrato para receber as sugestões.'
+          : 'Nenhum ajuste necessário: seus gastos estão dentro do esperado.'}
       </Text>
     );
   }

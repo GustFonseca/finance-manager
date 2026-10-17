@@ -26,6 +26,8 @@ public class SavingsPlanDto
     public long MonthSavedCents { get; set; }
     /// <summary>Average saved per month over the previous months.</summary>
     public long AverageSavedCents { get; set; }
+    /// <summary>How many of the previous months have any transaction (the analysis needs them).</summary>
+    public int HistoryMonths { get; set; }
     /// <summary>Share of the month already elapsed, 0 to 1.</summary>
     public double MonthProgress { get; set; }
     public List<CategoryBudgetDto> Budgets { get; set; } = [];

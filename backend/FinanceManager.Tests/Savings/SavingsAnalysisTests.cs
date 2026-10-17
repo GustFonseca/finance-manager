@@ -126,6 +126,19 @@ public class SavingsAnalysisTests
             RecurringExpenseDetector.Detect([.. History(), .. current], Now));
 
     [Fact]
+    public void The_plan_says_how_many_previous_months_have_transactions()
+    {
+        Assert.Equal(3, SavingsAnalyzer.Analyze(Input([], goalCents: 0)).HistoryMonths);
+
+        // Statements imported only for the current month: nothing to compare with.
+        var onlyThisMonth = new SavingsAnalysisInput(
+            [Tx("Mercado", 30000, Day(10, 2), Alimentacao)], [Alimentacao], new Dictionary<Guid, long>(), 0, MonthStart, Now, []);
+        var plan = SavingsAnalyzer.Analyze(onlyThisMonth);
+        Assert.Equal(0, plan.HistoryMonths);
+        Assert.DoesNotContain(plan.Suggestions, s => s.Kind == SuggestionKind.CATEGORY);
+    }
+
+    [Fact]
     public void Suggested_limits_close_the_goal_gap_without_cutting_essentials_or_more_than_30_percent()
     {
         var plan = SavingsAnalyzer.Analyze(Input([], goalCents: 250000));

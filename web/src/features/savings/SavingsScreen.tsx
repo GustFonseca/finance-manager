@@ -115,7 +115,13 @@ export function SavingsScreen() {
                     seguindo as sugestões abaixo.
                   </Text>
                 ) : null}
-                <SuggestionList suggestions={plan.suggestions} />
+                {plan.historyMonths > 0 && plan.historyMonths < 3 ? (
+                  <Text style={styles.hint}>
+                    Só {plan.historyMonths} dos 3 meses anteriores têm transações; as médias ficam mais
+                    precisas com o histórico completo.
+                  </Text>
+                ) : null}
+                <SuggestionList suggestions={plan.suggestions} historyMonths={plan.historyMonths} />
               </Card>
 
               <Card title="Orçamento por categoria">

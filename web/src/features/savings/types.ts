@@ -28,6 +28,8 @@ export type SavingsPlanDto = {
   monthSavedCents: number;
   /** Average saved per month over the previous three months. */
   averageSavedCents: number;
+  /** How many of the previous three months have any transaction. */
+  historyMonths: number;
   /** Share of the month already elapsed, 0 to 1. */
   monthProgress: number;
   budgets: CategoryBudgetDto[];

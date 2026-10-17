@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.UseCases.Folders.Commands.TrashFolder;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteAllTransactions;
 using FinanceManager.Aplication.UseCases.Trash.Commands.EmptyTrash;
 using FinanceManager.Aplication.UseCases.Trash.Commands.RestoreFolder;
 using FinanceManager.Domain.Entities;
@@ -112,5 +113,27 @@ public class ActivityLogInterceptorTests
         Assert.Equal(
             ["Arquivo excluído permanentemente: solto.pdf", "Pasta excluída permanentemente: Velha"],
             History().Skip(before).Select(a => a.Description).OrderBy(d => d));
+    }
+
+    [Fact]
+    public async Task Deleting_all_transactions_is_one_entry_and_zeroes_the_balances()
+    {
+        var transactions = new TransactionRepository(_db);
+        var accounts = new AccountRepository(_db);
+        var account = new Account(Me, "Nubank");
+        await accounts.CreateAsync(account);
+        account.SubtractBalance(5000);
+        await accounts.UpdateAsync(account);
+        foreach (var description in new[] { "iFood", "Uber", "Mercado" })
+            await transactions.CreateAsync(new Transaction { UserId = Me, AccountId = account.Id, Description = description, Type = TransactionType.EXPENSE, AmountCents = 1000 });
+        await transactions.CreateAsync(new Transaction { UserId = Guid.NewGuid(), Description = "De outra pessoa", Type = TransactionType.EXPENSE, AmountCents = 1000 });
+        var before = History().Count;
+
+        var deleted = await new DeleteAllTransactionsHandler(transactions, accounts).Handle(new DeleteAllTransactionsCommand(Me));
+
+        Assert.Equal(3, deleted);
+        Assert.Equal(1, _db.Transactions.Count());
+        Assert.Equal(0, (await accounts.GetByIdAsync(account.Id))!.BalanceCents);
+        Assert.Equal(["3 transações excluídas de uma vez"], History().Skip(before).Select(a => a.Description));
     }
 }

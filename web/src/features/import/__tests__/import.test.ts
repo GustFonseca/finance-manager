@@ -39,8 +39,8 @@ describe('parseStatement', () => {
     );
     expect(source).toBe('nubank-account');
     expect(rows).toEqual([
-      { key: 'abc-1', date: '2026-10-05', description: 'Transferência recebida - Empresa', amountCents: 650000, type: 'INCOME' },
-      { key: 'abc-2', date: '2026-10-06', description: 'Compra no débito - Mercado, Centro', amountCents: 8990, type: 'EXPENSE' },
+      { key: 'abc-1-0', date: '2026-10-05', description: 'Transferência recebida - Empresa', amountCents: 650000, type: 'INCOME', skipReason: undefined },
+      { key: 'abc-2-1', date: '2026-10-06', description: 'Compra no débito - Mercado, Centro', amountCents: 8990, type: 'EXPENSE', skipReason: undefined },
     ]);
   });
 
@@ -56,10 +56,35 @@ describe('parseStatement', () => {
     expect(parseStatement(ofx)).toEqual({
       source: 'ofx',
       rows: [
-        { key: 'f1', date: '2026-10-07', description: 'Posto Shell', amountCents: 12500, type: 'EXPENSE' },
-        { key: 'f2', date: '2026-10-08', description: 'Pix recebido', amountCents: 5050, type: 'INCOME' },
+        { key: 'f1-0', date: '2026-10-07', description: 'Posto Shell', amountCents: 12500, type: 'EXPENSE', skipReason: undefined },
+        { key: 'f2-1', date: '2026-10-08', description: 'Pix recebido', amountCents: 5050, type: 'INCOME', skipReason: undefined },
       ],
     });
+  });
+
+  it('keeps every row of a Pix paid with the credit card, which share one Identificador', () => {
+    const { rows } = parseStatement(
+      'Data,Valor,Identificador,Descrição\n' +
+        '07/01/2026,500.00,same-id,Valor adicionado na conta por cartão de crédito - Valor adicionado para Pix no crédito\n' +
+        '07/01/2026,-500.00,same-id,Transferência enviada pelo Pix - Ana Carolina\n'
+    );
+
+    expect(new Set(rows.map((r) => r.key)).size).toBe(2);
+    // The credit is the card paying for the Pix, not income: it starts unchecked.
+    expect(rows[0].skipReason).toBe('Crédito do cartão usado no Pix (não é renda)');
+    expect(rows[1].skipReason).toBeUndefined();
+  });
+
+  it('leaves moves between own accounts and investments unchecked', () => {
+    const { rows } = parseStatement(
+      'Data,Valor,Identificador,Descrição\n' +
+        '10/01/2026,300.00,a,Resgate RDB\n' +
+        '11/01/2026,-300.00,b,Aplicação RDB\n' +
+        '12/01/2026,120.00,c,Transferência de saldo NuInvest\n' +
+        '13/01/2026,-900.00,d,Pagamento de fatura\n'
+    );
+
+    expect(rows.every((r) => r.skipReason)).toBe(true);
   });
 
   it('rejects unknown formats and bad lines with a readable message', () => {

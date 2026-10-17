@@ -29,6 +29,10 @@ public static class ActivityDescriber
         _ => [],
     };
 
+    /// <summary>One entry for several transactions deleted together.</summary>
+    public static ActivityLog BulkDelete(IReadOnlyCollection<Transaction> transactions) =>
+        Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações excluídas de uma vez", ActivityType.WARNING);
+
     private static IEnumerable<ActivityLog> DescribeTransaction(EntityEntry entry, Transaction t)
     {
         var label = string.IsNullOrWhiteSpace(t.Description) ? "(sem descrição)" : t.Description;

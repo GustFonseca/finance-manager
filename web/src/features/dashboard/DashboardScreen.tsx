@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, ProgressBar } from '@/components/ui';
+import { Card, MoneyText, MonthSelect, ProgressBar, monthKeyOf, monthLabel, monthRange } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
 import { useAuth } from '@/features/auth/AuthContext';
-import { currentMonth } from '@/features/savings/queries';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
 import { RecurringExpenses } from './components/RecurringExpenses';
@@ -15,8 +14,9 @@ import { useRecurringExpenses, useSummary } from './queries';
 
 export function DashboardScreen() {
   const { user } = useAuth();
-  // Computed once on mount so the query key stays stable across renders.
-  const month = useMemo(currentMonth, []);
+  const [monthKey, setMonthKey] = useState(() => monthKeyOf(new Date()));
+  // Memoized so the query key stays stable across renders.
+  const month = useMemo(() => monthRange(monthKey), [monthKey]);
   const { data: accounts = [] } = useAccounts();
   const [accountId, setAccountId] = useState(ALL_ACCOUNTS);
   const filter = { ...month, accountId: accountId || undefined };
@@ -42,7 +42,7 @@ export function DashboardScreen() {
 
   const recentTransactions = (transactionsQuery.data ?? []).slice(0, 5);
   const activeGoals = (goalsQuery.data ?? []).filter((g) => g.status === 'ACTIVE');
-  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthName = monthLabel(monthKey);
 
   return (
     <Window
@@ -55,7 +55,10 @@ export function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
-          <AccountSelect value={accountId} onChange={setAccountId} />
+          <View style={styles.filters}>
+            <MonthSelect value={monthKey} onChange={setMonthKey} />
+            <AccountSelect value={accountId} onChange={setAccountId} />
+          </View>
         </View>
 
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
@@ -80,7 +83,7 @@ export function DashboardScreen() {
 
         <Card title="Últimas transações" style={styles.section}>
           {recentTransactions.length === 0 && (
-            <Text style={styles.empty}>Nenhuma transação este mês</Text>
+            <Text style={styles.empty}>Nenhuma transação neste mês</Text>
           )}
           {recentTransactions.map((txn) => (
             <View key={txn.id} style={styles.txnRow}>
@@ -112,6 +115,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md },
   greeting: { fontSize: fontSize.xl, fontWeight: '700', color: '#0046D5' },
   section: { marginTop: spacing.sm },
   empty: { color: colors.textSecondary, fontStyle: 'italic', fontSize: fontSize.sm },
