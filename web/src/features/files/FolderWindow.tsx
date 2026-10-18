@@ -14,7 +14,6 @@ import { useFileDrop, useListSelection } from './hooks';
 import { useFolderFiles, useTrashFile, useUpdateFile, useUploadFiles } from './queries';
 import { FolderDto, StoredFileDto } from './types';
 
-/** An Explorer window showing one folder's files. */
 export function FolderWindow({ folder }: { folder: FolderDto }) {
   const { confirm, alert } = useDialog();
   const contextMenu = useContextMenu();
@@ -40,7 +39,6 @@ export function FolderWindow({ folder }: { folder: FolderDto }) {
 
   async function download(file: StoredFileDto) {
     try {
-      // The signed link answers with "attachment", so the page stays where it is.
       window.location.href = await filesApi.downloadUrl(file.id);
     } catch (error) {
       alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível baixar o arquivo') });
@@ -166,6 +164,5 @@ const hiddenInput: React.CSSProperties = { display: 'none' };
 
 const styles = StyleSheet.create({
   content: { flex: 1 },
-  // Explorer highlights the folder while files are dragged over it.
   dropTarget: { backgroundColor: colors.hover, borderWidth: 2, borderColor: colors.selection, borderStyle: 'dashed' },
 });

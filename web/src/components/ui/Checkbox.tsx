@@ -8,7 +8,6 @@ type Props = {
   accessibilityLabel?: string;
 };
 
-/** Native check box (the app is web-only), tinted with the XP selection blue. */
 export function Checkbox({ checked, onChange, label, accessibilityLabel }: Props) {
   const box = (
     <input

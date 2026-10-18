@@ -6,7 +6,6 @@ export type MenuEntry =
   | {
       label: string;
       onPress: () => void;
-      /** The default action, drawn in bold (e.g. "Abrir"), as in XP. */
       bold?: boolean;
       disabled?: boolean;
     }
@@ -17,7 +16,6 @@ export type MenuDef = {
   entries: MenuEntry[];
 };
 
-/** Window menu bar (Arquivo, Exibir, Ajuda…) with drop-down menus. */
 export function MenuBar({ menus }: { menus: MenuDef[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -29,7 +27,6 @@ export function MenuBar({ menus }: { menus: MenuDef[] }) {
   return (
     <View style={styles.bar}>
       {openIndex !== null ? (
-        // Click anywhere else closes the menu, like XP.
         <Pressable style={styles.dismiss} onPress={() => setOpenIndex(null)} />
       ) : null}
       {menus.map((menu, index) => {
@@ -38,7 +35,6 @@ export function MenuBar({ menus }: { menus: MenuDef[] }) {
           <View key={menu.label} style={styles.menu}>
             <Pressable
               onPress={() => setOpenIndex(isOpen ? null : index)}
-              // While a menu is open, hovering another title switches to it.
               onHoverIn={() => openIndex !== null && setOpenIndex(index)}
               style={(state) => {
                 const { hovered } = state as PressState;
@@ -70,7 +66,6 @@ type MenuPanelProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** The white XP menu box: items and separators. Used by drop-downs and context menus. */
 export function MenuPanel({ entries, onRun, style }: MenuPanelProps) {
   return (
     <View style={[styles.panel, style]} accessibilityRole="menu">
@@ -90,7 +85,6 @@ type MenuItemProps = {
   onPress: () => void;
 };
 
-/** One clickable row of a drop-down or context menu. */
 export function MenuItem({ entry, onPress }: MenuItemProps) {
   return (
     <Pressable

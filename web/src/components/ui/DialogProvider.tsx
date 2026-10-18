@@ -37,11 +37,8 @@ type DialogState =
   | { kind: 'alert'; options: AlertOptions };
 
 type DialogApi = {
-  /** Promise resolves `true` when confirmed, `false` when cancelled/dismissed. */
   confirm: (options: ConfirmOptions) => Promise<boolean>;
-  /** Single-button notice — replaces native `Alert` (broken on web). */
   alert: (options: AlertOptions) => void;
-  /** Action sheet — replaces native `Alert` button lists (which are broken on web). */
   menu: (options: MenuOptions) => void;
 };
 
@@ -51,11 +48,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<DialogState | null>(null);
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
 
-  /**
-   * Resolves an in-flight `confirm()` promise. Called on every state change so
-   * a confirm that gets replaced or dismissed can never leave its promise
-   * dangling forever.
-   */
   const settlePending = useCallback((result: boolean) => {
     resolveRef.current?.(result);
     resolveRef.current = null;
@@ -101,7 +93,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     action.onPress();
   }, []);
 
-  /** Dismiss without an explicit answer: a pending confirm resolves `false`. */
   const close = useCallback(() => {
     settlePending(false);
     setState(null);
@@ -157,7 +148,6 @@ export function useDialog(): DialogApi {
   return ctx;
 }
 
-/** Message line with the classic XP balloon icon on its left. */
 function DialogMessage({ text, icon }: { text?: string; icon: 'question' | 'info' }) {
   if (!text) return null;
   return (

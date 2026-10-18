@@ -1,3 +1,5 @@
+import { reportError } from '@/lib/logger';
+import { queryClient } from '@/lib/queryClient';
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { getItem, setItem, deleteItem } from '@/lib/storage';
 import { TOKEN_KEY, setUnauthorizedHandler } from '@/lib/http';
@@ -30,15 +32,8 @@ const GOOGLE_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
   '932365675532-8nj494tuq5vnhtck4pimbqc61icfhdv4.apps.googleusercontent.com';
 
-/** Inlined by Expo from `experiments.baseUrl` in app.json; empty now that the site is served from the root of finance.dev.br. */
 const BASE_PATH = process.env.EXPO_BASE_URL ?? '';
 
-/**
- * Google demands an exact-match redirect URI, so it is derived from wherever
- * the app is actually being served instead of being hard-coded to production.
- * Every origin the app runs on (including `http://localhost:8081` for local
- * development) must be registered in the Google Cloud console.
- */
 function redirectUri(): string {
   return `${window.location.origin}${BASE_PATH}`.replace(/\/+$/, '');
 }
@@ -53,6 +48,15 @@ function extractIdTokenFromHash(): string | null {
     window.history.replaceState(null, '', window.location.pathname);
   }
   return idToken;
+}
+
+function parseUser(json: string | null): User | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as User;
+  } catch {
+    return null;
+  }
 }
 
 function startGoogleSignIn() {
@@ -83,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadToken() {
     const existingToken = await getItem(TOKEN_KEY);
     const userJson = await getItem(USER_KEY);
-    if (existingToken && userJson) {
-      setState({ token: existingToken, user: JSON.parse(userJson), isLoading: false });
+    const user = parseUser(userJson);
+    if (existingToken && user) {
+      setState({ token: existingToken, user, isLoading: false });
       return;
     }
 
@@ -106,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setItem(USER_KEY, JSON.stringify(user));
       setState({ token: data.token, user, isLoading: false });
     } catch (error) {
-      console.error('Auth failed:', error);
+      reportError(error instanceof Error ? `Login com o Google falhou: ${error.message}` : 'Login com o Google falhou');
       setState((prev) => ({ ...prev, isLoading: false }));
     }
   }
@@ -118,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await deleteItem(TOKEN_KEY);
     await deleteItem(USER_KEY);
+    queryClient.clear();
     setState({ token: null, user: null, isLoading: false });
   }
 

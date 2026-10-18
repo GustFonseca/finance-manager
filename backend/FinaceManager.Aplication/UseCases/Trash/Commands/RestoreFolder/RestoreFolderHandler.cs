@@ -19,7 +19,6 @@ public class RestoreFolderHandler : IRequestHandler<RestoreFolderCommand, bool>
         var folder = await _folderRepository.GetByIdAsync(request.FolderId);
         if (folder == null || folder.UserId != request.UserId || folder.DeletedAt == null) return false;
 
-        // Only the files that went to the trash with the folder come back with it.
         var files = (await _fileRepository.GetByFolderIdAsync(folder.Id)).Where(f => f.DeletedAt == folder.DeletedAt).ToList();
         files.ForEach(f => f.DeletedAt = null);
         await _fileRepository.UpdateRangeAsync(files);

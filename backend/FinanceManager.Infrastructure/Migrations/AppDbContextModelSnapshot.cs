@@ -141,6 +141,462 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("CategoryBudgets");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.ClassificationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Pattern")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Value")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type", "Priority");
+
+                    b.ToTable("ClassificationRules");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Pix pago com o cartão: o crédito que entra na conta não é renda",
+                            Pattern = "valor adicionado na conta por cartao de credito",
+                            Priority = 10,
+                            Type = "OWN_MONEY",
+                            Value = "Crédito do cartão (Pix no crédito)"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "As compras vêm da fatura do cartão",
+                            Pattern = "pagamento de fatura|pagamento recebido",
+                            Priority = 20,
+                            Type = "OWN_MONEY",
+                            Value = "Fatura do cartão"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "aplicacao rdb|resgate rdb|nuinvest|caixinha|dinheiro guardado|guardar dinheiro|aplicacao|resgate cdb|tesouro direto",
+                            Priority = 30,
+                            Type = "OWN_MONEY",
+                            Value = "Investimentos"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Dinheiro emprestado não é renda",
+                            Pattern = "(deposito|resgate) de emprestimo",
+                            Priority = 40,
+                            Type = "OWN_MONEY",
+                            Value = "Empréstimo recebido"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bifood\\b|^ifd\\b",
+                            Priority = 50,
+                            Type = "BRAND",
+                            Value = "iFood"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\buber\\b",
+                            Priority = 60,
+                            Type = "BRAND",
+                            Value = "Uber"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^99\\b|\\b99 ?app\\b|\\b99 tecnologia\\b|\\b99 pop\\b",
+                            Priority = 70,
+                            Type = "BRAND",
+                            Value = "99"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\brappi\\b",
+                            Priority = 80,
+                            Type = "BRAND",
+                            Value = "Rappi"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bshpp\\b|\\bshopee\\b",
+                            Priority = 90,
+                            Type = "BRAND",
+                            Value = "Shopee"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "mercado ?livre|mercadolivre",
+                            Priority = 100,
+                            Type = "BRAND",
+                            Value = "Mercado Livre"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000011"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "mercado ?pago|^pix marketplace$|^mp\\b",
+                            Priority = 110,
+                            Type = "BRAND",
+                            Value = "Mercado Pago"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000012"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bamazon\\b|\\bamzn\\b",
+                            Priority = 120,
+                            Type = "BRAND",
+                            Value = "Amazon"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000013"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bnetflix\\b",
+                            Priority = 130,
+                            Type = "BRAND",
+                            Value = "Netflix"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000014"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bspotify\\b",
+                            Priority = 140,
+                            Type = "BRAND",
+                            Value = "Spotify"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000015"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bdisney\\b",
+                            Priority = 150,
+                            Type = "BRAND",
+                            Value = "Disney+"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000016"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bapple\\b|\\bitunes\\b",
+                            Priority = 160,
+                            Type = "BRAND",
+                            Value = "Apple"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000017"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bgoogle\\b",
+                            Priority = 170,
+                            Type = "BRAND",
+                            Value = "Google"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000018"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bmicrosoft\\b",
+                            Priority = 180,
+                            Type = "BRAND",
+                            Value = "Microsoft"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000019"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bpagseguro\\b|\\bpagbank\\b",
+                            Priority = 190,
+                            Type = "BRAND",
+                            Value = "PagBank"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000020"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bpicpay\\b",
+                            Priority = 200,
+                            Type = "BRAND",
+                            Value = "PicPay"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000021"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^tim\\b",
+                            Priority = 210,
+                            Type = "BRAND",
+                            Value = "TIM"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000022"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^vivo\\b|telefonica brasil",
+                            Priority = 220,
+                            Type = "BRAND",
+                            Value = "Vivo"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000023"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^claro\\b",
+                            Priority = 230,
+                            Type = "BRAND",
+                            Value = "Claro"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000024"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "receita federal",
+                            Priority = 240,
+                            Type = "BRAND",
+                            Value = "Receita Federal"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000025"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "ifd|mp|pg|pag|ec|pp|ppro|dl|htm|sumup|lpz|ebn|mlp|ebanx|paypal|pagar ?me",
+                            Priority = 250,
+                            Type = "GATEWAY_PREFIX"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000026"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\b(ltda|sa|servicos|comercio|loja|lojas|restaurante|bar|mercado|supermercado|padaria|panificadora|pizzaria|pizzeria|lanches|lanchonete|hamburgueria|food|ai|farmacia|drogaria|posto|auto|center|centro|store|shop|digital|tecnologia|pagamentos|instituicao|banco|bco|grupo|empresa|clinica|academia|escola|condominio|igreja|associacao)\\b",
+                            Priority = 260,
+                            Type = "BUSINESS_WORD"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000027"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "netflix|spotify|disney|hbo|\\bmax\\b|prime video|amazon prime|youtube|deezer|globoplay|paramount|crunchyroll|apple com|icloud|google one|microsoft|xbox|playstation|nintendo|adobe|canva|chatgpt|openai|gympass|wellhub|smart ?fit|totalpass|dropbox|notion|github",
+                            Priority = 270,
+                            Type = "SUBSCRIPTION"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000028"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Impostos e taxas",
+                            Pattern = "receita federal|simples nacional|darf|\\binss\\b|fgts|imposto|tributo|prefeitura|municipio|detran|cartorio",
+                            Priority = 280,
+                            Type = "BILL"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000029"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "aluguel|condominio|imobiliaria|energia|enel|\\blight\\b|cemig|copel|celesc|sabesp|\\bagua\\b|comgas|internet|fibra|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu|ipva|seguro|plano de saude|unimed|amil|sulamerica|escola|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo",
+                            Priority = 290,
+                            Type = "BILL"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000030"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "supermercado|mercado(?! (pago|livre))|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao|acougue|padaria|feira|posto|combustivel|gasolina|shell|ipiranga|petrobras|farmacia|drogaria|drogasil|\\braia\\b|pague menos|uber|\\b99\\b|cabify|metro|onibus|bilhete unico|estacionamento",
+                            Priority = 300,
+                            Type = "GROCERY"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000031"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "ifood|rappi|ze delivery|delivery|aiqfome|uber eats|restaurante|lanchonete|\\bbar\\b|choperia|pizza|burger|mcdonald|\\bbk\\b|subway|starbucks|cafeteria|doceria|sorveteria|cinema|ingresso|\\bshow\\b|teatro|steam|shein|shopee|aliexpress|mercado livre|magalu|amazon|renner|riachuelo|\\bzara\\b|centauro|netshoes|boticario|sephora|perfumaria|\\bbet\\b|blaze|aposta",
+                            Priority = 310,
+                            Type = "SUPERFLUOUS"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000032"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "ifood|rappi|restaurante|lanchonete|padaria|panificadora|supermercado|mercado(?! (pago|livre))|atacad|assai|carrefour|pao de acucar|hortifruti|acougue|pizza|burger|mcdonald|\\bbk\\b|subway|\\bcafe\\b|confeitaria",
+                            Priority = 320,
+                            Type = "CATEGORY_HINT",
+                            Value = "Alimentação"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000033"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "uber|\\b99\\b|99app|cabify|posto|combustivel|gasolina|shell|ipiranga|petrobras|estacionamento|sem parar|veloe|conectcar|metro|onibus|bilhete unico",
+                            Priority = 330,
+                            Type = "CATEGORY_HINT",
+                            Value = "Transporte"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000034"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "aluguel|condominio|energia|enel|\\blight\\b|cemig|copel|sabesp|\\bagua\\b|comgas|internet|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu",
+                            Priority = 340,
+                            Type = "CATEGORY_HINT",
+                            Value = "Moradia"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000035"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "farmacia|drogaria|drogasil|\\braia\\b|pague menos|hospital|clinica|laboratorio|unimed|amil|odonto|academia|smart ?fit",
+                            Priority = 350,
+                            Type = "CATEGORY_HINT",
+                            Value = "Saúde"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000036"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "escola|faculdade|universidade|curso|udemy|alura|coursera|livraria|material escolar",
+                            Priority = 360,
+                            Type = "CATEGORY_HINT",
+                            Value = "Educação"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000037"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "netflix|spotify|disney|hbo|max com|prime video|youtube|cinema|ingresso|steam|playstation|xbox|nintendo|\\bshow\\b|teatro",
+                            Priority = 370,
+                            Type = "CATEGORY_HINT",
+                            Value = "Lazer"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000038"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "salario|folha de pagamento",
+                            Priority = 380,
+                            Type = "CATEGORY_HINT",
+                            Value = "Salário"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000039"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "rendimento|resgate|cdb|tesouro|dividendo|juros",
+                            Priority = 390,
+                            Type = "CATEGORY_HINT",
+                            Value = "Investimentos"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000040"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^(moradia|saude|educacao)$",
+                            Priority = 400,
+                            Type = "ESSENTIAL_CATEGORY"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000041"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^lazer$",
+                            Priority = 410,
+                            Type = "SUPERFLUOUS_CATEGORY"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000042"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "^outros$",
+                            Priority = 420,
+                            Type = "CATCH_ALL_CATEGORY"
+                        });
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,11 +820,9 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("Date");
-
                     b.HasIndex("MerchantId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Date");
 
                     b.ToTable("Transactions");
                 });
@@ -532,13 +986,13 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.HasOne("FinanceManager.Domain.Entities.Account", "Account")
                         .WithMany("Transactions")
                         .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FinanceManager.Domain.Entities.Category", "Category")
                         .WithMany("Transactions")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("FinanceManager.Domain.Entities.Merchant", "Merchant")

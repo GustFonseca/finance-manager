@@ -4,27 +4,20 @@ import { findProgram } from './programs';
 import type { IconName } from './TitleBar';
 import type { Point } from './useWindowDrag';
 
-/** What the taskbar shows for a window; registered by the `<Window>` itself. */
 export type WindowMeta = { title: string; icon: IconName };
 
 type WindowManagerApi = {
-  /** Open windows, in the order they appear on the taskbar. */
   openWindows: string[];
-  /** The focused window: topmost one that isn't minimized. */
   activeWindow: string | undefined;
-  /** Stacking order for the window frame (higher = in front). */
   zIndexOf: (id: string) => number;
   isOpen: (id: string) => boolean;
   isMinimized: (id: string) => boolean;
   isMaximized: (id: string) => boolean;
-  /** Opens the window if needed, restores it and brings it to the front. */
   open: (id: string) => void;
   close: (id: string) => void;
   minimize: (id: string) => void;
   toggleMaximize: (id: string) => void;
-  /** Taskbar click: focus the window, or minimize it if it's already focused. */
   toggleFromTaskbar: (id: string) => void;
-  /** Where the user dragged the restored window; undefined = default cascade. */
   positionOf: (id: string) => Point | undefined;
   setPosition: (id: string, point: Point) => void;
   metaOf: (id: string) => WindowMeta | undefined;
@@ -35,21 +28,13 @@ const WindowManagerContext = createContext<WindowManagerApi | null>(null);
 
 const without = (list: string[], id: string) => list.filter((r) => r !== id);
 
-/** Program windows are identified by their route; other windows (folders…) by any other id. */
 const isRoute = (id: string) => id.startsWith('/');
 
-/**
- * XP-style window state: several windows open at once, stacked in z-order.
- * Program windows are routes, so the focused program and the URL are kept in
- * sync (links, reloads and the back button still work); other windows, such
- * as folders, only live here.
- */
 export function WindowManagerProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const [openWindows, setOpenWindows] = useState<string[]>([]);
-  /** Back-to-front stacking order of the open windows. */
   const [zOrder, setZOrder] = useState<string[]>([]);
   const [minimized, setMinimized] = useState<string[]>([]);
   const [maximized, setMaximized] = useState<string[]>([]);
@@ -64,17 +49,14 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
     setMinimized((prev) => without(prev, id));
   }, []);
 
-  // Arriving at a program's URL (link, reload, back button) focuses its window…
   useEffect(() => {
     if (findProgram(pathname)) open(pathname);
   }, [pathname, open]);
 
-  // …and focusing a program window moves the URL to it.
   useEffect(() => {
     if (activeWindow && isRoute(activeWindow) && activeWindow !== pathname) {
       router.navigate(activeWindow as Href);
     }
-    // `pathname` is left out on purpose: only a focus change should navigate.
   }, [activeWindow, router]);
 
   const close = useCallback((id: string) => {
@@ -147,7 +129,6 @@ export function useWindowManager(): WindowManagerApi {
 
 const WindowIdContext = createContext<string | null>(null);
 
-/** Tells a `<Window>` which window (program route, folder…) it is. */
 export const WindowIdProvider = WindowIdContext.Provider;
 
 export function useWindowId(): string {

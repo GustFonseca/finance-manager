@@ -1,6 +1,7 @@
 using AutoMapper;
 using FinanceManager.Aplication.Analysis;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
@@ -36,13 +37,12 @@ public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, Upda
 
         var name = request.Name.Trim();
         if (name.Length == 0 || name.Length > MaxNameLength)
-            throw new InvalidOperationException($"O nome deve ter entre 1 e {MaxNameLength} caracteres");
-        // The key stays: it is how the bank's descriptions find this merchant.
+            throw new BusinessRuleException($"O nome deve ter entre 1 e {MaxNameLength} caracteres");
         if (MerchantParser.KeyOf(name) != merchant.Key)
         {
             var same = await _merchantRepository.GetByKeyAsync(request.UserId, MerchantParser.KeyOf(name));
             if (same != null && same.Id != merchant.Id)
-                throw new InvalidOperationException($"Já existe um estabelecimento chamado {same.Name}");
+                throw new BusinessRuleException($"Já existe um estabelecimento chamado {same.Name}");
         }
 
         Category? category = null;
@@ -50,7 +50,7 @@ public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, Upda
         {
             category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value);
             if (category == null || category.UserId != request.UserId)
-                throw new InvalidOperationException("Categoria não encontrada");
+                throw new BusinessRuleException("Categoria não encontrada");
         }
 
         merchant.Name = name;
@@ -62,7 +62,6 @@ public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, Upda
         var updated = 0;
         if (request.ApplyToTransactions && category != null)
         {
-            // An expense category only applies to expenses, an income one to income.
             var type = category.Type == CategoryType.INCOME ? TransactionType.INCOME : TransactionType.EXPENSE;
             var changed = (await _transactionRepository.GetByMerchantIdAsync(merchant.Id))
                 .Where(t => t.Type == type && t.CategoryId != category.Id)

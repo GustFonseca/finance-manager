@@ -8,30 +8,20 @@ import type { MenuEntry } from './MenuBar';
 import type { IconName } from './TitleBar';
 import type { Point } from './useWindowDrag';
 
-/** Movement (px) before a press on an icon becomes a drag. */
 const DRAG_THRESHOLD = 4;
 const DOUBLE_CLICK_MS = 400;
 
 type Props = {
-  /** Unique on the desktop; also the key its position is saved under. */
   id: string;
   label: string;
   icon: IconName;
   color: string;
   slot: IconSlot;
-  /** Double-click (or "Abrir"). */
   onOpen: () => void;
-  /** Right-click menu; defaults to just "Abrir". */
   menu?: () => MenuEntry[];
-  /** Enables inline renaming (started from the menu via `useDesktop().startRename`). */
   onRename?: (name: string) => void;
 };
 
-/**
- * An XP desktop shortcut: click selects, double-click opens, drag moves it
- * (saved per browser), right-click shows its menu, and the label can be
- * edited in place.
- */
 export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRename }: Props) {
   const desktop = useDesktop();
   const contextMenu = useContextMenu();
@@ -45,10 +35,8 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
   const renaming = desktop.renamingIcon === id && !!onRename;
 
   function onPointerDown(event: RNPointerEvent) {
-    // react-native-web hands us the DOM event; RN's types describe the native one.
     const dom = event.nativeEvent as unknown as PointerEvent;
     if (dom.button !== 0 || renaming) return;
-    // Keeps the desktop's own pointer-down (which clears the selection) from firing.
     event.stopPropagation();
     desktop.selectIcon(id);
 
@@ -75,7 +63,6 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
         desktop.moveIcon(id, current);
         return;
       }
-      // Not a drag: a second click in time opens the item, like XP.
       const now = Date.now();
       if (now - lastClick.current < DOUBLE_CLICK_MS) {
         lastClick.current = 0;
@@ -133,7 +120,6 @@ type RenameInputProps = {
   onCancel: () => void;
 };
 
-/** In-place label editor: Enter or clicking away saves, Esc cancels. */
 function RenameInput({ initial, onCommit, onCancel }: RenameInputProps) {
   const [value, setValue] = useState(initial);
   const done = useRef(false);
@@ -177,7 +163,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...webStyle({ boxShadow: '1px 1px 3px rgba(0,0,0,0.4)' }),
   },
-  // XP tints the selected icon with the selection blue.
   tileSelected: { backgroundColor: '#C1D2EE' },
   label: {
     color: '#FFFFFF',

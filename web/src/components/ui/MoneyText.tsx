@@ -7,9 +7,7 @@ type Tone = 'income' | 'expense' | 'auto' | 'neutral';
 
 type Props = {
   cents: number;
-  /** Show a leading `+` for positive amounts. */
   signed?: boolean;
-  /** `auto` (default) colors negatives red; `income`/`expense` force a color. */
   tone?: Tone;
   style?: StyleProp<TextStyle>;
 };

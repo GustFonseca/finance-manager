@@ -6,7 +6,6 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Tests.Files;
 
-/// <summary>In-memory repositories and storage shared by the files/folders/trash tests.</summary>
 public class FakeStore
 {
     public List<Folder> Folders { get; } = [];
@@ -40,7 +39,6 @@ public class FakeStore
 public class FakeFolderRepository(FakeStore store) : IFolderRepository
 {
     public Task<Folder?> GetByIdAsync(Guid id) => Task.FromResult(store.Folders.FirstOrDefault(f => f.Id == id));
-    public Task<IEnumerable<Folder>> GetAllAsync() => Task.FromResult<IEnumerable<Folder>>(store.Folders);
     public Task<Folder> CreateAsync(Folder entity) { store.Folders.Add(entity); return Task.FromResult(entity); }
     public Task<Folder> UpdateAsync(Folder entity) => Task.FromResult(entity);
     public Task DeleteAsync(Folder entity) { store.Folders.Remove(entity); return Task.CompletedTask; }
@@ -61,7 +59,6 @@ public class FakeFolderRepository(FakeStore store) : IFolderRepository
 public class FakeFileRepository(FakeStore store) : IStoredFileRepository
 {
     public Task<StoredFile?> GetByIdAsync(Guid id) => Task.FromResult(store.Files.FirstOrDefault(f => f.Id == id));
-    public Task<IEnumerable<StoredFile>> GetAllAsync() => Task.FromResult<IEnumerable<StoredFile>>(store.Files);
     public Task<StoredFile> CreateAsync(StoredFile entity) { store.Files.Add(entity); return Task.FromResult(entity); }
     public Task<StoredFile> UpdateAsync(StoredFile entity) => Task.FromResult(entity);
     public Task DeleteAsync(StoredFile entity) { store.Files.Remove(entity); return Task.CompletedTask; }

@@ -5,11 +5,9 @@ import { colors, fontSize, radius, spacing } from '@/theme';
 type Props = {
   label: string;
   value: React.ReactNode;
-  /** Context under the value, e.g. "12% acima da média". */
   detail?: string;
 };
 
-/** One headline number of a KPI row. */
 export function StatTile({ label, value, detail }: Props) {
   return (
     <View style={styles.tile}>

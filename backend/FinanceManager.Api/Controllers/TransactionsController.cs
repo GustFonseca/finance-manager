@@ -4,6 +4,7 @@ using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteAllTransactions;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteTransaction;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.ImportTransactions;
 using FinanceManager.Aplication.UseCases.Transactions.Queries.GetTransactionByDateRange;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,7 @@ public class TransactionsController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<TransactionDto>>> GetAll(
@@ -31,47 +32,39 @@ public class TransactionsController : ControllerBase
         [FromQuery] Guid? accountId,
         [FromQuery] Guid? merchantId)
     {
-        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start, end, accountId, merchantId));
+        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId, merchantId));
         return Ok(transactions);
     }
 
     [HttpPost]
     public async Task<ActionResult<TransactionDto>> Create([FromBody] CreateTransactionRequest request)
     {
-        try
-        {
-            var transaction = await _mediator.Send(new CreateTransactionCommand(
-                GetUserId(),
-                request.AccountId,
-                request.CategoryId,
-                request.Type,
-                request.AmountCents,
-                request.Description,
-                request.Date,
-                request.Recurrence));
-            return Created($"/api/transactions/{transaction.Id}", transaction);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var transaction = await _mediator.Send(new CreateTransactionCommand(
+            GetUserId(),
+            request.AccountId,
+            request.CategoryId,
+            request.Type,
+            request.AmountCents,
+            request.Description,
+            request.Date,
+            request.Recurrence));
+        return Created($"/api/transactions/{transaction.Id}", transaction);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            await _mediator.Send(new DeleteTransactionCommand(GetUserId(), id));
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        await _mediator.Send(new DeleteTransactionCommand(GetUserId(), id));
+        return NoContent();
     }
 
-    /// <summary>Deletes every transaction of the user (account balances go back to zero).</summary>
+    [HttpPost("import")]
+    public async Task<ActionResult<object>> Import([FromBody] ImportTransactionsRequest request)
+    {
+        var imported = await _mediator.Send(new ImportTransactionsCommand(GetUserId(), request.AccountId, request.Lines));
+        return Ok(new { imported });
+    }
+
     [HttpDelete]
     public async Task<ActionResult<object>> DeleteAll()
     {

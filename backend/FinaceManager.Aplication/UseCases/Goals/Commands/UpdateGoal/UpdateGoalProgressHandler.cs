@@ -1,5 +1,6 @@
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -20,11 +21,11 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
     public async Task<GoalDto> Handle(UpdateGoalProgressCommand request, CancellationToken cancellationToken = default)
     {
         var goal = await _goalRepository.GetByIdAsync(request.GoalId)
-            ?? throw new InvalidOperationException("Goal not found");
+            ?? throw new NotFoundException("Meta não encontrada.");
         if (goal.UserId != request.UserId)
-            throw new InvalidOperationException("Goal not found");
+            throw new NotFoundException("Meta não encontrada.");
         if (goal.Status != GoalStatus.ACTIVE)
-            throw new InvalidOperationException("Goal is not active");
+            throw new BusinessRuleException("A meta não está ativa.");
 
         goal.CurrentCents += request.AmountCents;
 

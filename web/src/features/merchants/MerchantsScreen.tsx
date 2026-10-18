@@ -1,23 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import {
-  Card,
-  Input,
-  MoneyText,
-  MonthSelect,
-  Select,
-  StatTile,
-  YearSelect,
-  monthKeyOf,
-  monthLabel,
-  monthRange,
-  useDialog,
-  yearRange,
-} from '@/components/ui';
+import { Card, ErrorState, Input, MoneyText, MonthSelect, Select, StatTile, YearSelect, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
-import { normalizeText } from '@/features/import/text';
+import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil, yearRange } from '@/lib/periods';
+import { normalizeText } from '@/lib/text';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
 import { fontSize, spacing } from '@/theme';
@@ -29,7 +17,6 @@ import { MerchantDto, UpdateMerchantInput } from './types';
 
 type Grouping = 'month' | 'year';
 
-/** "Estabelecimentos": how much went to each place in a month or a year, and each one over time. */
 export function MerchantsScreen() {
   const { alert } = useDialog();
   const { data: accounts = [] } = useAccounts();
@@ -42,19 +29,16 @@ export function MerchantsScreen() {
   const [editing, setEditing] = useState<MerchantDto | null>(null);
   const updateMerchant = useUpdateMerchant();
 
-  // Memoized so the query keys stay stable across renders.
   const period = useMemo(
     () => (grouping === 'month' ? monthRange(monthKey) : yearRange(year)),
     [grouping, monthKey, year]
   );
-  // The detail shows twelve months: the year, or the year up to the chosen month.
-  const history = useMemo(() => {
-    if (grouping === 'year') return yearRange(year);
-    const [y, m] = monthKey.split('-').map(Number);
-    return { start: new Date(y, m - 12, 1).toISOString(), end: monthRange(monthKey).end };
-  }, [grouping, monthKey, year]);
+  const history = useMemo(
+    () => (grouping === 'year' ? yearRange(year) : twelveMonthsUntil(monthKey)),
+    [grouping, monthKey, year]
+  );
 
-  const { data, isFetching, refetch } = useMerchantSpending({ ...period, accountId: accountId || undefined });
+  const { data, error, isFetching, refetch } = useMerchantSpending({ ...period, accountId: accountId || undefined });
   const periodName = grouping === 'month' ? monthLabel(monthKey) : String(year);
   const accountName = accounts.find((a) => a.id === accountId)?.name ?? 'todas as contas';
 
@@ -92,7 +76,6 @@ export function MerchantsScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}>
-          {/* Filters sit in one row above everything they affect. */}
           <View style={styles.filters}>
             <Select
               compact
@@ -111,7 +94,9 @@ export function MerchantsScreen() {
             <AccountSelect value={accountId} onChange={setAccountId} />
           </View>
 
-          {data ? (
+          {error ? (
+            <ErrorState error={error} fallback="Não foi possível carregar os estabelecimentos" onRetry={refetch} />
+          ) : data ? (
             <>
               <View style={styles.tiles}>
                 <StatTile

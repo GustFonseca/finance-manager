@@ -7,11 +7,6 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace FinanceManager.Infrastructure.Auditing;
 
-/// <summary>
-/// Turns a pending entity change into the user's activity history, in plain
-/// Portuguese. Changes that mean nothing to the user (an account balance moved
-/// by a transaction, the auto-created imports folder) produce no entry.
-/// </summary>
 public static class ActivityDescriber
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
@@ -30,7 +25,9 @@ public static class ActivityDescriber
         _ => [],
     };
 
-    /// <summary>One entry for several transactions deleted together.</summary>
+    public static ActivityLog BulkCreate(IReadOnlyCollection<Transaction> transactions) =>
+        Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações importadas de uma vez");
+
     public static ActivityLog BulkDelete(IReadOnlyCollection<Transaction> transactions) =>
         Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações excluídas de uma vez", ActivityType.WARNING);
 
@@ -44,10 +41,6 @@ public static class ActivityDescriber
             yield return Log(t.UserId, "Transações", $"Transação excluída: {label} ({amount})", ActivityType.WARNING);
     }
 
-    /// <summary>
-    /// Merchants are created by the catalog and learn categories on their own;
-    /// only what the user edits (name, kind) is history.
-    /// </summary>
     private static IEnumerable<ActivityLog> DescribeMerchant(EntityEntry entry, Merchant m)
     {
         if (entry.State != EntityState.Modified) yield break;
@@ -64,7 +57,6 @@ public static class ActivityDescriber
             case EntityState.Added:
                 yield return Log(a.UserId, "Contas", $"Conta criada: {a.Name}");
                 break;
-            // Balance changes come from transactions, which are logged on their own.
             case EntityState.Modified when Changed(entry, nameof(Account.Name)):
                 yield return Log(a.UserId, "Contas", $"Conta renomeada: {Original<string>(entry, nameof(Account.Name))} → {a.Name}");
                 break;
@@ -120,7 +112,6 @@ public static class ActivityDescriber
     {
         switch (entry.State)
         {
-            // The imports folder is created by the app, not by the user.
             case EntityState.Added when !f.IsSystem:
                 yield return Log(f.UserId, "Arquivos", $"Pasta criada: {f.Name}");
                 break;
@@ -161,7 +152,6 @@ public static class ActivityDescriber
                         : Log(file.UserId, "Arquivos", $"Arquivo restaurado da Lixeira: {file.Name}");
                 }
                 break;
-            // Files of a folder in the trash go with the folder's own entry.
             case EntityState.Deleted when folder?.DeletedAt == null:
                 yield return Log(file.UserId, "Arquivos", $"Arquivo excluído permanentemente: {file.Name}", ActivityType.WARNING);
                 break;
@@ -192,10 +182,6 @@ public static class ActivityDescriber
         }
     }
 
-    /// <summary>
-    /// True when the file goes to (or comes back from) the trash together with
-    /// its folder: they share the folder's timestamp, and the folder logs it once.
-    /// </summary>
     private static bool MovesWithFolder(EntityEntry entry, StoredFile file, DbContext context)
     {
         var folderEntry = context.ChangeTracker.Entries<Folder>().FirstOrDefault(e => e.Entity.Id == file.FolderId);
@@ -220,8 +206,16 @@ public static class ActivityDescriber
 
     private static T Original<T>(EntityEntry entry, string property) => (T)entry.Property(property).OriginalValue!;
 
+    public const int MaxDescriptionLength = 500;
+
     private static ActivityLog Log(Guid userId, string source, string description, ActivityType type = ActivityType.INFO) =>
-        new() { UserId = userId, Source = source, Description = description, Type = type };
+        new()
+        {
+            UserId = userId,
+            Source = source,
+            Description = description.Length <= MaxDescriptionLength ? description : description[..(MaxDescriptionLength - 1)] + "…",
+            Type = type,
+        };
 
     private static string Money(long cents, bool signed = false) => MoneyText.Format(cents, signed);
 

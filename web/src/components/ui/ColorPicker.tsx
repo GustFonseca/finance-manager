@@ -14,7 +14,6 @@ type Props = {
   label?: string;
 };
 
-/** Swatch grid in the style of the XP "Cor" dialog. */
 export function ColorPicker({ value, onChange, options = CATEGORY_COLORS, label }: Props) {
   return (
     <View style={styles.wrapper}>

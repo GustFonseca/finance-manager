@@ -9,6 +9,8 @@ using FinanceManager.Infrastructure.Messaging;
 using FinanceManager.Aplication.Storage;
 using FinanceManager.Infrastructure.Storage;
 using FinanceManager.Infrastructure.Auditing;
+using FinanceManager.Aplication.Classification;
+using FinanceManager.Infrastructure.Classification;
 
 namespace FinanceManager.Infrastructure;
 
@@ -35,6 +37,10 @@ public static class DependencyInjection
         services.AddScoped<ISavingsPlanRepository, SavingsPlanRepository>();
         services.AddScoped<ICategoryBudgetRepository, CategoryBudgetRepository>();
         services.AddScoped<IMerchantRepository, MerchantRepository>();
+        services.AddScoped<IClassificationRuleRepository, ClassificationRuleRepository>();
+
+        services.AddMemoryCache();
+        services.AddSingleton<IClassificationRulesProvider, ClassificationRulesProvider>();
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
 

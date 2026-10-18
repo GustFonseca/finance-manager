@@ -22,7 +22,7 @@ public class SummaryController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<FinancialSummaryDto>> GetSummary(
@@ -30,22 +30,20 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? end,
         [FromQuery] Guid? accountId)
     {
-        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), start, end, accountId));
+        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId));
         return Ok(summary);
     }
 
-    /// <summary>Fixed costs and subscriptions (marked or detected), optionally of one account.</summary>
     [HttpGet("recurring")]
     public async Task<ActionResult<List<RecurringExpenseDto>>> GetRecurring(
         [FromQuery] DateTime? end,
         [FromQuery] Guid? accountId)
     {
-        var now = (end ?? DateTime.UtcNow).ToUniversalTime();
+        var (_, now) = MonthPeriod.Resolve(null, end);
         var recurring = await _mediator.Send(new GetRecurringExpensesQuery(GetUserId(), now, accountId));
         return Ok(recurring);
     }
 
-    /// <summary>The spending dashboard: by class, category and merchant, the trend, and what could be reduced.</summary>
     [HttpGet("spending")]
     public async Task<ActionResult<SpendingAnalysisDto>> GetSpending(
         [FromQuery] DateTime? start,

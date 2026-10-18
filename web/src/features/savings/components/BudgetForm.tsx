@@ -9,11 +9,9 @@ type Props = {
   budget: CategoryBudgetDto | null;
   saving?: boolean;
   onClose: () => void;
-  /** `null` removes the limit. */
   onSubmit: (limitCents: number | null) => void;
 };
 
-/** Edits one category's monthly limit, with its average and the suggested value at hand. */
 export function BudgetForm({ budget, saving, onClose, onSubmit }: Props) {
   const [amount, setAmount] = useState('');
 

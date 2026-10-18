@@ -12,9 +12,7 @@ const navigationTheme: Theme = {
   colors: { ...DefaultTheme.colors, background: colors.desktop },
 };
 
-/** Single composition root for all app-wide context providers. */
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  // Errors no component caught still reach the API logs.
   useEffect(installGlobalErrorReporting, []);
 
   return (

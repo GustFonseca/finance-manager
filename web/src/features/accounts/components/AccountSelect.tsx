@@ -4,16 +4,13 @@ import { Select } from '@/components/ui';
 import { colors, fontSize, spacing } from '@/theme';
 import { useAccounts } from '../queries';
 
-/** Value meaning "every account". */
 export const ALL_ACCOUNTS = '';
 
 type Props = {
-  /** An account id, or {@link ALL_ACCOUNTS}. */
   value: string;
   onChange: (accountId: string) => void;
 };
 
-/** "Conta: Todas as contas / Nubank / …" filter shown above dashboards. */
 export function AccountSelect({ value, onChange }: Props) {
   const { data: accounts = [] } = useAccounts();
 

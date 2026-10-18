@@ -1,6 +1,5 @@
 namespace FinanceManager.Domain.Entities;
 
-/// <summary>How much the user wants to save each month (one per user).</summary>
 public class SavingsPlan
 {
     public Guid Id { get; set; } = Guid.NewGuid();

@@ -8,18 +8,12 @@ export const SOURCE_LABELS: Record<StatementSource, string> = {
   ofx: 'Extrato bancário (OFX)',
 };
 
-/** One line of a bank statement, normalized for import. */
 export type ImportRow = {
-  /** Unique within the file (the bank's id when it has one). */
   key: string;
-  /** Local calendar day, `yyyy-mm-dd`. */
   date: string;
   description: string;
-  /** Always positive; the direction is in `type`. */
   amountCents: number;
   type: TransactionType;
-  /** Why the row starts unchecked (e.g. a card bill payment), if it does. */
-  skipReason?: string;
 };
 
 export type ParsedStatement = {

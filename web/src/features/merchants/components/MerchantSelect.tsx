@@ -4,16 +4,13 @@ import { Select } from '@/components/ui';
 import { colors, fontSize, spacing } from '@/theme';
 import { useMerchants } from '../queries';
 
-/** Value meaning "every merchant". */
 export const ALL_MERCHANTS = '';
 
 type Props = {
-  /** A merchant id, or {@link ALL_MERCHANTS}. */
   value: string;
   onChange: (merchantId: string) => void;
 };
 
-/** "Estabelecimento: Todos / iFood / …" filter. */
 export function MerchantSelect({ value, onChange }: Props) {
   const { data: merchants = [] } = useMerchants();
 

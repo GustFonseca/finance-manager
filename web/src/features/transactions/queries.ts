@@ -3,14 +3,14 @@ import { queryKeys } from '@/lib/queryKeys';
 import { transactionsApi } from './api';
 import { CreateTransactionRequest, PeriodFilter } from './types';
 
-export function useTransactions(range: PeriodFilter = {}) {
+export function useTransactions(range: PeriodFilter = {}, enabled = true) {
   return useQuery({
     queryKey: [...queryKeys.transactions, range],
     queryFn: () => transactionsApi.getAll(range),
+    enabled,
   });
 }
 
-/** Transactions move money, so accounts and the summary are invalidated too. */
 export function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.transactions });
   qc.invalidateQueries({ queryKey: queryKeys.accounts });

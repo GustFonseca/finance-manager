@@ -5,7 +5,6 @@ import { formatCents } from '@/lib/money';
 import { SPENDING_CLASSES } from '../classes';
 import { SpendingClassTotalDto } from '../types';
 
-/** Essential / variable / superfluous as one 100% bar, with every value in the legend. */
 export function ClassSplit({ totals }: { totals: SpendingClassTotalDto[] }) {
   const byClass = (c: string) => totals.find((t) => t.class === c);
   return (

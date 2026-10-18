@@ -11,15 +11,11 @@ type Props = {
   onOpen: (merchant: MerchantSpendingDto) => void;
 };
 
-/**
- * Spending per merchant, biggest first: a bar per row (colored by how necessary
- * the spending is), with purchases, average ticket, total and share as text.
- */
 export function MerchantTable({ merchants, onOpen }: Props) {
   if (merchants.length === 0) {
     return <Text style={styles.empty}>Nenhum gasto encontrado neste período.</Text>;
   }
-  const max = merchants[0].cents;
+  const max = Math.max(1, ...merchants.map((m) => m.cents));
 
   return (
     <View>
@@ -35,7 +31,6 @@ export function MerchantTable({ merchants, onOpen }: Props) {
       {merchants.map((merchant) => (
         <ListItem
           key={merchant.merchantId ?? merchant.name}
-          // Spending with no merchant behind it has nothing to open.
           onPress={() => merchant.merchantId && onOpen(merchant)}
           style={styles.item}>
           <View style={styles.row}>

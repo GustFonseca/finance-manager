@@ -1,16 +1,15 @@
+using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 
 namespace FinanceManager.Aplication.Analysis;
 
-/// <summary>How much goes to each merchant: over a period, and one merchant month by month.</summary>
 public static class MerchantAnalyzer
 {
-    /// <summary>Spending per merchant in the period, biggest first. Own money moving is left out.</summary>
-    public static MerchantSpendingReportDto Report(IEnumerable<Transaction> transactions)
+    public static MerchantSpendingReportDto Report(IEnumerable<Transaction> transactions, ClassificationRules rules)
     {
-        var expenses = transactions.Where(t => t.Type == TransactionType.EXPENSE && !t.IsOwnMoney()).ToList();
+        var expenses = transactions.Where(t => t.Type == TransactionType.EXPENSE && !t.IsOwnMoney(rules)).ToList();
         var total = expenses.Sum(t => t.AmountCents);
 
         return new MerchantSpendingReportDto
@@ -18,23 +17,22 @@ public static class MerchantAnalyzer
             TotalCents = total,
             Count = expenses.Count,
             Merchants = expenses
-                .GroupBy(t => t.MerchantKey())
-                .Select(g => Spending(g.ToList(), total))
+                .GroupBy(t => t.MerchantKey(rules))
+                .Select(g => Spending(g.ToList(), total, rules))
                 .OrderByDescending(m => m.Cents)
                 .ToList(),
         };
     }
 
-    /// <summary>One merchant's row: totals, ticket, and the category and class of its latest purchase.</summary>
-    public static MerchantSpendingDto Spending(IReadOnlyList<Transaction> group, long periodTotal)
+    public static MerchantSpendingDto Spending(IReadOnlyList<Transaction> group, long periodTotal, ClassificationRules rules)
     {
         var latest = group.MaxBy(t => t.Date)!;
         var cents = group.Sum(t => t.AmountCents);
         return new MerchantSpendingDto
         {
             MerchantId = latest.MerchantId,
-            Name = latest.MerchantName(),
-            Kind = latest.MerchantKind(),
+            Name = latest.MerchantName(rules),
+            Kind = latest.MerchantKind(rules),
             CategoryName = latest.Category?.Name ?? string.Empty,
             Color = latest.Category?.Color ?? string.Empty,
             Count = group.Count,
@@ -42,14 +40,10 @@ public static class MerchantAnalyzer
             Share = periodTotal > 0 ? (double)cents / periodTotal : 0,
             AverageTicketCents = cents / group.Count,
             LastDate = latest.Date,
-            Class = SpendingClassifier.Classify(latest),
+            Class = SpendingClassifier.Classify(latest, rules),
         };
     }
 
-    /// <summary>
-    /// Month by month from the month of <paramref name="start"/> (the user's local
-    /// first day) up to <paramref name="end"/>. Averages use the months with spending.
-    /// </summary>
     public static MerchantHistoryDto History(IReadOnlyList<Transaction> transactions, DateTime start, DateTime end)
     {
         var months = new List<MerchantMonthDto>();

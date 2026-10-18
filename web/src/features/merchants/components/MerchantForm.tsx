@@ -5,7 +5,6 @@ import { useCategories } from '@/features/categories/queries';
 import { colors, fontSize, spacing } from '@/theme';
 import { MERCHANT_KINDS, MerchantDto, MerchantKind, UpdateMerchantInput } from '../types';
 
-/** Select value for "no category". */
 const NO_CATEGORY = '';
 
 type Props = {
@@ -15,7 +14,6 @@ type Props = {
   onSubmit: (data: UpdateMerchantInput) => void;
 };
 
-/** "Editar estabelecimento": name, kind and the category its transactions go under. */
 export function MerchantForm({ merchant, saving, onClose, onSubmit }: Props) {
   const { data: categories = [] } = useCategories();
   const [name, setName] = useState('');

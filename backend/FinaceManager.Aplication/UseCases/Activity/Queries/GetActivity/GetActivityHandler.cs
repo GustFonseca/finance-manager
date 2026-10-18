@@ -7,7 +7,6 @@ namespace FinanceManager.Aplication.UseCases.Activity.Queries.GetActivity;
 
 public class GetActivityHandler : IRequestHandler<GetActivityQuery, List<ActivityLogDto>>
 {
-    /// <summary>Largest page the event viewer can ask for.</summary>
     public const int MaxLimit = 200;
 
     private readonly IActivityLogRepository _activityLogRepository;

@@ -7,7 +7,6 @@ import { colors, fontSize, spacing } from '@/theme';
 type Props = {
   visible: boolean;
   currentCents: number;
-  /** Average saved per month lately, shown as a reference. */
   averageSavedCents: number;
   saving?: boolean;
   onClose: () => void;

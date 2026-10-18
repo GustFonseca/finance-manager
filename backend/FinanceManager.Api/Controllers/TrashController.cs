@@ -24,7 +24,7 @@ public class TrashController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<TrashDto>> Get()
@@ -33,7 +33,6 @@ public class TrashController : ControllerBase
         return Ok(trash);
     }
 
-    /// <summary>Permanently deletes everything in the trash.</summary>
     [HttpDelete]
     public async Task<IActionResult> EmptyTrash()
     {

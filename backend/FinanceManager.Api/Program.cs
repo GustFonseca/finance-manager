@@ -15,12 +15,11 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using FinanceManager.Api.Errors;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging: structured Serilog events. Production writes one JSON object per
-// line (searchable in Render's log explorer); development stays readable.
-// Levels come from the "Serilog" section of appsettings.
 builder.Services.AddSerilog((services, logger) =>
 {
     logger.ReadFrom.Configuration(builder.Configuration)
@@ -32,15 +31,11 @@ builder.Services.AddSerilog((services, logger) =>
         logger.WriteTo.Console(new RenderedCompactJsonFormatter());
 });
 
-// Unhandled errors become RFC 7807 responses carrying the request's trace id:
-// the same id is in the logs and is shown to the user, so a report can be
-// matched to exactly what happened.
+builder.Services.AddExceptionHandler<AppExceptionHandler>();
 builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context =>
         context.ProblemDetails.Extensions["traceId"] = TraceId(context.HttpContext));
 
-// Render terminates TLS in a proxy; trust its X-Forwarded-For so logs and
-// rate limits see the real client IP.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -48,8 +43,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Error reports from the browser may come before sign-in, so each client IP
-// gets a small quota instead of an open door into the logs.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -58,13 +51,10 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
 });
 
-// Infrastructure (DbContext, Repositories)
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Application (Handlers, AutoMapper)
 builder.Services.AddApplication();
 
-// Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "";
 if (!builder.Environment.IsDevelopment() && (jwtSecret.StartsWith("CHANGE-THIS") || jwtSecret.Length < 32))
     throw new InvalidOperationException("Jwt:Secret must be set to a private value of at least 32 characters (env var Jwt__Secret).");
@@ -85,9 +75,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
-// Controllers + Swagger
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -118,7 +108,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -131,8 +120,6 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
-// Every response says which trace it belongs to. Set as the response starts,
-// because the exception handler clears headers before writing a 500.
 app.Use(async (http, next) =>
 {
     http.Response.OnStarting(() =>
@@ -143,30 +130,23 @@ app.Use(async (http, next) =>
     await next();
 });
 
-// One summary event per request: method, path, status, time and user.
 app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnostics, http) =>
         diagnostics.Set("UserId", http.User.FindFirstValue(ClaimTypes.NameIdentifier));
-    // Render's health check hits Swagger every few seconds; keep it out of the logs.
     options.GetLevel = (http, _, error) =>
         error != null || http.Response.StatusCode >= 500 ? LogEventLevel.Error
         : http.Request.Path.StartsWithSegments("/swagger") ? LogEventLevel.Verbose
         : LogEventLevel.Information;
 });
 
-// After request logging, so a failed request is logged once with its 500.
 app.UseExceptionHandler();
 
-// Apply pending migrations on startup in every environment, so each deploy
-// brings its own schema changes. Safe because the API runs as a single
-// instance; if a migration fails, the app doesn't start.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    // Files transactions created before merchants existed under their merchant.
     var catalogued = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CatalogTransactionsCommand());
     if (catalogued > 0) app.Logger.LogInformation("Catalogued {Count} transactions under their merchants", catalogued);
 }
@@ -182,5 +162,4 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>W3C trace id of the request (falls back to ASP.NET's own id).</summary>
 static string TraceId(HttpContext http) => Activity.Current?.TraceId.ToString() ?? http.TraceIdentifier;

@@ -21,7 +21,6 @@ public class GetFoldersHandler : IRequestHandler<GetFoldersQuery, List<FolderDto
 
     public async Task<List<FolderDto>> Handle(GetFoldersQuery request, CancellationToken cancellationToken = default)
     {
-        // Every user has the imports folder; it is created the first time it's needed.
         if (await _folderRepository.GetSystemFolderAsync(request.UserId) == null)
         {
             await _folderRepository.CreateAsync(new Folder

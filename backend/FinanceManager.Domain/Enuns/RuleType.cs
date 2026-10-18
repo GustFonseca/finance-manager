@@ -1,0 +1,17 @@
+namespace FinanceManager.Domain.Enuns;
+
+public enum RuleType
+{
+    OWN_MONEY,
+    BRAND,
+    GATEWAY_PREFIX,
+    BUSINESS_WORD,
+    SUBSCRIPTION,
+    BILL,
+    GROCERY,
+    SUPERFLUOUS,
+    CATEGORY_HINT,
+    ESSENTIAL_CATEGORY,
+    SUPERFLUOUS_CATEGORY,
+    CATCH_ALL_CATEGORY
+}

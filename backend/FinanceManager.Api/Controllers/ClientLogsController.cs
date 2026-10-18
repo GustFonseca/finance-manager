@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace FinanceManager.Api.Controllers;
 
-/// <summary>Receives errors from the web app, so front and back end share one log.</summary>
 [ApiController]
 [Route("api/client-logs")]
 [AllowAnonymous]
@@ -25,7 +24,6 @@ public class ClientLogsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Report([FromBody] ClientLogRequest request)
     {
-        // Anonymous on purpose (the app can fail before sign-in); attach the user when known.
         Guid? userId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
         await _mediator.Send(new ReportClientErrorCommand(
             userId, request.Level, request.Message, request.Stack, request.Url, request.UserAgent));

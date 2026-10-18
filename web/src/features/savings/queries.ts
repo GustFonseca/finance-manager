@@ -1,15 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { monthKeyOf, monthRange } from '@/lib/periods';
 import { queryKeys } from '@/lib/queryKeys';
 import { DateRange } from '@/features/transactions/types';
 import { savingsApi } from './api';
 
-/** The current month, from the user's local first day until now. */
 export function currentMonth(): Required<DateRange> {
-  const now = new Date();
-  return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-    end: now.toISOString(),
-  };
+  return monthRange(monthKeyOf(new Date()));
 }
 
 export function useSavingsPlan(month: DateRange) {

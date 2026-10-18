@@ -12,7 +12,6 @@ type Props = {
   destructive?: boolean;
 };
 
-/** Right-aligned "OK / Cancelar" pair at the bottom of an XP dialog. */
 export function DialogButtons({
   confirmLabel = 'OK',
   cancelLabel = 'Cancelar',

@@ -1,6 +1,5 @@
 namespace FinanceManager.Domain.Entities;
 
-/// <summary>Monthly spending limit for one expense category.</summary>
 public class CategoryBudget
 {
     public Guid Id { get; set; } = Guid.NewGuid();

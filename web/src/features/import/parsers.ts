@@ -2,13 +2,8 @@ import { parseSignedAmountToCents } from '@/lib/money';
 import { normalizeText, toDay } from './text';
 import { ImportRow, ParsedStatement } from './types';
 
-/** A file we can't read; `message` is shown to the user as is. */
 export class StatementError extends Error {}
 
-/**
- * Turns the raw bytes of an exported statement into text. OFX files from
- * Brazilian banks are often Windows-1252, which their header declares.
- */
 export function decodeStatement(buffer: ArrayBuffer): string {
   const utf8 = new TextDecoder('utf-8').decode(buffer).replace(/^﻿/, '');
   if (/CHARSET:\s*1252/i.test(utf8.slice(0, 500))) {
@@ -17,7 +12,6 @@ export function decodeStatement(buffer: ArrayBuffer): string {
   return utf8;
 }
 
-/** Detects the format (Nubank card CSV, Nubank account CSV or OFX) and parses it. */
 export function parseStatement(text: string): ParsedStatement {
   if (/<OFX>/i.test(text)) return { source: 'ofx', rows: parseOfx(text) };
 
@@ -38,10 +32,6 @@ function sameColumns(actual: string[], expected: string[]) {
   return expected.every((column, i) => actual[i] === column);
 }
 
-/**
- * Minimal CSV reader: `,` or `;` separators, quoted fields with `""` escapes,
- * CRLF or LF line breaks. Blank lines are dropped.
- */
 export function parseCsv(text: string): string[][] {
   const firstLine = text.slice(0, text.search(/\r?\n|$/));
   const separator = firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
@@ -85,7 +75,6 @@ export function parseCsv(text: string): string[][] {
 }
 
 function lineError(index: number, detail: string): StatementError {
-  // +2: one for the header, one because people count lines from 1.
   return new StatementError(`Linha ${index + 2} inválida: ${detail}`);
 }
 
@@ -95,64 +84,34 @@ function amountOf(raw: string, index: number): number {
   return cents;
 }
 
-/**
- * Card bill: `date,title,amount` with ISO dates. Purchases are positive;
- * refunds and the bill payment are negative (credits on the card).
- */
 function parseCardLine([date, title, amount]: string[], index: number): ImportRow {
   const [year, month, day] = (date ?? '').split('-').map(Number);
   const isoDay = toDay(year, month, day);
   if (!isoDay) throw lineError(index, `data "${date}"`);
   const cents = amountOf(amount, index);
-  const isBillPayment = cents < 0 && /pagamento recebido/.test(normalizeText(title ?? ''));
   return {
     key: `card-${index}`,
     date: isoDay,
     description: title ?? '',
     amountCents: Math.abs(cents),
     type: cents > 0 ? 'EXPENSE' : 'INCOME',
-    // Paying the bill moves money between your own accounts; the purchases
-    // themselves are what should be counted.
-    skipReason: isBillPayment ? 'Pagamento da fatura' : undefined,
   };
 }
 
-/**
- * Lines that move the user's own money around rather than earning or spending
- * it. They start unchecked, with the reason shown, so they don't inflate
- * income and expenses.
- */
-const INTERNAL_TRANSFERS: [RegExp, string][] = [
-  // A Pix paid with the credit card shows up as this credit plus the Pix itself.
-  [/valor adicionado na conta por cartao de credito/, 'Crédito do cartão usado no Pix (não é renda)'],
-  [/pagamento de fatura/, 'Pagamento da fatura: as compras vêm da fatura do cartão'],
-  [/aplicacao rdb|resgate rdb|nuinvest|caixinha|dinheiro guardado|guardar dinheiro/, 'Movimentação entre suas contas e investimentos'],
-];
-
-function internalTransfer(description: string): string | undefined {
-  const text = normalizeText(description);
-  return INTERNAL_TRANSFERS.find(([pattern]) => pattern.test(text))?.[1];
-}
-
-/** Account statement: `Data,Valor,Identificador,Descrição` with `dd/mm/yyyy` dates. */
 function parseAccountLine([date, amount, id, description]: string[], index: number): ImportRow {
   const [day, month, year] = (date ?? '').split('/').map(Number);
   const isoDay = toDay(year, month, day);
   if (!isoDay) throw lineError(index, `data "${date}"`);
   const cents = amountOf(amount, index);
   return {
-    // Nubank repeats the Identificador on the two lines of a Pix paid with the
-    // credit card, so the line number keeps every row's key unique.
     key: `${id || 'account'}-${index}`,
     date: isoDay,
     description: description ?? '',
     amountCents: Math.abs(cents),
     type: cents < 0 ? 'EXPENSE' : 'INCOME',
-    skipReason: internalTransfer(description ?? ''),
   };
 }
 
-/** OFX 1.x (SGML, closing tags optional) or 2.x (XML): one row per `<STMTTRN>`. */
 function parseOfx(text: string): ImportRow[] {
   const blocks = text.match(/<STMTTRN>[\s\S]*?(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>)/gi) ?? [];
   if (blocks.length === 0) throw new StatementError('O arquivo OFX não tem transações.');
@@ -172,7 +131,6 @@ function parseOfx(text: string): ImportRow[] {
       description,
       amountCents: Math.abs(cents),
       type: cents < 0 ? 'EXPENSE' : 'INCOME',
-      skipReason: internalTransfer(description),
     };
   });
 }

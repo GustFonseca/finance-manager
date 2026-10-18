@@ -3,31 +3,25 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, ColumnChart, Modal, MoneyText, StatTile } from '@/components/ui';
 import { useTransactions } from '@/features/transactions/queries';
 import { DateRange } from '@/features/transactions/types';
+import { longMonthOf, shortMonthOf } from '@/lib/periods';
 import { formatCents, formatCentsCompact } from '@/lib/money';
 import { chart, colors, fontSize, spacing } from '@/theme';
 import { useMerchantHistory } from '../queries';
 import { kindLabel, MerchantDto } from '../types';
 
-/** Purchases listed under the chart. */
 const RECENT_COUNT = 8;
-
-const monthLabel = (iso: string) =>
-  new Date(iso).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
 
 type Props = {
   merchantId: string | null;
-  /** The months shown, from the first one's first day. */
   range: DateRange;
-  /** "de janeiro a dezembro de 2026", for the chart title. */
   rangeLabel: string;
   onClose: () => void;
   onEdit: (merchant: MerchantDto) => void;
 };
 
-/** One merchant: what was spent there month by month, and the latest purchases. */
 export function MerchantDetail({ merchantId, range, rangeLabel, onClose, onEdit }: Props) {
   const { data: history } = useMerchantHistory(merchantId, range);
-  const { data: transactions = [] } = useTransactions({ ...range, merchantId: merchantId ?? undefined });
+  const { data: transactions = [] } = useTransactions({ ...range, merchantId: merchantId ?? undefined }, !!merchantId);
   const merchant = history?.merchant;
 
   return (
@@ -68,10 +62,10 @@ export function MerchantDetail({ merchantId, range, rangeLabel, onClose, onEdit 
             formatValue={(v) => formatCentsCompact(v)}
             columns={history.months.map((m) => ({
               key: m.monthStart,
-              label: monthLabel(m.monthStart),
+              label: shortMonthOf(m.monthStart),
               segments: [{ key: 'expense', value: m.expenseCents, color: chart.essential }],
               details: [
-                new Date(m.monthStart).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+                longMonthOf(m.monthStart),
                 `${formatCents(m.expenseCents)} em ${m.count} transação(ões)`,
               ],
             }))}
@@ -113,13 +107,13 @@ const styles = StyleSheet.create({
   meta: { fontSize: fontSize.sm, color: colors.textSecondary },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tileValue: { fontSize: fontSize.xl, fontWeight: '700' },
-  section: { fontSize: fontSize.md, fontWeight: '700', color: '#0046D5', marginTop: spacing.sm },
+  section: { fontSize: fontSize.md, fontWeight: '700', color: colors.heading, marginTop: spacing.sm },
   txnRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   txnInfo: { flex: 1, marginRight: spacing.md, minWidth: 0 },
   txnDate: { fontSize: fontSize.sm, color: colors.textPrimary },

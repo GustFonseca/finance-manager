@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
@@ -19,10 +20,8 @@ public class DeleteCategoryHandler : IRequestHandler<DeleteCategoryCommand, bool
         var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
         if (category == null || category.UserId != request.UserId) return false;
 
-        // Check for existing transactions
-        var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, null, null);
-        if (transactions.Any(t => t.CategoryId == request.CategoryId))
-            throw new InvalidOperationException("Cannot delete category with existing transactions");
+        if (await _transactionRepository.ExistsForCategoryAsync(request.CategoryId))
+            throw new BusinessRuleException("Não é possível excluir uma categoria que tem transações. Mude a categoria delas antes (em Estabelecimentos).");
 
         await _categoryRepository.DeleteAsync(category);
         return true;

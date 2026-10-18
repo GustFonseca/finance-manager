@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -6,6 +7,7 @@ namespace FinanceManager.Aplication.UseCases.Merchants.Commands.CatalogTransacti
 
 public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCommand, int>
 {
+    private readonly IClassificationRulesProvider _rulesProvider;
     private readonly ITransactionRepository _transactionRepository;
     private readonly IMerchantRepository _merchantRepository;
     private readonly IUserRepository _userRepository;
@@ -13,8 +15,10 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
     public CatalogTransactionsHandler(
         ITransactionRepository transactionRepository,
         IMerchantRepository merchantRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IClassificationRulesProvider rulesProvider)
     {
+        _rulesProvider = rulesProvider;
         _transactionRepository = transactionRepository;
         _merchantRepository = merchantRepository;
         _userRepository = userRepository;
@@ -22,6 +26,7 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
 
     public async Task<int> Handle(CatalogTransactionsCommand request, CancellationToken cancellationToken = default)
     {
+        var rules = await _rulesProvider.GetAsync(cancellationToken);
         var filed = new List<Transaction>();
         foreach (var userTransactions in (await _transactionRepository.GetUncataloguedAsync()).GroupBy(t => t.UserId))
         {
@@ -30,13 +35,12 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
             foreach (var transaction in userTransactions)
             {
                 var merchant = await MerchantCatalog.ResolveAsync(
-                    _merchantRepository, userTransactions.Key, transaction.Description, owner?.Name, cache);
+                    _merchantRepository, rules, userTransactions.Key, transaction.Description, owner?.Name, cache);
                 if (merchant == null) continue;
                 transaction.MerchantId = merchant.Id;
                 filed.Add(transaction);
             }
 
-            // A merchant without a category learns the one most of its transactions use.
             foreach (var merchant in cache.Values.Where(m => m.CategoryId == null))
             {
                 var usual = userTransactions
@@ -44,7 +48,7 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
                     .GroupBy(t => t.CategoryId)
                     .OrderByDescending(g => g.Count())
                     .First().First().Category;
-                if (usual == null || !MerchantCatalog.ShouldLearn(merchant, usual)) continue;
+                if (usual == null || !MerchantCatalog.ShouldLearn(merchant, usual, rules)) continue;
                 merchant.CategoryId = usual.Id;
                 await _merchantRepository.UpdateAsync(merchant);
             }

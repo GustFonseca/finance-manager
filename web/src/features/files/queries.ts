@@ -3,7 +3,6 @@ import { queryKeys } from '@/lib/queryKeys';
 import { filesApi, foldersApi, trashApi } from './api';
 import { UpdateFileInput } from './types';
 
-/** Any change can move items between folders and the trash, so all three are refreshed. */
 export function invalidateFiles(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.folders });
   qc.invalidateQueries({ queryKey: queryKeys.files });
@@ -25,7 +24,6 @@ export function useTrash() {
   return useQuery({ queryKey: queryKeys.trash, queryFn: trashApi.get });
 }
 
-/** Wraps an API call as a mutation that refreshes folders, files and trash. */
 function useFilesMutation<TInput, TResult>(mutationFn: (input: TInput) => Promise<TResult>) {
   const qc = useQueryClient();
   return useMutation({ mutationFn, onSuccess: () => invalidateFiles(qc) });

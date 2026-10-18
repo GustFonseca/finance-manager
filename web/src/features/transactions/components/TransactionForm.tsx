@@ -29,7 +29,6 @@ export function TransactionForm({ visible, submitting, onClose, onSubmit }: Prop
     setType('EXPENSE');
   }, [visible]);
 
-  // Keep a valid account/category selected as the lists load or `type` changes.
   useEffect(() => {
     if (accounts.length && !accounts.some((a) => a.id === accountId)) {
       setAccountId(accounts[0].id);

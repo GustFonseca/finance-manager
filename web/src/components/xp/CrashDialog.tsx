@@ -8,15 +8,9 @@ import { TitleBar } from './TitleBar';
 
 type Props = {
   error: Error;
-  /** Re-renders the app from where it broke. */
   retry: () => void;
 };
 
-/**
- * The XP "encountered a problem and needs to close" dialog, shown when the
- * app crashes. It renders outside every provider (they may be what broke),
- * and reports the error to the API logs automatically.
- */
 export function CrashDialog({ error, retry }: Props) {
   const [showDetails, setShowDetails] = useState(false);
 

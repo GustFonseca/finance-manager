@@ -1,7 +1,6 @@
 const mockPost = jest.fn(() => Promise.resolve());
 jest.mock('../http', () => ({ http: { post: mockPost } }));
 
-/** The logger keeps per-page-load counters, so each test gets a fresh module. */
 function freshLogger(): typeof import('../logger') {
   let logger!: typeof import('../logger');
   jest.isolateModules(() => {

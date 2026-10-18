@@ -29,7 +29,6 @@ export function TransactionListItem({ transaction, onPress }: Props) {
           {new Date(transaction.date).toLocaleDateString('pt-BR')} · {transaction.categoryName} ·{' '}
           {transaction.accountName}
         </Text>
-        {/* The bank's full wording stays visible under the merchant's name. */}
         {transaction.merchantName ? (
           <Text style={styles.meta} numberOfLines={1}>
             {transaction.description}

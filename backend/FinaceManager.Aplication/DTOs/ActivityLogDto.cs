@@ -11,14 +11,11 @@ public class ActivityLogDto
     public DateTime CreatedAt { get; set; }
 }
 
-/// <summary>An error the web app reports so it lands in the API logs.</summary>
 public class ClientLogRequest
 {
-    /// <summary>"error" or "warning".</summary>
     public string Level { get; set; } = "error";
     public string Message { get; set; } = string.Empty;
     public string? Stack { get; set; }
-    /// <summary>Page where it happened.</summary>
     public string? Url { get; set; }
     public string? UserAgent { get; set; }
 }

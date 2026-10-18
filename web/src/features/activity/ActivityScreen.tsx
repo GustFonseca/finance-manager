@@ -17,7 +17,6 @@ const TYPES: Record<ActivityType, { label: string; icon: 'info-circle' | 'exclam
 const date = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 const time = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR');
 
-/** "Visualizar eventos": the user's own history, like XP's Event Viewer. */
 export function ActivityScreen() {
   const { alert } = useDialog();
   const { data, isFetching, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useActivity();
@@ -28,7 +27,6 @@ export function ActivityScreen() {
   const sources = [...new Set(entries.map((entry) => entry.source))].sort();
   const visible = source === ALL_SOURCES ? entries : entries.filter((entry) => entry.source === source);
 
-  // XP opens an event's properties on double-click; a second click on the selected row does it here.
   function press(entry: ActivityLogDto) {
     if (selectedId !== entry.id) {
       setSelectedId(entry.id);
@@ -103,7 +101,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   filterLabel: { fontSize: fontSize.sm, color: colors.textPrimary },
   header: { backgroundColor: colors.surfaceLight, borderBottomWidth: 1, borderBottomColor: colors.border },

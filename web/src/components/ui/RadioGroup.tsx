@@ -13,7 +13,6 @@ type Props<T extends string> = {
   onChange: (value: T) => void;
 };
 
-/** Horizontal group of XP radio buttons (green dot when checked). */
 export function RadioGroup<T extends string>({ options, value, onChange }: Props<T>) {
   return (
     <View style={styles.row} accessibilityRole="radiogroup">

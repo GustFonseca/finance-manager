@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.Analysis;
+using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -7,6 +8,7 @@ namespace FinanceManager.Aplication.UseCases.Savings.Commands.ApplySuggestedBudg
 
 public class ApplySuggestedBudgetsHandler : IRequestHandler<ApplySuggestedBudgetsCommand, int>
 {
+    private readonly IClassificationRulesProvider _rulesProvider;
     private readonly ITransactionRepository _transactionRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICategoryBudgetRepository _budgetRepository;
@@ -16,8 +18,10 @@ public class ApplySuggestedBudgetsHandler : IRequestHandler<ApplySuggestedBudget
         ITransactionRepository transactionRepository,
         ICategoryRepository categoryRepository,
         ICategoryBudgetRepository budgetRepository,
-        ISavingsPlanRepository planRepository)
+        ISavingsPlanRepository planRepository,
+        IClassificationRulesProvider rulesProvider)
     {
+        _rulesProvider = rulesProvider;
         _transactionRepository = transactionRepository;
         _categoryRepository = categoryRepository;
         _budgetRepository = budgetRepository;
@@ -28,12 +32,12 @@ public class ApplySuggestedBudgetsHandler : IRequestHandler<ApplySuggestedBudget
     {
         var input = await SavingsAnalysisLoader.LoadAsync(
             request.UserId, request.MonthStart, request.Now,
-            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository);
+            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository,
+            await _rulesProvider.GetAsync(cancellationToken));
         var plan = SavingsAnalyzer.Analyze(input);
         var existing = (await _budgetRepository.GetByUserIdAsync(request.UserId)).ToDictionary(b => b.CategoryId);
 
         var applied = 0;
-        // Categories with no history have no suggestion and keep whatever limit they had.
         foreach (var suggestion in plan.Budgets.Where(b => b.SuggestedLimitCents > 0))
         {
             if (existing.TryGetValue(suggestion.CategoryId, out var budget))

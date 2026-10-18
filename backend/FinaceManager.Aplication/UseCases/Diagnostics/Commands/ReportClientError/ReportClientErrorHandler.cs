@@ -5,7 +5,6 @@ namespace FinanceManager.Aplication.UseCases.Diagnostics.Commands.ReportClientEr
 
 public class ReportClientErrorHandler : IRequestHandler<ReportClientErrorCommand, bool>
 {
-    // Reports come from the browser (even before sign-in), so every field is capped.
     private const int MaxMessage = 1_000;
     private const int MaxStack = 8_000;
     private const int MaxText = 500;
@@ -22,7 +21,6 @@ public class ReportClientErrorHandler : IRequestHandler<ReportClientErrorCommand
         var level = request.Level == "warning" ? LogLevel.Warning : LogLevel.Error;
         _logger.Log(
             level,
-            // ":l" writes the browser's text as is, without JSON-style quotes.
             "Web app {ClientLevel:l}: {ClientMessage:l} at {ClientUrl:l} (user {UserId}, {UserAgent:l})\n{ClientStack:l}",
             level == LogLevel.Warning ? "warning" : "error",
             Cap(request.Message, MaxMessage),

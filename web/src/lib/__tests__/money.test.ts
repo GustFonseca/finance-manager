@@ -1,10 +1,5 @@
 import { formatCents, formatCentsCompact, formatCentsForInput, parseSignedAmountToCents, parseToCents } from '../money';
 
-/**
- * `Intl` separates the currency symbol from the digits with a non-breaking
- * space, which is invisible in a diff — normalise it so the expectations below
- * stay readable.
- */
 const normalize = (value: string) => value.replace(/ /g, ' ');
 
 describe('formatCents', () => {

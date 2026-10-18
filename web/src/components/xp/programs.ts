@@ -1,19 +1,13 @@
 import type { IconName } from './TitleBar';
 
 export type Program = {
-  /** Route path (without the GitHub Pages base URL); also the window id. */
   route: string;
   title: string;
   icon: IconName;
-  /** Icon tint on the desktop and in the Start menu. */
   color: string;
   description: string;
 };
 
-/**
- * Every app screen, as an XP "program". The Start menu, the desktop icons and
- * the taskbar are all generated from this list.
- */
 export const PROGRAMS: Program[] = [
   {
     route: '/',

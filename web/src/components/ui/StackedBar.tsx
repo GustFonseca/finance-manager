@@ -6,14 +6,9 @@ export type BarSegment = { key: string; value: number; color: string };
 
 type Props = {
   segments: BarSegment[];
-  /** Bar thickness; marks stay thin (<= 24px). */
   thickness?: number;
 };
 
-/**
- * A 100% horizontal stacked bar (part-to-whole). Segments are split by 2px
- * surface gaps; the far end is rounded, the baseline square.
- */
 export function StackedBar({ segments, thickness = 18 }: Props) {
   const visible = segments.filter((s) => s.value > 0);
   const total = visible.reduce((sum, s) => sum + s.value, 0);

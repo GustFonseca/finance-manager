@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, MonthSelect, ProgressBar, monthKeyOf, monthLabel, monthRange } from '@/components/ui';
+import { Card, ErrorState, MoneyText, MonthSelect, ProgressBar } from '@/components/ui';
+import { monthKeyOf, monthLabel, monthRange } from '@/lib/periods';
 import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
@@ -15,7 +16,6 @@ import { useRecurringExpenses, useSummary } from './queries';
 export function DashboardScreen() {
   const { user } = useAuth();
   const [monthKey, setMonthKey] = useState(() => monthKeyOf(new Date()));
-  // Memoized so the query key stays stable across renders.
   const month = useMemo(() => monthRange(monthKey), [monthKey]);
   const { data: accounts = [] } = useAccounts();
   const [accountId, setAccountId] = useState(ALL_ACCOUNTS);
@@ -61,6 +61,9 @@ export function DashboardScreen() {
           </View>
         </View>
 
+        {summaryQuery.error ? (
+          <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
+        ) : null}
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
 
         <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   filters: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md },
-  greeting: { fontSize: fontSize.xl, fontWeight: '700', color: '#0046D5' },
+  greeting: { fontSize: fontSize.xl, fontWeight: '700', color: colors.heading },
   section: { marginTop: spacing.sm },
   empty: { color: colors.textSecondary, fontStyle: 'italic', fontSize: fontSize.sm },
   goalRow: {
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xs + 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   txnInfo: { flex: 1, marginRight: spacing.md },
   txnDesc: { fontSize: fontSize.md, color: colors.textPrimary },

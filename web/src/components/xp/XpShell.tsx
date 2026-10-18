@@ -9,12 +9,10 @@ import { WindowManagerProvider } from './WindowManager';
 
 type Props = {
   screens: ProgramScreens;
-  /** Desktop items from other features (folders, Lixeira…), rendered with the windows. */
   desktopExtras?: React.ReactNode;
   children: React.ReactNode;
 };
 
-/** The whole XP desktop: wallpaper + windows, Start menu and taskbar. */
 export function XpShell({ screens, desktopExtras, children }: Props) {
   const [startOpen, setStartOpen] = useState(false);
 

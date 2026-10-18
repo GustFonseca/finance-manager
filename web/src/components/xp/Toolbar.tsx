@@ -11,7 +11,6 @@ export type ToolbarButton = {
   onPress: () => void;
 };
 
-/** Explorer-style toolbar: flat icon buttons that raise on hover. */
 export function Toolbar({ buttons }: { buttons: ToolbarButton[] }) {
   return (
     <View style={styles.bar}>

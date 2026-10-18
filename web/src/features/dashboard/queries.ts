@@ -10,7 +10,6 @@ export function useSummary(filter: PeriodFilter = {}) {
   });
 }
 
-/** Under the summary key, so any transaction change refreshes it too. */
 export function useRecurringExpenses(filter: PeriodFilter = {}) {
   return useQuery({
     queryKey: [...queryKeys.summary, 'recurring', filter],

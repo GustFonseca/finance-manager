@@ -18,7 +18,6 @@ public class DeleteAllTransactionsHandler : IRequestHandler<DeleteAllTransaction
     {
         var deleted = await _transactionRepository.DeleteByUserIdAsync(request.UserId);
 
-        // Balances only ever move with transactions, so with none left they are zero.
         foreach (var account in await _accountRepository.GetByUserIdAsync(request.UserId))
         {
             if (account.BalanceCents == 0) continue;

@@ -6,7 +6,6 @@ type Props = TextInputProps & {
   label?: string;
 };
 
-/** XP text box: square, white, thin blue-grey border. */
 export function Input({ label, style, ...rest }: Props) {
   return (
     <View style={styles.wrapper}>

@@ -12,14 +12,9 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   label?: string;
-  /** Inline in a table row: no label spacing, narrower text. */
   compact?: boolean;
 };
 
-/**
- * XP drop-down list. The app is web-only, so this renders a native
- * `<select>`, which the browser draws much like the XP combo box.
- */
 export function Select({ options, selectedId, onSelect, label, compact }: Props) {
   return (
     <View style={compact ? undefined : styles.wrapper}>

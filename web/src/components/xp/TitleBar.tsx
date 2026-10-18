@@ -13,13 +13,10 @@ type Props = {
   onMinimize?: () => void;
   onMaximize?: () => void;
   onClose?: () => void;
-  /** Starts a window drag (see useWindowDrag). */
   onPointerDown?: ViewProps['onPointerDown'];
-  /** Shows the move cursor when the window can be dragged. */
   draggable?: boolean;
 };
 
-/** Blue Luna caption bar with the minimize / maximize / close buttons. */
 export function TitleBar({
   title,
   icon,
@@ -40,7 +37,6 @@ export function TitleBar({
         webStyle({ backgroundImage: active ? gradients.titleBar : gradients.titleBarInactive }),
       ]}>
       {icon ? <FontAwesome name={icon} size={14} color="#FFFFFF" style={styles.icon} /> : null}
-      {/* Inline (not StyleSheet) so the title font outranks the global Tahoma rule. */}
       <Text style={[styles.title, { fontFamily: fonts.title }]} numberOfLines={1}>
         {title}
       </Text>
@@ -113,7 +109,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     ...webStyle({ userSelect: 'none' }),
   },
-  // touchAction lets touch screens drag the window instead of scrolling.
   draggable: webStyle({ cursor: 'move', touchAction: 'none' }),
   icon: { marginRight: 6 },
   title: {

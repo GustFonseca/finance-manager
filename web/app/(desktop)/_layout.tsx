@@ -13,7 +13,6 @@ import { SavingsScreen } from '@/features/savings/SavingsScreen';
 import { SpendingScreen } from '@/features/spending/SpendingScreen';
 import { TransactionsScreen } from '@/features/transactions/TransactionsScreen';
 
-/** Screen rendered inside each program's window, keyed by its route. */
 const SCREENS: ProgramScreens = {
   '/': DashboardScreen,
   '/transactions': TransactionsScreen,
@@ -26,15 +25,9 @@ const SCREENS: ProgramScreens = {
   '/events': ActivityScreen,
 };
 
-/**
- * Every signed-in screen is a window on the XP desktop. The shell renders all
- * open windows at once; the routes below only drive the URL (the focused one).
- */
 export default function DesktopLayout() {
   const { token } = useAuth();
 
-  // The router keeps this layout mounted under /login; without a session there
-  // is no desktop (and its data must not be fetched). Logging off clears it.
   if (!token) return <Slot />;
 
   return (

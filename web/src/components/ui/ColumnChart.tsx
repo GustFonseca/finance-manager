@@ -5,29 +5,19 @@ import type { BarSegment } from './StackedBar';
 
 export type ChartColumn = {
   key: string;
-  /** Under the column, e.g. "out". */
   label: string;
-  /** Bottom to top. */
   segments: BarSegment[];
-  /** Hover tooltip lines (the same values must also be readable elsewhere, e.g. a table). */
   details: string[];
 };
 
 type Props = {
   columns: ChartColumn[];
-  /** Formats a total for the axis and the direct label. */
   formatValue: (value: number) => string;
-  /** Plot height, excluding the labels under it. */
   height?: number;
 };
 
 const COLUMN_WIDTH = 24;
 
-/**
- * Stacked columns over time. Hairline gridlines, 2px surface gaps between
- * segments, a 4px rounded top; only the last column is labeled directly, the
- * rest show their values on hover.
- */
 export function ColumnChart({ columns, formatValue, height = 160 }: Props) {
   const total = (c: ChartColumn) => c.segments.reduce((sum, s) => sum + s.value, 0);
   const max = Math.max(1, ...columns.map(total));
@@ -106,7 +96,6 @@ const styles = StyleSheet.create({
   plotArea: { flex: 1 },
   plot: { flexDirection: 'row', alignItems: 'flex-end', position: 'relative' },
   gridline: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: chart.grid },
-  // The whole slot is the hover target, not just the thin column.
   slot: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end', ...webStyle({ cursor: 'default' }) },
   stack: { width: COLUMN_WIDTH, flexDirection: 'column-reverse' },
   segmentGap: { borderBottomWidth: 2, borderBottomColor: chart.surface },
@@ -118,7 +107,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     minWidth: 170,
     padding: spacing.sm,
-    backgroundColor: '#FFFFE1', // the XP tooltip yellow
+    backgroundColor: '#FFFFE1',
     borderWidth: 1,
     borderColor: colors.textPrimary,
     borderRadius: radius.sm,

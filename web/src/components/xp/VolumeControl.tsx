@@ -5,10 +5,6 @@ import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
 import { useSound } from './sound/SoundProvider';
 import { TASKBAR_HEIGHT } from './StartMenu';
 
-/**
- * Speaker icon in the notification area. Clicking it opens the XP volume
- * pop-up: a vertical slider and the "Sem áudio" (mute) check box.
- */
 export function VolumeControl() {
   const { volume, muted, setVolume, setMuted, click } = useSound();
   const [open, setOpen] = useState(false);
@@ -42,7 +38,6 @@ export function VolumeControl() {
               value={volume}
               aria-label="Volume"
               onChange={(event) => setVolume(Number(event.target.value))}
-              // Like XP, releasing the slider plays a sample at the new level.
               onPointerUp={click}
               onKeyUp={click}
               style={sliderStyle}
@@ -62,7 +57,6 @@ export function VolumeControl() {
   );
 }
 
-/** A native range, turned vertical with the max at the top. */
 const sliderStyle: React.CSSProperties = {
   writingMode: 'vertical-lr',
   direction: 'rtl',

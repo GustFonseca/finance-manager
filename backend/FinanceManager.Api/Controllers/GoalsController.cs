@@ -23,7 +23,7 @@ public class GoalsController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<GoalDto>>> GetAll()
@@ -42,29 +42,15 @@ public class GoalsController : ControllerBase
     [HttpPut("{id}/progress")]
     public async Task<ActionResult<GoalDto>> UpdateProgress(Guid id, [FromBody] UpdateGoalProgressRequest request)
     {
-        try
-        {
-            var goal = await _mediator.Send(new UpdateGoalProgressCommand(GetUserId(), id, request.AmountCents));
-            return Ok(goal);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var goal = await _mediator.Send(new UpdateGoalProgressCommand(GetUserId(), id, request.AmountCents));
+        return Ok(goal);
     }
 
     [HttpPut("{id}/complete")]
     public async Task<ActionResult<GoalDto>> Complete(Guid id)
     {
-        try
-        {
-            var goal = await _mediator.Send(new CompleteGoalCommand(GetUserId(), id));
-            return Ok(goal);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var goal = await _mediator.Send(new CompleteGoalCommand(GetUserId(), id));
+        return Ok(goal);
     }
 
     [HttpDelete("{id}")]

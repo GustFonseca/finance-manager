@@ -5,7 +5,6 @@ import { colors, fontSize, spacing } from '@/theme';
 import { classInfo } from '../classes';
 import { MerchantSpendingDto } from '../types';
 
-/** "Onde você mais gastou": the month's biggest merchants, with how often and what kind. */
 export function TopMerchants({ merchants }: { merchants: MerchantSpendingDto[] }) {
   if (merchants.length === 0) {
     return <Text style={styles.empty}>Nenhuma despesa neste mês.</Text>;
@@ -51,7 +50,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   th: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textPrimary },
   td: { fontSize: fontSize.sm, color: colors.textPrimary },

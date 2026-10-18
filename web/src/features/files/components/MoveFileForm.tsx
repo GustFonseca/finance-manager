@@ -10,7 +10,6 @@ type Props = {
   onSubmit: (folderId: string) => void;
 };
 
-/** "Mover para a pasta": picks any other folder of the desktop. */
 export function MoveFileForm({ file, saving, onClose, onSubmit }: Props) {
   const { data: folders = [] } = useFolders();
   const targets = folders.filter((folder) => folder.id !== file?.folderId);
@@ -18,7 +17,6 @@ export function MoveFileForm({ file, saving, onClose, onSubmit }: Props) {
 
   useEffect(() => {
     if (file) setFolderId(targets[0]?.id ?? null);
-    // Preselects only when a file is chosen, so a refetch can't reset the user's pick.
   }, [file]);
 
   return (

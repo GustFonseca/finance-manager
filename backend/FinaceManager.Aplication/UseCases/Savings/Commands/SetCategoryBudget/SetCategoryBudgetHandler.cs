@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
@@ -21,9 +22,9 @@ public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand
         var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
         if (category == null || category.UserId != request.UserId) return false;
         if (category.Type != CategoryType.EXPENSE)
-            throw new InvalidOperationException("Só categorias de despesa têm orçamento.");
+            throw new BusinessRuleException("Só categorias de despesa têm orçamento.");
         if (request.LimitCents < 0)
-            throw new InvalidOperationException("O limite não pode ser negativo.");
+            throw new BusinessRuleException("O limite não pode ser negativo.");
 
         var budget = await _budgetRepository.GetByCategoryIdAsync(request.UserId, request.CategoryId);
         if (request.LimitCents is null or 0)

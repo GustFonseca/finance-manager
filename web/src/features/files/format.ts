@@ -1,10 +1,8 @@
 import type { IconName } from '@/components/xp';
 
-/** Window/icon ids for the desktop: folder windows aren't routes. */
 export const folderWindowId = (folderId: string) => `folder:${folderId}`;
 export const TRASH_WINDOW_ID = 'trash';
 
-/** Base name for "Nova pasta", numbered like Windows when taken: "Nova pasta (2)". */
 export function nextFolderName(existing: string[], base = 'Nova pasta'): string {
   const taken = new Set(existing.map((name) => name.toLowerCase()));
   if (!taken.has(base.toLowerCase())) return base;
@@ -14,7 +12,6 @@ export function nextFolderName(existing: string[], base = 'Nova pasta'): string 
   }
 }
 
-/** "532 bytes", "12,5 KB", "3,1 MB" — the way Explorer shows sizes. */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} bytes`;
   const units = ['KB', 'MB', 'GB'];
@@ -36,7 +33,6 @@ const ICONS: { pattern: RegExp; icon: IconName; color: string }[] = [
   { pattern: /\.(txt|md|log|json|xml)$/i, icon: 'file-text-o', color: '#455A64' },
 ];
 
-/** Explorer-style icon for a file name. */
 export function fileIcon(name: string): { icon: IconName; color: string } {
   return ICONS.find((entry) => entry.pattern.test(name)) ?? { icon: 'file-o', color: '#607D8B' };
 }

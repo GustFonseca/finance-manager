@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
@@ -19,11 +20,8 @@ public class TrashFolderHandler : IRequestHandler<TrashFolderCommand, bool>
         var folder = await _folderRepository.GetByIdAsync(request.FolderId);
         if (folder == null || folder.UserId != request.UserId || folder.DeletedAt != null) return false;
         if (folder.IsSystem)
-            throw new InvalidOperationException("A pasta padrão não pode ser excluída.");
+            throw new BusinessRuleException("A pasta padrão não pode ser excluída.");
 
-        // Files go to the trash with the folder's timestamp, so restoring the
-        // folder brings back exactly the files that were in it. Marking the
-        // folder first saves everything together, as one history entry.
         var now = DateTime.UtcNow;
         folder.DeletedAt = now;
         var files = (await _fileRepository.GetByFolderIdAsync(folder.Id)).Where(f => f.DeletedAt == null).ToList();

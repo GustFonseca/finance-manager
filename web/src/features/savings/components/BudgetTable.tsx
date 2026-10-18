@@ -10,7 +10,6 @@ type Props = {
   onEdit: (budget: CategoryBudgetDto) => void;
 };
 
-/** Spending per expense category against its limit, average and suggested limit. */
 export function BudgetTable({ budgets, onEdit }: Props) {
   return (
     <View>

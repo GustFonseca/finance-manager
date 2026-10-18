@@ -17,10 +17,6 @@ type Props = {
   onClose: () => void;
 };
 
-/**
- * The two-column XP Start menu: programs on the left, utilities on the right,
- * "Fazer logoff" / "Desligar" in the footer.
- */
 export function StartMenu({ visible, onClose }: Props) {
   const { user, signOut } = useAuth();
   const { open } = useWindowManager();
@@ -29,7 +25,6 @@ export function StartMenu({ visible, onClose }: Props) {
 
   if (!visible) return null;
 
-  // Every item closes the menu first, as in Windows.
   const run = (action: () => void) => () => {
     onClose();
     action();

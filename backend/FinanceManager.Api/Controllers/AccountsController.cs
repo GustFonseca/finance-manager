@@ -22,7 +22,7 @@ public class AccountsController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<AccountDto>>> GetAll()
@@ -49,15 +49,8 @@ public class AccountsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            var deleted = await _mediator.Send(new DeleteAccountCommand(GetUserId(), id));
-            if (!deleted) return NotFound();
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var deleted = await _mediator.Send(new DeleteAccountCommand(GetUserId(), id));
+        if (!deleted) return NotFound();
+        return NoContent();
     }
 }

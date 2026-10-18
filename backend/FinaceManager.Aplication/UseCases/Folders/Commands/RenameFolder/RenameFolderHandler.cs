@@ -1,5 +1,6 @@
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
@@ -23,7 +24,7 @@ public class RenameFolderHandler : IRequestHandler<RenameFolderCommand, FolderDt
         var folder = await _folderRepository.GetByIdAsync(request.FolderId);
         if (folder == null || folder.UserId != request.UserId || folder.DeletedAt != null) return null;
         if (folder.IsSystem)
-            throw new InvalidOperationException("A pasta padrão não pode ser renomeada.");
+            throw new BusinessRuleException("A pasta padrão não pode ser renomeada.");
 
         folder.Name = ItemNames.Validate(request.Name, 100);
         await _folderRepository.UpdateAsync(folder);

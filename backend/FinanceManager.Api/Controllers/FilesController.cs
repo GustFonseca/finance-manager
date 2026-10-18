@@ -21,25 +21,16 @@ public class FilesController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
-    /// <summary>Renames the file and/or moves it to another folder.</summary>
     [HttpPut("{id}")]
     public async Task<ActionResult<StoredFileDto>> Update(Guid id, [FromBody] UpdateFileRequest request)
     {
-        try
-        {
-            var file = await _mediator.Send(new UpdateFileCommand(GetUserId(), id, request.Name, request.FolderId));
-            if (file == null) return NotFound();
-            return Ok(file);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var file = await _mediator.Send(new UpdateFileCommand(GetUserId(), id, request.Name, request.FolderId));
+        if (file == null) return NotFound();
+        return Ok(file);
     }
 
-    /// <summary>Moves the file to the trash.</summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -48,7 +39,6 @@ public class FilesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>A short-lived link to download the file.</summary>
     [HttpGet("{id}/download")]
     public async Task<ActionResult<FileDownloadDto>> Download(Guid id)
     {

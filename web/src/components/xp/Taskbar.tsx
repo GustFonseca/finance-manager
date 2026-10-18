@@ -14,7 +14,6 @@ type Props = {
   onToggleStart: () => void;
 };
 
-/** Start button, one button per open window, and the clock tray. */
 export function Taskbar({ startOpen, onToggleStart }: Props) {
   const wm = useWindowManager();
 

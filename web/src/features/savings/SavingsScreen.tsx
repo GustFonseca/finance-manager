@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, MoneyText, ProgressBar, useDialog } from '@/components/ui';
+import { Card, ErrorState, MoneyText, ProgressBar, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
@@ -18,12 +18,10 @@ import {
 } from './queries';
 import { CategoryBudgetDto } from './types';
 
-/** "Plano de economia": monthly goal, category budgets and the automatic analysis of what to cut. */
 export function SavingsScreen() {
   const { confirm, alert } = useDialog();
-  // Computed once on mount so the query key stays stable across renders.
   const month = useMemo(currentMonth, []);
-  const { data: plan, isFetching, refetch } = useSavingsPlan(month);
+  const { data: plan, error, isFetching, refetch } = useSavingsPlan(month);
   const setGoal = useSetSavingsGoal();
   const setBudget = useSetBudget();
   const applySuggested = useApplySuggestedBudgets();
@@ -82,7 +80,9 @@ export function SavingsScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}>
-          {plan ? (
+          {error ? (
+            <ErrorState error={error} fallback="Não foi possível carregar o plano" onRetry={refetch} />
+          ) : plan ? (
             <>
               <Card title="Meta do mês">
                 {goal > 0 ? (
@@ -103,7 +103,11 @@ export function SavingsScreen() {
                 <View style={styles.figures}>
                   <Figure label="Receitas no mês" cents={plan.monthIncomeCents} tone="income" />
                   <Figure label="Despesas no mês" cents={plan.monthExpenseCents} tone="expense" />
-                  <Figure label="Média economizada (3 meses)" cents={plan.averageSavedCents} tone="auto" />
+                  <Figure
+                    label={`Média economizada (${plan.historyMonths} ${plan.historyMonths === 1 ? 'mês' : 'meses'})`}
+                    cents={plan.averageSavedCents}
+                    tone="auto"
+                  />
                 </View>
               </Card>
 

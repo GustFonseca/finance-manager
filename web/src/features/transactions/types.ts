@@ -12,7 +12,6 @@ export type TransactionDto = {
   date: string;
   recurrence: string;
   merchantId: string | null;
-  /** Who the money went to or came from; empty when unknown. */
   merchantName: string;
 };
 
@@ -26,7 +25,11 @@ export type CreateTransactionRequest = {
   recurrence?: string;
 };
 
+export type ImportTransactionsRequest = {
+  accountId: string;
+  lines: { date: string; description: string; amountCents: number; type: TransactionType; categoryId: string }[];
+};
+
 export type DateRange = { start?: string; end?: string };
 
-/** A period, optionally narrowed to one account or merchant. */
 export type PeriodFilter = DateRange & { accountId?: string; merchantId?: string };

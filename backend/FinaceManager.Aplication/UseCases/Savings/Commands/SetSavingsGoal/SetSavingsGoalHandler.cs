@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -16,7 +17,7 @@ public class SetSavingsGoalHandler : IRequestHandler<SetSavingsGoalCommand, long
     public async Task<long> Handle(SetSavingsGoalCommand request, CancellationToken cancellationToken = default)
     {
         if (request.MonthlyGoalCents < 0)
-            throw new InvalidOperationException("A meta não pode ser negativa.");
+            throw new BusinessRuleException("A meta não pode ser negativa.");
 
         var plan = await _planRepository.GetByUserIdAsync(request.UserId);
         if (plan == null)

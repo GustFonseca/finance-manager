@@ -4,7 +4,6 @@ import { colors, fontSize, spacing } from '@/theme';
 
 export type LegendItem = { label: string; color: string; value?: string };
 
-/** Swatch + label (+ value) per series. Text stays in text colors; the swatch carries identity. */
 export function ChartLegend({ items }: { items: LegendItem[] }) {
   return (
     <View style={styles.row}>

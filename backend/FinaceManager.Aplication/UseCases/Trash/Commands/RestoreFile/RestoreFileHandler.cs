@@ -19,7 +19,6 @@ public class RestoreFileHandler : IRequestHandler<RestoreFileCommand, bool>
         var file = await _fileRepository.GetByIdAsync(request.FileId);
         if (file == null || file.UserId != request.UserId || file.DeletedAt == null) return false;
 
-        // A file trashed together with its folder comes back by restoring the folder.
         var folder = await _folderRepository.GetByIdAsync(file.FolderId);
         if (folder == null || folder.DeletedAt != null) return false;
 

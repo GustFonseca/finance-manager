@@ -1,4 +1,6 @@
 ﻿using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FinanceManager.Infrastructure.Messaging;
@@ -17,21 +19,38 @@ public class Mediator : IMediator
         var handlerType = typeof(IRequestHandler<,>).MakeGenericType(request.GetType(), typeof(TResponse));
         var handler = _serviceProvider.GetRequiredService(handlerType);
 
-        var method = handlerType.GetMethod("Handle") 
+        var method = handlerType.GetMethod("Handle")
             ?? throw new InvalidOperationException($"Handler for {request.GetType().Name} does not have a Handle method");
 
-        return (Task<TResponse>)method.Invoke(handler, [request, cancellationToken])!;
+        return InTransactionIfCommand(request, () => (Task<TResponse>)method.Invoke(handler, [request, cancellationToken])!, cancellationToken);
     }
 
-    public Task Send(IRequest request, CancellationToken cancellationToken = default)
+    public async Task Send(IRequest request, CancellationToken cancellationToken = default)
     {
         var handlerType = typeof(IRequestHandler<>).MakeGenericType(request.GetType());
         var handler = _serviceProvider.GetRequiredService(handlerType);
 
-        var method = handlerType.GetMethod("Handle") 
+        var method = handlerType.GetMethod("Handle")
             ?? throw new InvalidOperationException($"Handler for {request.GetType().Name} does not have a Handle method");
 
-        return (Task)method.Invoke(handler, [request, cancellationToken])!;
+        await InTransactionIfCommand(request, async () =>
+        {
+            await (Task)method.Invoke(handler, [request, cancellationToken])!;
+            return true;
+        }, cancellationToken);
+    }
+
+    private async Task<T> InTransactionIfCommand<T>(object request, Func<Task<T>> handle, CancellationToken cancellationToken)
+    {
+        var isCommand = request.GetType().GetInterfaces()
+            .Any(i => i == typeof(ICommand) || (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommand<>)));
+        var db = _serviceProvider.GetRequiredService<AppDbContext>();
+        if (!isCommand || !db.Database.IsRelational() || db.Database.CurrentTransaction != null)
+            return await handle();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var result = await handle();
+        await transaction.CommitAsync(cancellationToken);
+        return result;
     }
 }
-

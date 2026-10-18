@@ -1,4 +1,5 @@
 using FinanceManager.Domain.Entities;
+using FinanceManager.Infrastructure.Classification;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceManager.Infrastructure.Context;
@@ -18,10 +19,10 @@ public class AppDbContext : DbContext
     public DbSet<SavingsPlan> SavingsPlans => Set<SavingsPlan>();
     public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
     public DbSet<Merchant> Merchants => Set<Merchant>();
+    public DbSet<ClassificationRule> ClassificationRules => Set<ClassificationRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // User
         modelBuilder.Entity<User>(e =>
         {
             e.HasKey(u => u.Id);
@@ -29,7 +30,6 @@ public class AppDbContext : DbContext
             e.HasIndex(u => u.Email).IsUnique();
         });
 
-        // Account
         modelBuilder.Entity<Account>(e =>
         {
             e.HasKey(a => a.Id);
@@ -37,7 +37,6 @@ public class AppDbContext : DbContext
             e.HasOne(a => a.User).WithMany(u => u.Accounts).HasForeignKey(a => a.UserId);
         });
 
-        // Category
         modelBuilder.Entity<Category>(e =>
         {
             e.HasKey(c => c.Id);
@@ -46,26 +45,33 @@ public class AppDbContext : DbContext
             e.HasOne(c => c.User).WithMany(u => u.Categories).HasForeignKey(c => c.UserId);
         });
 
-        // Transaction
         modelBuilder.Entity<Transaction>(e =>
         {
             e.HasKey(t => t.Id);
-            e.HasIndex(t => t.UserId);
-            e.HasIndex(t => t.Date);
+            e.HasIndex(t => new { t.UserId, t.Date });
             e.Property(t => t.Type).HasConversion<string>();
             e.Property(t => t.Recurrence).HasConversion<string>();
             e.HasOne(t => t.User).WithMany(u => u.Transactions).HasForeignKey(t => t.UserId);
-            e.HasOne(t => t.Account).WithMany(a => a.Transactions).HasForeignKey(t => t.AccountId);
-            e.HasOne(t => t.Category).WithMany(c => c.Transactions).HasForeignKey(t => t.CategoryId);
+            e.HasOne(t => t.Account).WithMany(a => a.Transactions).HasForeignKey(t => t.AccountId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(t => t.Category).WithMany(c => c.Transactions).HasForeignKey(t => t.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(t => t.MerchantId);
             e.HasOne(t => t.Merchant).WithMany(m => m.Transactions).HasForeignKey(t => t.MerchantId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        // Merchant
+        modelBuilder.Entity<ClassificationRule>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.HasIndex(r => new { r.Type, r.Priority });
+            e.Property(r => r.Type).HasConversion<string>().HasMaxLength(30);
+            e.Property(r => r.Pattern).HasMaxLength(2000);
+            e.Property(r => r.Value).HasMaxLength(100);
+            e.Property(r => r.Note).HasMaxLength(300);
+            e.HasData(DefaultClassificationRules.All);
+        });
+
         modelBuilder.Entity<Merchant>(e =>
         {
             e.HasKey(m => m.Id);
-            // Descriptions are matched to a merchant by its key, per user.
             e.HasIndex(m => new { m.UserId, m.Key }).IsUnique();
             e.Property(m => m.Name).HasMaxLength(100);
             e.Property(m => m.Key).HasMaxLength(100);
@@ -75,7 +81,6 @@ public class AppDbContext : DbContext
             e.HasOne(m => m.Category).WithMany().HasForeignKey(m => m.CategoryId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        // Goal
         modelBuilder.Entity<Goal>(e =>
         {
             e.HasKey(g => g.Id);
@@ -84,7 +89,6 @@ public class AppDbContext : DbContext
             e.HasOne(g => g.User).WithMany(u => u.Goals).HasForeignKey(g => g.UserId);
         });
 
-        // Folder
         modelBuilder.Entity<Folder>(e =>
         {
             e.HasKey(f => f.Id);
@@ -93,7 +97,6 @@ public class AppDbContext : DbContext
             e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
         });
 
-        // StoredFile
         modelBuilder.Entity<StoredFile>(e =>
         {
             e.ToTable("Files");
@@ -107,11 +110,9 @@ public class AppDbContext : DbContext
             e.HasOne(f => f.Folder).WithMany(d => d.Files).HasForeignKey(f => f.FolderId);
         });
 
-        // ActivityLog
         modelBuilder.Entity<ActivityLog>(e =>
         {
             e.HasKey(a => a.Id);
-            // The event viewer always reads one user's entries, newest first.
             e.HasIndex(a => new { a.UserId, a.CreatedAt });
             e.Property(a => a.Type).HasConversion<string>().HasMaxLength(20);
             e.Property(a => a.Source).HasMaxLength(50);
@@ -119,7 +120,6 @@ public class AppDbContext : DbContext
             e.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
         });
 
-        // SavingsPlan
         modelBuilder.Entity<SavingsPlan>(e =>
         {
             e.HasKey(p => p.Id);
@@ -127,7 +127,6 @@ public class AppDbContext : DbContext
             e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId);
         });
 
-        // CategoryBudget
         modelBuilder.Entity<CategoryBudget>(e =>
         {
             e.HasKey(b => b.Id);

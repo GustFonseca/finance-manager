@@ -12,11 +12,9 @@ const KINDS: Record<RecurringKind, { label: string; icon: 'play-circle' | 'repea
 
 type Props = {
   items: RecurringExpenseDto[];
-  /** Shows which account each charge comes from (when viewing all accounts). */
   showAccount: boolean;
 };
 
-/** "Custos fixos e assinaturas": what leaves the account every month. */
 export function RecurringExpenses({ items, showAccount }: Props) {
   const total = items.reduce((sum, item) => sum + item.monthlyCents, 0);
 
@@ -65,7 +63,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xs + 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   info: { flex: 1, minWidth: 0 },
   name: { fontSize: fontSize.md, color: colors.textPrimary },

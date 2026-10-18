@@ -6,10 +6,6 @@ function fingerprint(day: string, type: string, amountCents: number, description
   return [day, type, amountCents, normalizeText(description)].join('|');
 }
 
-/**
- * Keys of the rows that already exist in the app (same day, direction,
- * amount and description), so importing the same file twice is harmless.
- */
 export function findDuplicates(rows: ImportRow[], existing: TransactionDto[]): Set<string> {
   const known = new Set(
     existing.map((t) => fingerprint(isoToDay(t.date), t.type, t.amountCents, t.description))

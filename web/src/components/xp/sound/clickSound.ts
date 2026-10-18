@@ -1,12 +1,5 @@
-/**
- * Synthesized UI sounds (Web Audio API). Generating them keeps the bundle
- * small and avoids shipping Microsoft's copyrighted .wav files, while still
- * sounding like XP's short "tk" navigation click.
- */
-
 let context: AudioContext | null = null;
 
-/** Created lazily: browsers only allow audio after a user gesture anyway. */
 function getContext(): AudioContext | null {
   if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
   context ??= new AudioContext();
@@ -14,7 +7,6 @@ function getContext(): AudioContext | null {
   return context;
 }
 
-/** Plays the click at `level` (0–1, already curved for loudness). */
 export function playClick(level: number) {
   const ctx = getContext();
   if (!ctx || level <= 0) return;
@@ -24,7 +16,6 @@ export function playClick(level: number) {
   output.gain.value = level;
   output.connect(ctx.destination);
 
-  // Body: a short, falling tone.
   const tone = ctx.createOscillator();
   const toneGain = ctx.createGain();
   tone.type = 'triangle';
@@ -36,7 +27,6 @@ export function playClick(level: number) {
   tone.start(now);
   tone.stop(now + 0.05);
 
-  // Attack: a burst of band-passed noise for the "tick".
   const length = Math.floor(ctx.sampleRate * 0.02);
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
   const samples = buffer.getChannelData(0);

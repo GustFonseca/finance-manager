@@ -1,5 +1,3 @@
-// Web-only persistent storage backed by localStorage.
-
 export async function getItem(key: string): Promise<string | null> {
   return localStorage.getItem(key);
 }

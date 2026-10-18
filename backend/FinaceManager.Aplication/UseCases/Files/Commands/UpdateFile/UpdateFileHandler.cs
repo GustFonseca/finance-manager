@@ -1,5 +1,6 @@
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Folders;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -28,7 +29,7 @@ public class UpdateFileHandler : IRequestHandler<UpdateFileCommand, StoredFileDt
         {
             var target = await _folderRepository.GetByIdAsync(folderId);
             if (target == null || target.UserId != request.UserId || target.DeletedAt != null)
-                throw new InvalidOperationException("Pasta de destino não encontrada.");
+                throw new BusinessRuleException("Pasta de destino não encontrada.");
             file.FolderId = target.Id;
         }
 

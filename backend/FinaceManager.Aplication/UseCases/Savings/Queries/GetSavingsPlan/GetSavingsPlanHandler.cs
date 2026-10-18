@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.Analysis;
+using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -7,6 +8,7 @@ namespace FinanceManager.Aplication.UseCases.Savings.Queries.GetSavingsPlan;
 
 public class GetSavingsPlanHandler : IRequestHandler<GetSavingsPlanQuery, SavingsPlanDto>
 {
+    private readonly IClassificationRulesProvider _rulesProvider;
     private readonly ITransactionRepository _transactionRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICategoryBudgetRepository _budgetRepository;
@@ -16,8 +18,10 @@ public class GetSavingsPlanHandler : IRequestHandler<GetSavingsPlanQuery, Saving
         ITransactionRepository transactionRepository,
         ICategoryRepository categoryRepository,
         ICategoryBudgetRepository budgetRepository,
-        ISavingsPlanRepository planRepository)
+        ISavingsPlanRepository planRepository,
+        IClassificationRulesProvider rulesProvider)
     {
+        _rulesProvider = rulesProvider;
         _transactionRepository = transactionRepository;
         _categoryRepository = categoryRepository;
         _budgetRepository = budgetRepository;
@@ -28,7 +32,8 @@ public class GetSavingsPlanHandler : IRequestHandler<GetSavingsPlanQuery, Saving
     {
         var input = await SavingsAnalysisLoader.LoadAsync(
             request.UserId, request.MonthStart, request.Now,
-            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository);
+            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository,
+            await _rulesProvider.GetAsync(cancellationToken));
         return SavingsAnalyzer.Analyze(input);
     }
 }

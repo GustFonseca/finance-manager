@@ -15,8 +15,22 @@ public class TransactionDto
     public DateTime Date { get; set; }
     public Recurrence Recurrence { get; set; }
     public Guid? MerchantId { get; set; }
-    /// <summary>Who the money went to or came from; empty when unknown.</summary>
     public string MerchantName { get; set; } = string.Empty;
+}
+
+public class ImportTransactionsRequest
+{
+    public Guid AccountId { get; set; }
+    public List<ImportTransactionLine> Lines { get; set; } = [];
+}
+
+public class ImportTransactionLine
+{
+    public DateTime Date { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public long AmountCents { get; set; }
+    public TransactionType Type { get; set; }
+    public Guid CategoryId { get; set; }
 }
 
 public class CreateTransactionRequest

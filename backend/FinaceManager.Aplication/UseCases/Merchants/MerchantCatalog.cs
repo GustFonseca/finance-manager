@@ -1,25 +1,22 @@
 using FinanceManager.Aplication.Analysis;
+using FinanceManager.Aplication.Classification;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Merchants;
 
-/// <summary>Files transactions under their merchant; shared by transaction creation and the catalog backfill.</summary>
 public static class MerchantCatalog
 {
-    /// <summary>
-    /// The merchant named in the description, created on first sight; null when
-    /// it names nobody. <paramref name="cache"/> spares lookups within a batch.
-    /// </summary>
     public static async Task<Merchant?> ResolveAsync(
         IMerchantRepository repository,
+        ClassificationRules rules,
         Guid userId,
         string description,
         string? ownerName,
         Dictionary<string, Merchant>? cache = null)
     {
-        var parsed = MerchantParser.Parse(description, ownerName);
+        var parsed = MerchantParser.Parse(description, rules, ownerName);
         if (parsed == null) return null;
         if (cache != null && cache.TryGetValue(parsed.Key, out var known)) return known;
 
@@ -36,12 +33,8 @@ public static class MerchantCatalog
         return merchant;
     }
 
-    /// <summary>
-    /// Whether choosing <paramref name="category"/> should become the merchant's
-    /// suggestion. "Outros" means "not sorted yet", and own money has no category to learn.
-    /// </summary>
-    public static bool ShouldLearn(Merchant merchant, Category category) =>
+    public static bool ShouldLearn(Merchant merchant, Category category, ClassificationRules rules) =>
         merchant.Kind != MerchantKind.OWN
         && merchant.CategoryId != category.Id
-        && MoneyText.Key(category.Name) != "outros";
+        && !rules.IsCatchAll(category.Name);
 }

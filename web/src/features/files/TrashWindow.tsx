@@ -15,13 +15,11 @@ type TrashItem = {
   name: string;
   icon: IconName;
   iconColor: string;
-  /** Where it was before being deleted. */
   origin: string;
   size: string;
   deletedAt: string | null;
 };
 
-/** The Lixeira window: restore items or delete them for good. */
 export function TrashWindow() {
   const { confirm, alert } = useDialog();
   const contextMenu = useContextMenu();

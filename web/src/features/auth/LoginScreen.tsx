@@ -4,7 +4,6 @@ import { WindowsLogo } from '@/components/xp';
 import { fonts, PressState, spacing, webStyle } from '@/theme';
 import { useAuth } from './AuthContext';
 
-/** The XP "Welcome" screen: click your user tile to sign in. */
 export function LoginScreen() {
   const { signInWithGoogle } = useAuth();
 
@@ -50,7 +49,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#00309C',
     ...webStyle({ boxShadow: '0 2px 0 #E1802E, 0 3px 0 #FFFFFF' }),
   },
-  // Wraps to a column on narrow screens via CSS, so the static HTML matches.
   middle: {
     flex: 1,
     flexDirection: 'row',
@@ -74,7 +72,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   hint: { color: '#FFFFFF', fontSize: 15, textAlign: 'right' },
-  // The XP divider line; a left border keeps working when the row wraps.
   users: {
     flexGrow: 1,
     flexBasis: 280,

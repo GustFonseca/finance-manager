@@ -18,11 +18,6 @@ import { FolderDto } from './types';
 const FOLDER_COLOR = '#E8B24A';
 const TRASH_COLOR = '#455A64';
 
-/**
- * Everything the files feature puts on the desktop: one icon per folder, the
- * Lixeira, "Nova pasta" in the desktop's right-click menu, and the open
- * folder / Lixeira windows.
- */
 export function FileDesktop() {
   const wm = useWindowManager();
   const desktop = useDesktop();
@@ -44,7 +39,6 @@ export function FileDesktop() {
     }
   }
 
-  // Like XP, "Nova pasta" appears where you right-clicked, ready to be renamed.
   useDesktopMenu((point) => [
     {
       label: 'Nova pasta',
@@ -58,7 +52,6 @@ export function FileDesktop() {
     },
   ]);
 
-  // A folder sent to the trash (here or elsewhere) closes its window.
   useEffect(() => {
     if (!foldersLoaded) return;
     const ids = new Set(folders.map((folder) => folderWindowId(folder.id)));
@@ -96,7 +89,6 @@ export function FileDesktop() {
           <DesktopIcon
             key={id}
             id={id}
-            // Folders line up after the program shortcuts.
             slot={PROGRAMS.length + index}
             label={folder.name}
             icon="folder"

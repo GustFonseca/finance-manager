@@ -24,7 +24,6 @@ export function useMerchantHistory(id: string | null, range: DateRange) {
   });
 }
 
-/** Renaming or recategorizing a merchant changes how every analysis groups the money. */
 export function useUpdateMerchant() {
   const qc = useQueryClient();
   return useMutation({

@@ -5,7 +5,6 @@ import { colors, fontSize, spacing } from '@/theme';
 import { classInfo } from '../classes';
 import { ReducibleExpenseDto } from '../types';
 
-/** "Onde dá para reduzir": habits ranked by what cutting them would save each month. */
 export function ReducibleList({ items }: { items: ReducibleExpenseDto[] }) {
   if (items.length === 0) {
     return (
@@ -43,7 +42,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   swatch: { width: 10, height: 10, borderRadius: 2, marginTop: 4 },
   info: { flex: 1 },

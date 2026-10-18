@@ -6,7 +6,6 @@ export const foldersApi = {
   create: (name: string) => http.post<FolderDto>('/folders', { name }).then((r) => r.data),
   rename: (id: string, name: string) =>
     http.put<FolderDto>(`/folders/${id}`, { name }).then((r) => r.data),
-  /** Moves the folder and its files to the trash. */
   trash: (id: string) => http.delete(`/folders/${id}`).then(() => undefined),
   getFiles: (id: string) => http.get<StoredFileDto[]>(`/folders/${id}/files`).then((r) => r.data),
   upload: (id: string, files: File[]) => {
@@ -23,9 +22,7 @@ export const foldersApi = {
 export const filesApi = {
   update: (id: string, input: UpdateFileInput) =>
     http.put<StoredFileDto>(`/files/${id}`, input).then((r) => r.data),
-  /** Moves the file to the trash. */
   trash: (id: string) => http.delete(`/files/${id}`).then(() => undefined),
-  /** A short-lived link that downloads the file. */
   downloadUrl: (id: string) =>
     http.get<{ url: string }>(`/files/${id}/download`).then((r) => r.data.url),
 };

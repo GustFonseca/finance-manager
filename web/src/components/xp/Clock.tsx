@@ -6,10 +6,6 @@ function formatTime(date: Date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-/**
- * Notification-area clock (HH:mm), refreshed every few seconds. Starts empty
- * so the statically rendered HTML (built at deploy time) hydrates cleanly.
- */
 export function Clock() {
   const [now, setNow] = useState<Date | null>(null);
 

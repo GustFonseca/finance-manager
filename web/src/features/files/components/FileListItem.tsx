@@ -10,16 +10,13 @@ type Props = {
   icon: IconName;
   iconColor: string;
   name: string;
-  /** Second line, e.g. "Local original: Documentos". */
   detail?: string;
-  /** Right-aligned columns, e.g. size and date. */
   columns: string[];
   selected: boolean;
   onPress: () => void;
   onRightClick: (point: Point) => void;
 };
 
-/** One row of an Explorer "details" list (folder contents, Lixeira). */
 export function FileListItem({ icon, iconColor, name, detail, columns, selected, onPress, onRightClick }: Props) {
   return (
     <ListItem onPress={onPress} onRightClick={onRightClick} selected={selected}>

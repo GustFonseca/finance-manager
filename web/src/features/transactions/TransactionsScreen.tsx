@@ -54,14 +54,10 @@ export function TransactionsScreen() {
   }
 
   async function handleDeleteAll() {
-    if (transactions.length === 0) {
-      alert({ title: 'Apagar todas as transações', message: 'Não há transações para apagar.' });
-      return;
-    }
     const ok = await confirm({
       title: 'Confirmar exclusão de todas as transações',
       message:
-        `Tem certeza de que deseja apagar permanentemente as ${transactions.length} transações? ` +
+        'Tem certeza de que deseja apagar permanentemente todas as suas transações, de todas as contas e estabelecimentos? ' +
         'Os saldos das contas voltam a zero. Contas, categorias e extratos salvos não são apagados.',
       confirmLabel: 'Sim',
       cancelLabel: 'Não',

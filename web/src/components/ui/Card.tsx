@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, ViewProps } from 'react-native';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
 type Props = ViewProps & {
-  /** Renders the card as an XP group box with this caption on its border. */
   title?: string;
 };
 
@@ -34,7 +33,6 @@ const styles = StyleSheet.create({
     top: -8,
     left: spacing.sm,
     paddingHorizontal: spacing.xs,
-    // Group boxes sit on the white window content area.
     backgroundColor: colors.surface,
     color: '#0046D5',
     fontSize: fontSize.sm,

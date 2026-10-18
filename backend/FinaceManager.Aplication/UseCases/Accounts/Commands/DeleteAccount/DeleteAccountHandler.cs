@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
@@ -19,9 +20,8 @@ public class DeleteAccountHandler : IRequestHandler<DeleteAccountCommand, bool>
         var account = await _accountRepository.GetByIdAsync(request.AccountId);
         if (account == null || account.UserId != request.UserId) return false;
 
-        var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, null, null);
-        if (transactions.Any(t => t.AccountId == request.AccountId))
-            throw new InvalidOperationException("Cannot delete account with existing transactions");
+        if (await _transactionRepository.ExistsForAccountAsync(request.AccountId))
+            throw new BusinessRuleException("Não é possível excluir uma conta que tem transações. Apague as transações dela antes.");
 
         await _accountRepository.DeleteAsync(account);
         return true;

@@ -3,7 +3,6 @@ export type SpendingClass = 'ESSENTIAL' | 'VARIABLE' | 'SUPERFLUOUS';
 export type SpendingClassTotalDto = {
   class: SpendingClass;
   cents: number;
-  /** Share of the month's spending, 0 to 1. */
   share: number;
 };
 
@@ -14,7 +13,6 @@ export type CategorySpendingDto = {
   cents: number;
   share: number;
   averageCents: number;
-  /** The class most of this category's money went to. */
   class: SpendingClass;
 };
 
@@ -42,11 +40,9 @@ export type ReducibleExpenseDto = {
 
 export type SpendingAnalysisDto = {
   monthExpenseCents: number;
-  /** Average over the previous three months. */
   averageExpenseCents: number;
   byClass: SpendingClassTotalDto[];
   byCategory: CategorySpendingDto[];
-  /** Oldest first, ending with the current month. */
   months: MonthSpendingDto[];
   topMerchants: MerchantSpendingDto[];
   reducible: ReducibleExpenseDto[];

@@ -1,5 +1,6 @@
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -20,9 +21,9 @@ public class CompleteGoalHandler : IRequestHandler<CompleteGoalCommand, GoalDto>
     public async Task<GoalDto> Handle(CompleteGoalCommand request, CancellationToken cancellationToken = default)
     {
         var goal = await _goalRepository.GetByIdAsync(request.GoalId)
-            ?? throw new InvalidOperationException("Goal not found");
+            ?? throw new NotFoundException("Meta não encontrada.");
         if (goal.UserId != request.UserId)
-            throw new InvalidOperationException("Goal not found");
+            throw new NotFoundException("Meta não encontrada.");
 
         goal.Status = GoalStatus.COMPLETED;
         await _goalRepository.UpdateAsync(goal);

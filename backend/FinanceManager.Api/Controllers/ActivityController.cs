@@ -19,9 +19,8 @@ public class ActivityController : ControllerBase
         _mediator = mediator;
     }
 
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid GetUserId() => User.GetUserId();
 
-    /// <summary>The user's history, newest first; pass the oldest <c>createdAt</c> as <paramref name="before"/> for the next page.</summary>
     [HttpGet]
     public async Task<ActionResult<List<ActivityLogDto>>> Get([FromQuery] DateTime? before, [FromQuery] int limit = 50)
     {

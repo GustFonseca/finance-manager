@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -18,14 +19,13 @@ public class DeleteTransactionHandler : IRequestHandler<DeleteTransactionCommand
     public async Task Handle(DeleteTransactionCommand request, CancellationToken cancellationToken)
     {
         var transaction = await _transactionRepository.GetByIdAsync(request.TransactionId)
-            ?? throw new InvalidOperationException("Transaction not found");
+            ?? throw new NotFoundException("Transação não encontrada.");
         if (transaction.UserId != request.UserId)
-            throw new InvalidOperationException("Transaction not found");
+            throw new NotFoundException("Transação não encontrada.");
 
         var account = await _accountRepository.GetByIdAsync(transaction.AccountId)
-            ?? throw new InvalidOperationException("Account not found");
+            ?? throw new NotFoundException("Conta não encontrada.");
 
-        // Revert balance
         if (transaction.Type == TransactionType.INCOME)
             account.SubtractBalance(transaction.AmountCents);
         else

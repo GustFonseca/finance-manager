@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.UseCases.Files.Commands.UpdateFile;
 using FinanceManager.Aplication.UseCases.Files.Commands.UploadFile;
 using FinanceManager.Aplication.UseCases.Files.Queries.GetFileDownloadUrl;
@@ -42,7 +43,7 @@ public class FileHandlersTests
     {
         var handler = new CreateFolderHandler(_store.FolderRepository, _store.Mapper);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new CreateFolderCommand(Me, name)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new CreateFolderCommand(Me, name)));
     }
 
     [Fact]
@@ -50,10 +51,10 @@ public class FileHandlersTests
     {
         var system = _store.AddFolder(Me, Folder.ImportsFolderName, isSystem: true);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
             new RenameFolderHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper)
                 .Handle(new RenameFolderCommand(Me, system.Id, "Outro nome")));
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
             new TrashFolderHandler(_store.FolderRepository, _store.FileRepository)
                 .Handle(new TrashFolderCommand(Me, system.Id)));
     }
@@ -81,7 +82,7 @@ public class FileHandlersTests
         var theirs = _store.AddFolder(SomeoneElse);
         var handler = new UpdateFileHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
             handler.Handle(new UpdateFileCommand(Me, mine.Id, null, theirs.Id)));
         Assert.NotEqual(theirs.Id, mine.FolderId);
     }
@@ -107,7 +108,7 @@ public class FileHandlersTests
         var folder = _store.AddFolder(Me);
         var handler = new UploadFileHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Mapper);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new UploadFileCommand(
+        await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new UploadFileCommand(
             Me, folder.Id, "grande.zip", "application/zip", UploadFileHandler.MaxSizeBytes + 1, Stream.Null)));
         Assert.Empty(_store.StoredKeys);
     }

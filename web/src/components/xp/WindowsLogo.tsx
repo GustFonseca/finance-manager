@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { webStyle } from '@/theme';
 
-/** The four-color waving flag, drawn with plain views. */
 export function WindowsLogo({ size = 18 }: { size?: number }) {
   const pane = size / 2 - 1;
   return (

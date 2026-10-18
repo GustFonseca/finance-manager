@@ -17,13 +17,11 @@ const KINDS: Record<
   ORGANIZE: { icon: 'tags', color: '#EF6C00' },
 };
 
-/** The automatic analysis: what is off track and what could be cut, with the monthly savings. */
 export function SuggestionList({
   suggestions,
   historyMonths,
 }: {
   suggestions: SavingsSuggestionDto[];
-  /** Previous months with transactions; without any, there is nothing to compare with. */
   historyMonths: number;
 }) {
   if (suggestions.length === 0) {
@@ -41,7 +39,6 @@ export function SuggestionList({
     <View>
       {suggestions.map((suggestion) => {
         const kind = KINDS[suggestion.kind];
-        // Goal gaps aren't savings in themselves, so only cuts show "por mês".
         const showSavings = suggestion.potentialCents > 0 && suggestion.kind !== 'GOAL';
         return (
           <View key={suggestion.title} style={styles.row}>
@@ -68,7 +65,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   icon: { width: 18, textAlign: 'center', marginTop: 1 },
   info: { flex: 1 },

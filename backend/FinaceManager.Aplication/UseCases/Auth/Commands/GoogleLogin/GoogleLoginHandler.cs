@@ -54,7 +54,6 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
             await SeedUserData(user.Id);
         }
 
-        // Signing in changes no data, so it's the one entry written explicitly.
         await _activityLogRepository.CreateAsync(new ActivityLog
         {
             UserId = user.Id,
@@ -81,7 +80,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name)
+            new Claim(ClaimTypes.Name, string.IsNullOrEmpty(user.Name) ? user.Email : user.Name)
         };
 
         var token = new JwtSecurityToken(

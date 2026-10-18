@@ -1,10 +1,13 @@
 using AutoMapper;
 using FinanceManager.Aplication.Analysis;
+using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.CatalogTransactions;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.ResolveMerchants;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.ImportTransactions;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Infrastructure.Auditing;
@@ -14,7 +17,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FinanceManager.Tests.Merchants;
 
-/// <summary>Filing transactions under merchants, through the real repositories.</summary>
 public class MerchantCatalogTests
 {
     private readonly AppDbContext _db = new(new DbContextOptionsBuilder<AppDbContext>()
@@ -42,7 +44,7 @@ public class MerchantCatalogTests
     }
 
     private Task Create(string description, Category category, long cents = 4590) =>
-        new CreateTransactionHandler(Transactions, new AccountRepository(_db), new CategoryRepository(_db), Merchants, new UserRepository(_db), _mapper)
+        new CreateTransactionHandler(Transactions, new AccountRepository(_db), new CategoryRepository(_db), Merchants, new UserRepository(_db), _mapper, TestRules.Provider)
             .Handle(new CreateTransactionCommand(_me.Id, _account.Id, category.Id, TransactionType.EXPENSE, cents, description, DateTime.UtcNow, Recurrence.NONE));
 
     [Fact]
@@ -56,9 +58,8 @@ public class MerchantCatalogTests
         Assert.Equal(_alimentacao.Id, ifood.CategoryId);
         Assert.All(_db.Transactions, t => Assert.Equal(ifood.Id, t.MerchantId));
 
-        // The next import suggests what the user chose.
-        var match = Assert.Single(await new ResolveMerchantsHandler(Merchants, new UserRepository(_db))
-            .Handle(new ResolveMerchantsQuery(_me.Id, ["Ifd*Restaurante Sabor Caseiro"])));
+        var match = Assert.Single(await new ResolveMerchantsHandler(Merchants, new CategoryRepository(_db), new UserRepository(_db), TestRules.Provider)
+            .Handle(new ResolveMerchantsQuery(_me.Id, [new ImportLineRequest { Description = "Ifd*Restaurante Sabor Caseiro", Type = TransactionType.EXPENSE }])));
         Assert.Equal(ifood.Id, match.MerchantId);
         Assert.Equal(_alimentacao.Id, match.CategoryId);
     }
@@ -81,14 +82,13 @@ public class MerchantCatalogTests
             Tx("Resgate RDB", _outros));
         _db.SaveChanges();
 
-        var filed = await new CatalogTransactionsHandler(Transactions, Merchants, new UserRepository(_db)).Handle(new CatalogTransactionsCommand());
+        var filed = await new CatalogTransactionsHandler(Transactions, Merchants, new UserRepository(_db), TestRules.Provider).Handle(new CatalogTransactionsCommand());
 
         Assert.Equal(4, filed);
         var ifood = _db.Merchants.Single(m => m.Key == "ifood");
         Assert.Equal(_alimentacao.Id, ifood.CategoryId);
         Assert.Equal(MerchantKind.OWN, _db.Merchants.Single(m => m.Key == "investimentos").Kind);
-        // Nothing left to file: running it again is a no-op.
-        Assert.Equal(0, await new CatalogTransactionsHandler(Transactions, Merchants, new UserRepository(_db)).Handle(new CatalogTransactionsCommand()));
+        Assert.Equal(0, await new CatalogTransactionsHandler(Transactions, Merchants, new UserRepository(_db), TestRules.Provider).Handle(new CatalogTransactionsCommand()));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class MerchantCatalogTests
         await Create("Transferência enviada pelo Pix - TORU - 24.444.401/0001-07 - ITAÚ", _outros);
         var toru = _db.Merchants.Single(m => m.Key == "toru");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
             new UpdateMerchantHandler(Merchants, new CategoryRepository(_db), Transactions, _mapper)
                 .Handle(new UpdateMerchantCommand(_me.Id, toru.Id, "IFOOD", MerchantKind.BUSINESS, null, false)));
     }
@@ -128,7 +128,7 @@ public class MerchantCatalogTests
             Tx("Transferência enviada pelo Pix - IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A. - 14.380.200/0001-21 - ADYEN", _alimentacao, 5000),
             Tx("Transferência enviada pelo Pix - TORU - 24.444.401/0001-07 - ITAÚ", _outros, 2000),
             Tx("Aplicação RDB", _outros, 90000),
-        ]);
+        ], TestRules.Default);
 
         Assert.Equal(10000, report.TotalCents);
         var ifood = report.Merchants[0];
@@ -138,6 +138,40 @@ public class MerchantCatalogTests
         Assert.Equal(4000, ifood.AverageTicketCents);
         Assert.Equal(0.8, ifood.Share, 3);
         Assert.Equal(["iFood", "Toru"], report.Merchants.Select(m => m.Name));
+    }
+
+    private ImportTransactionsHandler Importer() =>
+        new(Transactions, new AccountRepository(_db), new CategoryRepository(_db), Merchants, new UserRepository(_db), TestRules.Provider);
+
+    private ImportTransactionLine Line(string description, long cents, Category category, TransactionType type = TransactionType.EXPENSE) =>
+        new() { Date = DateTime.UtcNow, Description = description, AmountCents = cents, Type = type, CategoryId = category.Id };
+
+    [Fact]
+    public async Task An_import_moves_the_balance_once_and_is_one_history_entry()
+    {
+        var imported = await Importer().Handle(new ImportTransactionsCommand(_me.Id, _account.Id,
+        [
+            Line("Compra no débito via NuPay - iFood", 4000, _alimentacao),
+            Line("Transferência enviada pelo Pix - TORU - 24.444.401/0001-07 - ITAÚ", 6000, _outros),
+        ]));
+
+        Assert.Equal(2, imported);
+        Assert.Equal(-10000, (await new AccountRepository(_db).GetByIdAsync(_account.Id))!.BalanceCents);
+        Assert.Contains(_db.ActivityLogs, a => a.Description == "2 transações importadas de uma vez");
+        Assert.All(_db.Transactions, t => Assert.NotNull(t.MerchantId));
+    }
+
+    [Fact]
+    public async Task An_import_line_under_a_category_of_the_wrong_type_is_refused_with_its_line()
+    {
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => Importer().Handle(new ImportTransactionsCommand(_me.Id, _account.Id,
+        [
+            Line("Compra no débito via NuPay - iFood", 4000, _alimentacao),
+            Line("Transferência recebida - Empresa", 900000, _alimentacao, TransactionType.INCOME),
+        ])));
+
+        Assert.StartsWith("Linha 2", error.Message);
+        Assert.Empty(_db.Transactions);
     }
 
     private Transaction Tx(string description, Category category, long cents = 1000) => new()

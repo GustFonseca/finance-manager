@@ -9,20 +9,16 @@ import type { MenuEntry } from './MenuBar';
 import { PROGRAMS } from './programs';
 import { useWindowManager, WindowIdProvider } from './WindowManager';
 
-/** The Windows XP "Bliss" photo, resized to 1920px for the web. */
 const WALLPAPER = require('../../../assets/images/bliss.jpg');
 
 export type ProgramScreens = Record<string, React.ComponentType>;
 
 type Props = {
-  /** Screen component for each program route; every open one is rendered as a window. */
   screens: ProgramScreens;
-  /** Icons and windows other features put on the desktop (folders, Lixeira…). */
   extras?: React.ReactNode;
   children: React.ReactNode;
 };
 
-/** Wallpaper with the desktop icons, and every open window on top. */
 export function Desktop(props: Props) {
   return (
     <DesktopProvider>
@@ -50,7 +46,6 @@ function DesktopSurface({ screens, extras, children }: Props) {
   return (
     <View
       style={styles.desktop}
-      // Clicking the wallpaper clears the icon selection, as in XP.
       onPointerDown={() => desktop.selectIcon(null)}
       {...onContextMenu(showDesktopMenu)}>
       <Image source={WALLPAPER} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -84,7 +79,6 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-    // Drawn while the wallpaper photo loads.
     ...webStyle({ backgroundImage: gradients.wallpaper, backgroundColor: '#5A9A2E' }),
   },
 });

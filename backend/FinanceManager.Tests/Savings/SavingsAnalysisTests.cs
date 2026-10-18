@@ -9,7 +9,6 @@ public class SavingsAnalysisTests
     private static readonly Guid Me = Guid.NewGuid();
     private static readonly Account Nubank = new(Me, "Nubank");
 
-    // October 2026 in Brasília (UTC-3), halfway through the month.
     private static readonly DateTime MonthStart = new(2026, 10, 1, 3, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime Now = new(2026, 10, 16, 15, 0, 0, DateTimeKind.Utc);
 
@@ -43,14 +42,12 @@ public class SavingsAnalysisTests
 
     private static DateTime Day(int month, int day) => new(2026, month, day, 15, 0, 0, DateTimeKind.Utc);
 
-    // ---- RecurringExpenseDetector ----
-
     [Fact]
     public void A_monthly_streaming_charge_is_detected_as_a_subscription()
     {
         var recurring = RecurringExpenseDetector.Detect(
             [Tx("NETFLIX.COM", 5590, Day(8, 5)), Tx("NETFLIX.COM", 5590, Day(9, 5)), Tx("Netflix.com", 5590, Day(10, 5))],
-            Now);
+            Now, TestRules.Default);
 
         var netflix = Assert.Single(recurring);
         Assert.Equal(RecurringKind.SUBSCRIPTION, netflix.Kind);
@@ -64,7 +61,7 @@ public class SavingsAnalysisTests
     {
         var recurring = RecurringExpenseDetector.Detect(
             [Tx("Pix enviado - Imobiliária", 150000, Day(8, 10)), Tx("Pix enviado - Imobiliaria", 150000, Day(9, 10)), Tx("Pix enviado - Imobiliária", 155000, Day(10, 10))],
-            Now);
+            Now, TestRules.Default);
 
         Assert.Equal(RecurringKind.FIXED, Assert.Single(recurring).Kind);
     }
@@ -74,7 +71,7 @@ public class SavingsAnalysisTests
     {
         var weekly = Enumerable.Range(0, 10).Select(i => Tx("Supermercado", 20000, Day(8, 1).AddDays(i * 7)));
 
-        Assert.Empty(RecurringExpenseDetector.Detect(weekly, Now));
+        Assert.Empty(RecurringExpenseDetector.Detect(weekly, Now, TestRules.Default));
     }
 
     [Fact]
@@ -82,7 +79,7 @@ public class SavingsAnalysisTests
     {
         var recurring = RecurringExpenseDetector.Detect(
             [Tx("Spotify", 2190, Day(6, 20)), Tx("Spotify", 2190, Day(7, 20)), Tx("Spotify", 2190, Day(8, 14))],
-            Now);
+            Now, TestRules.Default);
 
         Assert.Empty(recurring);
     }
@@ -92,19 +89,13 @@ public class SavingsAnalysisTests
     {
         var recurring = RecurringExpenseDetector.Detect(
             [Tx("Anuidade cartão", 120000, Day(9, 1), recurrence: Recurrence.YEARLY)],
-            Now);
+            Now, TestRules.Default);
 
         var annual = Assert.Single(recurring);
         Assert.Equal(10000, annual.MonthlyCents);
         Assert.False(annual.Detected);
     }
 
-    // ---- SavingsAnalyzer ----
-
-    /// <summary>
-    /// July–September: earns R$ 5.000 and spends R$ 3.000 a month (saves R$ 2.000).
-    /// Groceries and outings vary month to month, as they do in real life.
-    /// </summary>
     private static List<Transaction> History() =>
         [.. new[] { (7, 100000, 50000), (8, 85000, 40000), (9, 115000, 60000) }.SelectMany(m => new[]
         {
@@ -123,16 +114,16 @@ public class SavingsAnalysisTests
             goalCents,
             MonthStart,
             Now,
-            RecurringExpenseDetector.Detect([.. History(), .. current], Now));
+            RecurringExpenseDetector.Detect([.. History(), .. current], Now, TestRules.Default),
+            TestRules.Default);
 
     [Fact]
     public void The_plan_says_how_many_previous_months_have_transactions()
     {
         Assert.Equal(3, SavingsAnalyzer.Analyze(Input([], goalCents: 0)).HistoryMonths);
 
-        // Statements imported only for the current month: nothing to compare with.
         var onlyThisMonth = new SavingsAnalysisInput(
-            [Tx("Mercado", 30000, Day(10, 2), Alimentacao)], [Alimentacao], new Dictionary<Guid, long>(), 0, MonthStart, Now, []);
+            [Tx("Mercado", 30000, Day(10, 2), Alimentacao)], [Alimentacao], new Dictionary<Guid, long>(), 0, MonthStart, Now, [], TestRules.Default);
         var plan = SavingsAnalyzer.Analyze(onlyThisMonth);
         Assert.Equal(0, plan.HistoryMonths);
         Assert.DoesNotContain(plan.Suggestions, s => s.Kind == SuggestionKind.CATEGORY);
@@ -145,8 +136,8 @@ public class SavingsAnalysisTests
 
         Assert.Equal(200000, plan.AverageSavedCents);
         var byName = plan.Budgets.ToDictionary(b => b.CategoryName);
-        Assert.Equal(150000, byName["Moradia"].SuggestedLimitCents);      // essential: kept
-        Assert.Equal(70000, byName["Alimentação"].SuggestedLimitCents);   // gap share is 33%, capped at 30%
+        Assert.Equal(150000, byName["Moradia"].SuggestedLimitCents);
+        Assert.Equal(70000, byName["Alimentação"].SuggestedLimitCents);
         Assert.Equal(35000, byName["Lazer"].SuggestedLimitCents);
         var goal = plan.Suggestions[0];
         Assert.Equal(SuggestionKind.GOAL, goal.Kind);
@@ -169,19 +160,16 @@ public class SavingsAnalysisTests
         {
             Tx("Salário", 500000, Day(10, 5), Salario, TransactionType.INCOME),
             Tx("Mercado", 30000, Day(10, 6), Alimentacao),
-            Tx("Show", 40000, Day(10, 10), Lazer),      // R$ 400 halfway → ~R$ 790 by month end vs R$ 500 average
+            Tx("Show", 40000, Day(10, 10), Lazer),
         };
         var plan = SavingsAnalyzer.Analyze(Input(current, goalCents: 0, budgets: new() { [Alimentacao.Id] = 35000 }));
 
         Assert.Equal(500000 - 70000, plan.MonthSavedCents);
         Assert.Contains(plan.Suggestions, s => s.Kind == SuggestionKind.BUDGET && s.Title == "Orçamento de Alimentação quase no limite");
         var trend = Assert.Single(plan.Suggestions, s => s.Title.StartsWith("Lazer está"));
-        // This month's overshoot is a warning, not a monthly saving.
         Assert.Equal(0, trend.PotentialCents);
-        // A superfluous habit is advice at the place; its category isn't cut again on top.
         Assert.Contains(plan.Suggestions, s => s.Kind == SuggestionKind.HABIT && s.Title == "Reduza Cinema pela metade");
         Assert.DoesNotContain(plan.Suggestions, s => s.Title.StartsWith("Reduza Lazer"));
-        // One grocery run a month isn't a habit to shop around for: the category is cut instead.
         Assert.DoesNotContain(plan.Suggestions, s => s.Title == "Economize em Mercado");
         Assert.Contains(plan.Suggestions, s => s.Title == "Reduza Alimentação em 10%");
     }
@@ -199,7 +187,7 @@ public class SavingsAnalysisTests
         }).ToList();
 
         var plan = SavingsAnalyzer.Analyze(new SavingsAnalysisInput(
-            history, [Alimentacao, outros], new Dictionary<Guid, long>(), 0, MonthStart, Now, []));
+            history, [Alimentacao, outros], new Dictionary<Guid, long>(), 0, MonthStart, Now, [], TestRules.Default));
 
         Assert.DoesNotContain(plan.Suggestions, s => s.Title.Contains("Receita Federal"));
         Assert.DoesNotContain(plan.Suggestions, s => s.Title.StartsWith("Reduza Outros"));
@@ -228,9 +216,8 @@ public class SavingsAnalysisTests
         var internet = new[] { 7, 8, 9, 10 }.Select(month => Tx("Vivo Fibra", 11990, Day(month, 15), Lazer)).ToList();
         var input = Input(internet, goalCents: 0) with
         {
-            // Only the internet bill in Lazer, so its history average is exactly the bill.
             Transactions = [.. internet],
-            Recurring = RecurringExpenseDetector.Detect(internet, Now),
+            Recurring = RecurringExpenseDetector.Detect(internet, Now, TestRules.Default),
         };
 
         var plan = SavingsAnalyzer.Analyze(input);
@@ -241,15 +228,15 @@ public class SavingsAnalysisTests
     [Fact]
     public void A_steady_monthly_charge_from_an_unknown_merchant_needs_three_months()
     {
-        Assert.Empty(RecurringExpenseDetector.Detect([Tx("Restaurante", 40000, Day(9, 14)), Tx("Restaurante", 40000, Day(10, 14))], Now));
+        Assert.Empty(RecurringExpenseDetector.Detect([Tx("Restaurante", 40000, Day(9, 14)), Tx("Restaurante", 40000, Day(10, 14))], Now, TestRules.Default));
         Assert.Single(RecurringExpenseDetector.Detect(
-            [Tx("Restaurante", 40000, Day(8, 14)), Tx("Restaurante", 40000, Day(9, 14)), Tx("Restaurante", 41000, Day(10, 14))], Now));
+            [Tx("Restaurante", 40000, Day(8, 14)), Tx("Restaurante", 40000, Day(9, 14)), Tx("Restaurante", 41000, Day(10, 14))], Now, TestRules.Default));
     }
 
     [Fact]
     public void Utility_bills_are_detected_even_when_the_amount_varies()
     {
-        var recurring = RecurringExpenseDetector.Detect([Tx("ENEL Energia", 18000, Day(9, 20)), Tx("ENEL Energia", 23000, Day(10, 14))], Now);
+        var recurring = RecurringExpenseDetector.Detect([Tx("ENEL Energia", 18000, Day(9, 20)), Tx("ENEL Energia", 23000, Day(10, 14))], Now, TestRules.Default);
 
         Assert.Equal(RecurringKind.FIXED, Assert.Single(recurring).Kind);
     }
@@ -262,7 +249,7 @@ public class SavingsAnalysisTests
         var plan = SavingsAnalyzer.Analyze(Input(internet, goalCents: 0) with
         {
             Transactions = [.. internet],
-            Recurring = RecurringExpenseDetector.Detect(internet, Now),
+            Recurring = RecurringExpenseDetector.Detect(internet, Now, TestRules.Default),
         });
 
         Assert.True(plan.Budgets.Single(b => b.CategoryName == "Lazer").SuggestedLimitCents >= 11990);
@@ -287,7 +274,7 @@ public class SavingsAnalysisTests
         var plan = SavingsAnalyzer.Analyze(Input(internet, goalCents: 0, budgets: new() { [Lazer.Id] = 12000 }) with
         {
             Transactions = [.. internet],
-            Recurring = RecurringExpenseDetector.Detect(internet, Now),
+            Recurring = RecurringExpenseDetector.Detect(internet, Now, TestRules.Default),
         });
 
         Assert.DoesNotContain(plan.Suggestions, s => s.Kind == SuggestionKind.BUDGET);

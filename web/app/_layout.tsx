@@ -8,7 +8,6 @@ import { CrashDialog } from '@/components/xp/CrashDialog';
 import { AppProviders } from '@/providers/AppProviders';
 import { useAuth } from '@/features/auth/AuthContext';
 
-/** A crash shows the XP "needs to close" dialog and is reported to the API logs. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return <CrashDialog error={error} retry={retry} />;
 }
@@ -38,7 +37,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  // Only the icon font is needed; it gates first paint, so nothing else is loaded here.
   const [loaded, error] = useFonts(FontAwesome.font);
 
   useEffect(() => {

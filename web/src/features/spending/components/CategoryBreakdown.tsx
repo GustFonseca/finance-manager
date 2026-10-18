@@ -6,12 +6,11 @@ import { colors, fontSize, spacing } from '@/theme';
 import { classInfo, SPENDING_CLASSES } from '../classes';
 import { CategorySpendingDto } from '../types';
 
-/** "Para onde foi o dinheiro": one bar per category, colored by what kind of spending it mostly was. */
 export function CategoryBreakdown({ categories }: { categories: CategorySpendingDto[] }) {
   if (categories.length === 0) {
     return <Text style={styles.empty}>Nenhuma despesa neste mês.</Text>;
   }
-  const max = Math.max(...categories.map((c) => c.cents));
+  const max = Math.max(1, ...categories.map((c) => c.cents));
 
   return (
     <View>
@@ -28,7 +27,6 @@ export function CategoryBreakdown({ categories }: { categories: CategorySpending
             <Text style={styles.value}>
               {formatCents(category.cents)} · {Math.round(category.share * 100)}%
             </Text>
-            {/* A reference, not a % change: the month is still running. */}
             <Text style={styles.average}>
               {category.averageCents > 0 ? `média ${formatCents(category.averageCents)}` : 'sem média'}
             </Text>

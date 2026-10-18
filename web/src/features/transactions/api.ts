@@ -1,5 +1,5 @@
 import { http } from '@/lib/http';
-import { CreateTransactionRequest, PeriodFilter, TransactionDto } from './types';
+import { CreateTransactionRequest, ImportTransactionsRequest, PeriodFilter, TransactionDto } from './types';
 
 export const transactionsApi = {
   getAll: ({ start, end, accountId, merchantId }: PeriodFilter = {}) =>
@@ -8,7 +8,8 @@ export const transactionsApi = {
       .then((r) => r.data),
   create: (data: CreateTransactionRequest) =>
     http.post<TransactionDto>('/transactions', data).then((r) => r.data),
+  importMany: (data: ImportTransactionsRequest) =>
+    http.post<{ imported: number }>('/transactions/import', data).then((r) => r.data.imported),
   remove: (id: string) => http.delete(`/transactions/${id}`).then(() => undefined),
-  /** Deletes every transaction of the user; resolves with how many were deleted. */
   removeAll: () => http.delete<{ deleted: number }>('/transactions').then((r) => r.data.deleted),
 };

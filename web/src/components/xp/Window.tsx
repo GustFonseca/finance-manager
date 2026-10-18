@@ -10,18 +10,14 @@ import { Toolbar, ToolbarButton } from './Toolbar';
 import { Point, useWindowDrag } from './useWindowDrag';
 import { useWindowId, useWindowManager } from './WindowManager';
 
-/** Below this width windows are always maximized (phones, small tablets). */
 const COMPACT_WIDTH = 720;
 const RESTORED_MAX_WIDTH = 860;
 const RESTORED_MAX_HEIGHT = 560;
-/** Offset between windows opened in a row, like XP's cascade. */
 const CASCADE_STEP = 28;
-/** How much of a dragged window must stay on screen so it can be grabbed back. */
 const MIN_VISIBLE = 100;
 const TITLE_BAR_HEIGHT = 28;
 
 export type WindowAction = {
-  /** Menu/toolbar label, e.g. "Nova conta". */
   label: string;
   icon: IconName;
   onPress: () => void;
@@ -30,20 +26,12 @@ export type WindowAction = {
 type Props = {
   title: string;
   icon: IconName;
-  /** Shown in the toolbar and in the "Arquivo" menu. */
   actions?: WindowAction[];
-  /** Adds "Atualizar" to the toolbar and the "Exibir" menu. */
   onRefresh?: () => void;
-  /** Status bar text, e.g. "4 objeto(s)". */
   status?: string;
   children: React.ReactNode;
 };
 
-/**
- * An XP window (a program, a folder…). Its open / minimized / maximized state,
- * position and stacking live in the WindowManager, so the content only
- * describes itself and its actions.
- */
 export function Window({ title, icon, actions = [], onRefresh, status, children }: Props) {
   const wm = useWindowManager();
   const { alert } = useDialog();
@@ -52,13 +40,11 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   const active = wm.activeWindow === id;
   const { setMeta } = wm;
 
-  // The taskbar shows whatever title and icon the window has right now.
   useEffect(() => setMeta(id, { title, icon }), [setMeta, id, title, icon]);
 
   const compact = width < COMPACT_WIDTH;
   const maximized = compact || wm.isMaximized(id);
 
-  // Restored windows have a fixed size and open cascaded from the center.
   const desktopHeight = height - TASKBAR_HEIGHT;
   const size = {
     width: Math.min(RESTORED_MAX_WIDTH, width - spacing.xxl * 2),
@@ -75,7 +61,6 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   };
 
   const drag = useWindowDrag({
-    // Re-clamped every render so a smaller browser window can't strand it off-screen.
     position: clamp(wm.positionOf(id) ?? initial),
     clamp,
     onDragEnd: (point) => wm.setPosition(id, point),
@@ -126,7 +111,6 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
 
   return (
     <View
-      // Any click inside a background window brings it to the front.
       onPointerDown={active ? undefined : () => wm.open(id)}
       {...isolateContextMenu}
       style={[
@@ -172,7 +156,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     ...webStyle({ boxShadow: bevels.window }),
   },
-  // XP fades the whole frame of background windows, not just the title bar.
   inactiveFrame: { backgroundColor: '#7B9CF0' },
   maximized: { top: 0, left: 0, right: 0, bottom: 0 },
   inner: {

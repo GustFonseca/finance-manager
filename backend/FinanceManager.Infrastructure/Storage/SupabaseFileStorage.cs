@@ -5,14 +5,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace FinanceManager.Infrastructure.Storage;
 
-/// <summary>
-/// Supabase Storage through its REST API, authenticated with the project's
-/// secret key (server-side only: it bypasses Row Level Security). The bucket
-/// must be private; users only ever receive short-lived signed URLs.
-/// </summary>
 public class SupabaseFileStorage : IFileStorage
 {
-    /// <summary>How long a download link stays valid.</summary>
     private const int DownloadUrlSeconds = 120;
 
     private readonly HttpClient _http;
@@ -29,8 +23,6 @@ public class SupabaseFileStorage : IFileStorage
         _http = http;
         _http.BaseAddress = new Uri($"{url.TrimEnd('/')}/storage/v1/");
         _http.DefaultRequestHeaders.Add("apikey", key);
-        // New secret keys (sb_secret_...) go in `apikey` only; legacy service_role
-        // keys are JWTs and must also be sent as the bearer token.
         if (!key.StartsWith("sb_"))
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
     }
@@ -51,7 +43,6 @@ public class SupabaseFileStorage : IFileStorage
 
         var signed = await response.Content.ReadFromJsonAsync<SignedUrlResponse>(cancellationToken)
             ?? throw new InvalidOperationException("Resposta inválida do armazenamento.");
-        // signedURL is relative to /storage/v1 and already carries ?token=...
         var baseUrl = _http.BaseAddress!.ToString().TrimEnd('/');
         return $"{baseUrl}{signed.SignedURL}&download={Uri.EscapeDataString(downloadName)}";
     }

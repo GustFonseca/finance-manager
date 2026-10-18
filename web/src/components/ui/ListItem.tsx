@@ -6,15 +6,12 @@ import { colors, PressState, spacing, webStyle } from '@/theme';
 
 type Props = {
   onPress: () => void;
-  /** Right-click, at the pointer position. */
   onRightClick?: (point: Point) => void;
-  /** Highlighted with the selection color, like the selected row in Explorer. */
   selected?: boolean;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-/** Explorer "details view" row: white, with the XP hot-track hover. */
 export function ListItem({ onPress, onRightClick, selected, children, style }: Props) {
   return (
     <Pressable

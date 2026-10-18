@@ -2,19 +2,16 @@ import React, { useEffect, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Checkbox, Modal, MoneyText, ProgressBar, Select } from '@/components/ui';
+import { Button, Checkbox, Modal, MoneyText, Select } from '@/components/ui';
 import { useAccounts } from '@/features/accounts/queries';
 import { useCategories } from '@/features/categories/queries';
 import { transactionsApi } from '@/features/transactions/api';
 import { foldersApi } from '@/features/files/api';
 import { invalidateFiles } from '@/features/files/queries';
 import { merchantsApi } from '@/features/merchants/api';
-import { MerchantMatchDto } from '@/features/merchants/types';
 import { invalidateMoney } from '@/features/transactions/queries';
 import { getErrorMessage } from '@/lib/http';
-import { reportError } from '@/lib/logger';
 import { colors, fontSize, spacing } from '@/theme';
-import { suggestCategory } from './categorize';
 import { findDuplicates } from './duplicates';
 import { decodeStatement, parseStatement, StatementError } from './parsers';
 import { dayToIso } from './text';
@@ -25,14 +22,12 @@ type Step = 'file' | 'review' | 'importing' | 'done';
 type RowChoice = {
   include: boolean;
   categoryId: string | null;
-  /** Shown under the description when the row starts unchecked. */
   note?: string;
 };
 
 type Result = {
   imported: number;
-  failures: string[];
-  /** Folder the statement file was saved to, or null if saving it failed. */
+  error: string | null;
   savedTo: string | null;
 };
 
@@ -51,11 +46,6 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 
 const formatDay = (day: string) => day.split('-').reverse().join('/');
 
-/**
- * "Assistente para importação de extrato": reads a Nubank CSV / OFX export,
- * lets the user review it (duplicates and bill payments start unchecked) and
- * creates the transactions one by one.
- */
 export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: accounts = [] } = useAccounts();
@@ -68,10 +58,8 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
   const [accountId, setAccountId] = useState<string | null>(null);
   const [choices, setChoices] = useState<Record<string, RowChoice>>({});
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<Result>({ imported: 0, failures: [], savedTo: null });
+  const [result, setResult] = useState<Result>({ imported: 0, error: null, savedTo: null });
 
-  // Every opening starts a fresh import.
   useEffect(() => {
     if (!visible) return;
     setStep('file');
@@ -79,7 +67,6 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     setStatement(null);
     setError(null);
     setChoices({});
-    setProgress(0);
   }, [visible]);
 
   useEffect(() => {
@@ -107,7 +94,6 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     }
   }
 
-  /** Looks up what is already in the app for the file's period, then pre-fills the review. */
   async function goToReview() {
     if (!statement) return;
     setBusy(true);
@@ -119,21 +105,19 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
         end: new Date(`${last}T23:59:59`).toISOString(),
       });
       const duplicates = findDuplicates(statement.rows, existing);
-      const merchants = await resolveMerchants(statement.rows.map((row) => row.description));
+      const matches = await merchantsApi.resolve(
+        statement.rows.map((row) => ({ description: row.description, type: row.type }))
+      );
       const next: Record<string, RowChoice> = {};
-      for (const row of statement.rows) {
+      statement.rows.forEach((row, index) => {
         const duplicate = duplicates.has(row.key);
-        const merchant = merchants.get(row.description);
-        // The category the user chose for this merchant before wins over the keyword rules.
-        const learned = categories.find((c) => c.id === merchant?.categoryId && c.type === row.type);
-        const skipReason =
-          row.skipReason ?? (merchant?.kind === 'OWN' ? 'Movimentação entre suas contas (não é renda nem gasto)' : undefined);
+        const match = matches[index];
         next[row.key] = {
-          include: !duplicate && !skipReason,
-          categoryId: learned?.id ?? suggestCategory(row.description, row.type, categories),
-          note: duplicate ? 'Já existe no app' : skipReason,
+          include: !duplicate && !match?.skipReason,
+          categoryId: match?.categoryId ?? null,
+          note: duplicate ? 'Já existe no app' : (match?.skipReason ?? undefined),
         };
-      }
+      });
       setChoices(next);
       setStep('review');
     } catch (e) {
@@ -143,54 +127,28 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     }
   }
 
-  /** The merchant of each line; the review still works (with keyword suggestions) if this fails. */
-  async function resolveMerchants(descriptions: string[]): Promise<Map<string, MerchantMatchDto>> {
-    try {
-      const matches = await merchantsApi.resolve([...new Set(descriptions)]);
-      return new Map(matches.map((match) => [match.description, match]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  /** One request at a time: the API updates the account balance on each create. */
   async function runImport() {
     if (!accountId) return;
     setStep('importing');
-    setProgress(0);
-    const failures: string[] = [];
-    let imported = 0;
-    for (const [index, row] of selected.entries()) {
-      const { categoryId } = choices[row.key];
-      try {
-        if (!categoryId) throw new Error('sem categoria');
-        await transactionsApi.create({
-          accountId,
-          categoryId,
-          type: row.type,
-          amountCents: row.amountCents,
-          description: row.description,
+    try {
+      const imported = await transactionsApi.importMany({
+        accountId,
+        lines: selected.map((row) => ({
           date: dayToIso(row.date),
-        });
-        imported++;
-      } catch (e) {
-        failures.push(`${formatDay(row.date)} ${row.description}: ${getErrorMessage(e, (e as Error).message)}`);
-      }
-      setProgress(((index + 1) / selected.length) * 100);
+          description: row.description,
+          amountCents: row.amountCents,
+          type: row.type,
+          categoryId: choices[row.key].categoryId!,
+        })),
+      });
+      invalidateMoney(qc);
+      setResult({ imported, error: null, savedTo: await saveStatementFile() });
+    } catch (e) {
+      setResult({ imported: 0, error: getErrorMessage(e, 'Não foi possível importar as transações'), savedTo: null });
     }
-    invalidateMoney(qc);
-    if (failures.length > 0) {
-      // Lands in the API logs (with the trace ids in the messages) so failures can be investigated.
-      reportError(
-        `Importação de extrato: ${failures.length} de ${selected.length} transações falharam (${sourceFile?.name}). ` +
-          failures.slice(0, 5).join(' | ')
-      );
-    }
-    setResult({ imported, failures, savedTo: await saveStatementFile() });
     setStep('done');
   }
 
-  /** Keeps the imported file in the "Extratos importados" folder of the desktop. */
   async function saveStatementFile(): Promise<string | null> {
     if (!sourceFile) return null;
     try {
@@ -215,10 +173,10 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
   }
 
   const header =
-    step === 'done' && result.failures.length > 0
+    step === 'done' && result.error
       ? {
-          title: 'Importação concluída com erros',
-          subtitle: 'Algumas transações não foram criadas. Você pode importar o mesmo arquivo de novo: as que já entraram ficam de fora.',
+          title: 'A importação não foi feita',
+          subtitle: 'Nenhuma transação foi criada. Corrija o problema abaixo e importe o arquivo de novo.',
         }
       : STEP_HEADERS[step];
 
@@ -301,31 +259,24 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
 
         {step === 'importing' && (
           <View style={styles.progress}>
-            <Text style={styles.info}>
-              Importando {Math.round((progress / 100) * selected.length)} de {selected.length}...
-            </Text>
-            <ProgressBar percent={progress} />
+            <Text style={styles.info}>Importando {selected.length} transação(ões)...</Text>
           </View>
         )}
 
         {step === 'done' && (
           <>
-            <Text style={styles.info}>{result.imported} transação(ões) importada(s).</Text>
-            <Text style={result.savedTo ? styles.info : styles.error}>
-              {result.savedTo
-                ? `O arquivo foi salvo na pasta "${result.savedTo}" da área de trabalho.`
-                : 'Não foi possível salvar uma cópia do arquivo na área de trabalho.'}
-            </Text>
-            {result.failures.length > 0 ? (
+            {result.error ? (
+              <Text style={styles.error}>{result.error}</Text>
+            ) : (
               <>
-                <Text style={styles.error}>{result.failures.length} não puderam ser importadas:</Text>
-                {result.failures.map((failure) => (
-                  <Text key={failure} style={styles.failure}>
-                    • {failure}
-                  </Text>
-                ))}
+                <Text style={styles.info}>{result.imported} transação(ões) importada(s).</Text>
+                <Text style={result.savedTo ? styles.info : styles.error}>
+                  {result.savedTo
+                    ? `O arquivo foi salvo na pasta "${result.savedTo}" da área de trabalho.`
+                    : 'Não foi possível salvar uma cópia do arquivo na área de trabalho.'}
+                </Text>
               </>
-            ) : null}
+            )}
           </>
         )}
       </View>
@@ -346,7 +297,9 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
               disabled={
                 step === 'importing' ||
                 !accountId ||
-                (step === 'file' ? !statement : selected.length === 0)
+                (step === 'file'
+                  ? !statement
+                  : selected.length === 0 || selected.some((row) => !choices[row.key].categoryId))
               }
               loading={busy}
               onPress={step === 'review' ? runImport : goToReview}
@@ -426,7 +379,6 @@ const styles = StyleSheet.create({
   info: { fontSize: fontSize.sm, color: colors.textPrimary },
   fileInfo: { marginBottom: spacing.md },
   error: { fontSize: fontSize.sm, color: colors.expense, marginVertical: spacing.xs },
-  failure: { fontSize: fontSize.xs, color: colors.textSecondary },
   table: {
     maxHeight: 320,
     backgroundColor: colors.surface,
@@ -446,7 +398,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
   },
   rowSkipped: { opacity: 0.55 },
   th: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textPrimary },

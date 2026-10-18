@@ -56,10 +56,18 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         await _context.SaveChangesAsync();
     }
 
+    public async Task CreateRangeAsync(IEnumerable<Transaction> transactions)
+    {
+        await _dbSet.AddRangeAsync(transactions);
+        await _context.SaveChangesAsync();
+    }
+
+    public Task<bool> ExistsForAccountAsync(Guid accountId) => _dbSet.AnyAsync(t => t.AccountId == accountId);
+
+    public Task<bool> ExistsForCategoryAsync(Guid categoryId) => _dbSet.AnyAsync(t => t.CategoryId == categoryId);
+
     public async Task<int> DeleteByUserIdAsync(Guid userId)
     {
-        // Loaded and removed through the change tracker (not ExecuteDelete) so the
-        // activity history sees the deletion.
         var transactions = await _dbSet.Where(t => t.UserId == userId).ToListAsync();
         if (transactions.Count == 0) return 0;
         _dbSet.RemoveRange(transactions);

@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 
 const DOUBLE_CLICK_MS = 400;
 
-/** Explorer list behaviour: a click selects the row, a second click on it opens it. */
 export function useListSelection() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const lastClick = useRef({ id: '', at: 0 });
@@ -18,10 +17,6 @@ export function useListSelection() {
   return { selectedId, select: setSelectedId, press };
 }
 
-/**
- * Accepts files dragged from the computer onto an element. Returns a callback
- * ref (react-native-web views are DOM elements) and whether a drag is over it.
- */
 export function useFileDrop(onFiles: (files: File[]) => void) {
   const [over, setOver] = useState(false);
   const onFilesRef = useRef(onFiles);

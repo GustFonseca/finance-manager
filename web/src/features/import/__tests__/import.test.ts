@@ -1,6 +1,4 @@
-import type { CategoryDto } from '@/features/categories/types';
 import type { TransactionDto } from '@/features/transactions/types';
-import { suggestCategory } from '../categorize';
 import { findDuplicates } from '../duplicates';
 import { parseCsv, parseStatement, StatementError } from '../parsers';
 
@@ -27,9 +25,9 @@ describe('parseStatement', () => {
     );
     expect(source).toBe('nubank-card');
     expect(rows).toEqual([
-      { key: 'card-0', date: '2026-10-03', description: 'iFood *Restaurante', amountCents: 4590, type: 'EXPENSE', skipReason: undefined },
-      { key: 'card-1', date: '2026-10-05', description: 'Pagamento recebido', amountCents: 120000, type: 'INCOME', skipReason: 'Pagamento da fatura' },
-      { key: 'card-2', date: '2026-10-06', description: 'Estorno de compra', amountCents: 3000, type: 'INCOME', skipReason: undefined },
+      { key: 'card-0', date: '2026-10-03', description: 'iFood *Restaurante', amountCents: 4590, type: 'EXPENSE' },
+      { key: 'card-1', date: '2026-10-05', description: 'Pagamento recebido', amountCents: 120000, type: 'INCOME' },
+      { key: 'card-2', date: '2026-10-06', description: 'Estorno de compra', amountCents: 3000, type: 'INCOME' },
     ]);
   });
 
@@ -39,8 +37,8 @@ describe('parseStatement', () => {
     );
     expect(source).toBe('nubank-account');
     expect(rows).toEqual([
-      { key: 'abc-1-0', date: '2026-10-05', description: 'Transferência recebida - Empresa', amountCents: 650000, type: 'INCOME', skipReason: undefined },
-      { key: 'abc-2-1', date: '2026-10-06', description: 'Compra no débito - Mercado, Centro', amountCents: 8990, type: 'EXPENSE', skipReason: undefined },
+      { key: 'abc-1-0', date: '2026-10-05', description: 'Transferência recebida - Empresa', amountCents: 650000, type: 'INCOME' },
+      { key: 'abc-2-1', date: '2026-10-06', description: 'Compra no débito - Mercado, Centro', amountCents: 8990, type: 'EXPENSE' },
     ]);
   });
 
@@ -56,8 +54,8 @@ describe('parseStatement', () => {
     expect(parseStatement(ofx)).toEqual({
       source: 'ofx',
       rows: [
-        { key: 'f1-0', date: '2026-10-07', description: 'Posto Shell', amountCents: 12500, type: 'EXPENSE', skipReason: undefined },
-        { key: 'f2-1', date: '2026-10-08', description: 'Pix recebido', amountCents: 5050, type: 'INCOME', skipReason: undefined },
+        { key: 'f1-0', date: '2026-10-07', description: 'Posto Shell', amountCents: 12500, type: 'EXPENSE' },
+        { key: 'f2-1', date: '2026-10-08', description: 'Pix recebido', amountCents: 5050, type: 'INCOME' },
       ],
     });
   });
@@ -70,57 +68,11 @@ describe('parseStatement', () => {
     );
 
     expect(new Set(rows.map((r) => r.key)).size).toBe(2);
-    // The credit is the card paying for the Pix, not income: it starts unchecked.
-    expect(rows[0].skipReason).toBe('Crédito do cartão usado no Pix (não é renda)');
-    expect(rows[1].skipReason).toBeUndefined();
-  });
-
-  it('leaves moves between own accounts and investments unchecked', () => {
-    const { rows } = parseStatement(
-      'Data,Valor,Identificador,Descrição\n' +
-        '10/01/2026,300.00,a,Resgate RDB\n' +
-        '11/01/2026,-300.00,b,Aplicação RDB\n' +
-        '12/01/2026,120.00,c,Transferência de saldo NuInvest\n' +
-        '13/01/2026,-900.00,d,Pagamento de fatura\n'
-    );
-
-    expect(rows.every((r) => r.skipReason)).toBe(true);
   });
 
   it('rejects unknown formats and bad lines with a readable message', () => {
     expect(() => parseStatement('foo,bar\n1,2')).toThrow(StatementError);
     expect(() => parseStatement('date,title,amount\n2026-13-40,X,1.00')).toThrow('Linha 2 inválida');
-  });
-});
-
-const category = (id: string, name: string, type: 'INCOME' | 'EXPENSE'): CategoryDto => ({
-  id,
-  name,
-  type,
-  color: '#000',
-});
-const CATEGORIES = [
-  category('food', 'Alimentação', 'EXPENSE'),
-  category('car', 'Transporte', 'EXPENSE'),
-  category('other', 'Outros', 'EXPENSE'),
-  category('salary', 'Salário', 'INCOME'),
-];
-
-describe('suggestCategory', () => {
-  it('matches keywords regardless of case and accents', () => {
-    expect(suggestCategory('IFOOD *Restaurante', 'EXPENSE', CATEGORIES)).toBe('food');
-    expect(suggestCategory('Uber *Trip', 'EXPENSE', CATEGORIES)).toBe('car');
-    expect(suggestCategory('Pagamento de SALÁRIO', 'INCOME', CATEGORIES)).toBe('salary');
-  });
-
-  it('falls back to "Outros", then to the first category of the type', () => {
-    expect(suggestCategory('Loja qualquer', 'EXPENSE', CATEGORIES)).toBe('other');
-    expect(suggestCategory('Pix recebido', 'INCOME', CATEGORIES)).toBe('salary');
-  });
-
-  it('skips rules whose category the user deleted', () => {
-    const withoutFood = CATEGORIES.filter((c) => c.id !== 'food');
-    expect(suggestCategory('iFood', 'EXPENSE', withoutFood)).toBe('other');
   });
 });
 

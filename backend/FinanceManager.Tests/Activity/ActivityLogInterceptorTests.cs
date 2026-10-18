@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FinanceManager.Tests.Activity;
 
-/// <summary>The history written by the EF interceptor, through the real repositories.</summary>
 public class ActivityLogInterceptorTests
 {
     private static readonly Guid Me = Guid.NewGuid();

@@ -7,7 +7,6 @@ export const summaryApi = {
     http
       .get<FinancialSummaryDto>('/summary', { params: { start, end, accountId } })
       .then((r) => r.data),
-  /** Fixed costs and subscriptions (marked or detected) up to `end`. */
   recurring: ({ end, accountId }: PeriodFilter = {}) =>
     http
       .get<RecurringExpenseDto[]>('/summary/recurring', { params: { end, accountId } })

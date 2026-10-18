@@ -22,11 +22,6 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-/**
- * Classic XP push button. `primary` is the dialog's default button (blue
- * glow); `success`/`danger` only tint the label, as XP buttons were never
- * colored.
- */
 export function Button({
   label,
   onPress,
