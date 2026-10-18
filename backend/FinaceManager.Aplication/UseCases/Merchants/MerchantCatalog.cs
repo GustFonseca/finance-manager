@@ -33,6 +33,25 @@ public static class MerchantCatalog
         return merchant;
     }
 
+    public static async Task<Merchant?> FileAsync(
+        IMerchantRepository repository,
+        ClassificationRules rules,
+        Guid userId,
+        string description,
+        string? ownerName,
+        Category category,
+        bool learnCategory = true,
+        Dictionary<string, Merchant>? cache = null)
+    {
+        var merchant = await ResolveAsync(repository, rules, userId, description, ownerName, cache);
+        if (merchant != null && learnCategory && ShouldLearn(merchant, category, rules))
+        {
+            merchant.CategoryId = category.Id;
+            await repository.UpdateAsync(merchant);
+        }
+        return merchant;
+    }
+
     public static bool ShouldLearn(Merchant merchant, Category category, ClassificationRules rules) =>
         merchant.Kind != MerchantKind.OWN
         && merchant.CategoryId != category.Id

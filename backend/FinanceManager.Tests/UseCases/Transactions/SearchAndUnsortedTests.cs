@@ -68,6 +68,20 @@ public sealed class SearchAndUnsortedTests : IDisposable
     }
 
     [Fact]
+    public async Task Searching_without_accents_finds_the_merchant_by_its_key()
+    {
+        var acougue = new Merchant { UserId = _me.Id, Name = "Açougue Central", Key = "acouguecentral", Kind = MerchantKind.BUSINESS };
+        _db.Merchants.Add(acougue);
+        _db.SaveChanges();
+        _db.AddTransaction(_nubank, _alimentacao, 3000, Day, "Compra no débito - AÇOUGUE CENTRAL", acougue);
+        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db), TestDb.Mapper);
+
+        var result = await handler.Handle(new GetTransactionsByDateRangeQuery(_me.Id, null, null, Search: "acougue"));
+
+        Assert.Equal("Açougue Central", Assert.Single(result).MerchantName);
+    }
+
+    [Fact]
     public async Task The_query_passes_every_filter_to_the_search()
     {
         _db.AddTransaction(_nubank, _alimentacao, 4000, Day, "Mercado");

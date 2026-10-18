@@ -138,23 +138,16 @@ describe('ColorPicker', () => {
 describe('DateInput', () => {
   it('shows a labelled native date picker and reports the chosen day', () => {
     const onChange = jest.fn();
-    render(<DateInput label="Data:" value="2026-10-18" max="2026-12-31" onChange={onChange} />);
+    render(<DateInput label="Data:" value="2026-10-18" onChange={onChange} />);
 
     const input = screen.getByLabelText('Data:') as HTMLInputElement;
     expect(screen.getByText('Data:')).toBeTruthy();
     expect(input.type).toBe('date');
     expect(input.value).toBe('2026-10-18');
-    expect(input.max).toBe('2026-12-31');
 
     fireEvent.change(input, { target: { value: '2026-10-01' } });
 
     expect(onChange).toHaveBeenCalledWith('2026-10-01');
-  });
-
-  it('works without a maximum', () => {
-    render(<DateInput label="Prazo" value="" onChange={jest.fn()} />);
-
-    expect(screen.getByLabelText('Prazo').hasAttribute('max')).toBe(false);
   });
 });
 

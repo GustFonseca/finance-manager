@@ -68,9 +68,9 @@ describe('OrganizeMerchants', () => {
     expect(screen.getByText(/Empresa · 3 transação\(ões\) · R\$\s45,00/)).toBeTruthy();
     expect(screen.getByText(/Pessoa · 1 transação\(ões\) · R\$\s200,00/)).toBeTruthy();
 
-    await waitFor(() => expect(rowSelect('Padaria Pão Bom').querySelectorAll('option')).toHaveLength(2));
+    await waitFor(() => expect(rowSelect('Padaria Pão Bom').querySelectorAll('option')).toHaveLength(3));
     const options = Array.from(rowSelect('Padaria Pão Bom').querySelectorAll('option')).map((o) => o.textContent);
-    expect(options).toEqual(['(escolha a categoria)', 'Alimentação']);
+    expect(options).toEqual(['(escolha a categoria)', 'Alimentação', 'Outros']);
     expect(rowSelect('Ana Souza').querySelectorAll('option')).toHaveLength(3);
     expect(screen.queryByText(/organizado\(s\) agora/)).toBeNull();
   });
@@ -90,7 +90,7 @@ describe('OrganizeMerchants', () => {
       })
     );
     renderModal();
-    await waitFor(() => expect(rowSelect('Padaria Pão Bom').querySelectorAll('option')).toHaveLength(2));
+    await waitFor(() => expect(rowSelect('Padaria Pão Bom').querySelectorAll('option')).toHaveLength(3));
 
     fireEvent.change(rowSelect('Padaria Pão Bom'), { target: { value: 'c1' } });
 
@@ -129,5 +129,25 @@ describe('OrganizeMerchants', () => {
     fireEvent.click(screen.getByText('Fechar'));
 
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('keeps every merchant being saved marked while saves overlap', async () => {
+    const pending: Array<() => void> = [];
+    api.update.mockImplementation(
+      () => new Promise((resolve) => pending.push(() => resolve({ merchant: {} as never, updatedTransactions: 1 })))
+    );
+    renderModal();
+    await waitFor(() => expect(rowSelect('Ana Souza').querySelectorAll('option')).toHaveLength(3));
+
+    fireEvent.change(rowSelect('Padaria Pão Bom'), { target: { value: 'c1' } });
+    fireEvent.change(rowSelect('Ana Souza'), { target: { value: 'c1' } });
+    await waitFor(() => expect(screen.getAllByText('Salvando...')).toHaveLength(2));
+
+    await act(async () => pending[0]());
+    expect(screen.getAllByText('Salvando...')).toHaveLength(1);
+
+    await act(async () => pending[1]());
+    expect(screen.queryByText('Salvando...')).toBeNull();
+    expect(screen.getByText('2 estabelecimento(s) organizado(s) agora.')).toBeTruthy();
   });
 });

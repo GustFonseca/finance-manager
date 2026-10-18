@@ -1,6 +1,7 @@
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
+using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Transactions;
 
@@ -13,6 +14,24 @@ public static class TransactionInput
         if (amountCents <= 0) throw new BusinessRuleException("O valor deve ser maior que zero.");
         if (description.Length > MaxDescriptionLength)
             throw new BusinessRuleException($"A descrição pode ter no máximo {MaxDescriptionLength} caracteres.");
+    }
+
+    public static async Task<(Account Account, Category Category)> LoadReferencesAsync(
+        IAccountRepository accountRepository,
+        ICategoryRepository categoryRepository,
+        Guid userId,
+        Guid accountId,
+        Guid categoryId,
+        TransactionType type)
+    {
+        var account = await accountRepository.GetByIdAsync(accountId);
+        if (account == null || account.UserId != userId)
+            throw new BusinessRuleException("Conta não encontrada.");
+        var category = await categoryRepository.GetByIdAsync(categoryId);
+        if (category == null || category.UserId != userId)
+            throw new BusinessRuleException("Categoria não encontrada.");
+        EnsureCategoryFits(category, type);
+        return (account, category);
     }
 
     public static void EnsureCategoryFits(Category category, TransactionType type)

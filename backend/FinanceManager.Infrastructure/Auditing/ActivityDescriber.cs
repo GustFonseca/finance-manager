@@ -61,7 +61,7 @@ public static class ActivityDescriber
         nameof(Transaction.AmountCents), nameof(Transaction.Description), nameof(Transaction.Date), nameof(Transaction.Recurrence),
     ];
 
-    private static bool EditedByUser(EntityEntry entry) => EditableTransactionFields.Any(field => Changed(entry, field));
+    public static bool EditedByUser(EntityEntry entry) => EditableTransactionFields.Any(field => Changed(entry, field));
 
     private static IEnumerable<ActivityLog> DescribeAccount(EntityEntry entry, Account a)
     {

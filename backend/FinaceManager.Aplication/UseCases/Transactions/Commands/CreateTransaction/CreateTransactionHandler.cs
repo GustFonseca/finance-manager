@@ -1,7 +1,6 @@
 using AutoMapper;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
-using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Merchants;
 using FinanceManager.Domain.Entities;
@@ -41,23 +40,13 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
     public async Task<TransactionDto> Handle(CreateTransactionCommand request, CancellationToken cancellationToken = default)
     {
         TransactionInput.Validate(request.AmountCents, request.Description);
-        var account = await _accountRepository.GetByIdAsync(request.AccountId);
-        if (account == null || account.UserId != request.UserId)
-            throw new BusinessRuleException("Conta não encontrada.");
-
-        var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
-        if (category == null || category.UserId != request.UserId)
-            throw new BusinessRuleException("Categoria não encontrada.");
-        TransactionInput.EnsureCategoryFits(category, request.Type);
+        var (account, category) = await TransactionInput.LoadReferencesAsync(
+            _accountRepository, _categoryRepository, request.UserId, request.AccountId, request.CategoryId, request.Type);
 
         var owner = await _userRepository.GetByIdAsync(request.UserId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
-        var merchant = await MerchantCatalog.ResolveAsync(_merchantRepository, rules, request.UserId, request.Description, owner?.Name);
-        if (merchant != null && MerchantCatalog.ShouldLearn(merchant, category, rules))
-        {
-            merchant.CategoryId = category.Id;
-            await _merchantRepository.UpdateAsync(merchant);
-        }
+        var merchant = await MerchantCatalog.FileAsync(
+            _merchantRepository, rules, request.UserId, request.Description, owner?.Name, category);
 
         var transaction = new Transaction
         {

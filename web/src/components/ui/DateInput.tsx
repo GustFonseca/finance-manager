@@ -6,10 +6,9 @@ type Props = {
   label: string;
   value: string;
   onChange: (day: string) => void;
-  max?: string;
 };
 
-export function DateInput({ label, value, onChange, max }: Props) {
+export function DateInput({ label, value, onChange }: Props) {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
@@ -17,7 +16,6 @@ export function DateInput({ label, value, onChange, max }: Props) {
         type="date"
         aria-label={label}
         value={value}
-        max={max}
         onChange={(event) => onChange(event.target.value)}
         style={inputStyle}
       />

@@ -44,27 +44,19 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
             throw new NotFoundException("Transação não encontrada.");
 
         TransactionInput.Validate(request.AmountCents, request.Description);
-        var account = await _accountRepository.GetByIdAsync(request.AccountId);
-        if (account == null || account.UserId != request.UserId)
-            throw new BusinessRuleException("Conta não encontrada.");
-        var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
-        if (category == null || category.UserId != request.UserId)
-            throw new BusinessRuleException("Categoria não encontrada.");
-        TransactionInput.EnsureCategoryFits(category, request.Type);
+        var (account, category) = await TransactionInput.LoadReferencesAsync(
+            _accountRepository, _categoryRepository, request.UserId, request.AccountId, request.CategoryId, request.Type);
+
+        var rules = await _rulesProvider.GetAsync(cancellationToken);
+        var owner = await _userRepository.GetByIdAsync(request.UserId);
+        var merchant = await MerchantCatalog.FileAsync(
+            _merchantRepository, rules, request.UserId, request.Description, owner?.Name, category,
+            learnCategory: transaction.CategoryId != category.Id);
 
         var previousAccount = await _accountRepository.GetByIdAsync(transaction.AccountId)
             ?? throw new NotFoundException("Conta não encontrada.");
         TransactionInput.ApplyToBalance(previousAccount, Opposite(transaction.Type), transaction.AmountCents);
         TransactionInput.ApplyToBalance(account, request.Type, request.AmountCents);
-
-        var rules = await _rulesProvider.GetAsync(cancellationToken);
-        var owner = await _userRepository.GetByIdAsync(request.UserId);
-        var merchant = await MerchantCatalog.ResolveAsync(_merchantRepository, rules, request.UserId, request.Description, owner?.Name);
-        if (merchant != null && MerchantCatalog.ShouldLearn(merchant, category, rules))
-        {
-            merchant.CategoryId = category.Id;
-            await _merchantRepository.UpdateAsync(merchant);
-        }
 
         transaction.AccountId = account.Id;
         transaction.Account = account;

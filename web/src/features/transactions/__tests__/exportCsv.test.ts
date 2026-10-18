@@ -1,5 +1,5 @@
 import { dayToIso } from '@/lib/periods';
-import { buildTransactionsCsv, downloadCsv } from '../exportCsv';
+import { buildTransactionsCsv, downloadCsv, REVOKE_AFTER_MS } from '../exportCsv';
 import { TransactionDto } from '../types';
 
 const base: TransactionDto = {
@@ -47,6 +47,21 @@ describe('buildTransactionsCsv', () => {
   });
 });
 
+describe('buildTransactionsCsv formula safety', () => {
+  it('neutralises text that a spreadsheet would run as a formula, but not the amounts', () => {
+    const csv = buildTransactionsCsv([
+      {
+        id: 'x', accountId: 'a', accountName: '@conta', categoryId: 'c', categoryName: '+Categoria',
+        type: 'EXPENSE', amountCents: 1000, description: '=HYPERLINK("http://evil","x")',
+        date: '2026-10-03T15:00:00Z', recurrence: 'NONE', merchantId: null, merchantName: '-Loja',
+      },
+    ]);
+
+    const line = csv.split('\r\n')[1];
+    expect(line).toBe(`03/10/2026;"'=HYPERLINK(""http://evil"",""x"")";'-Loja;'+Categoria;'@conta;Despesa;-10,00`);
+  });
+});
+
 describe('downloadCsv', () => {
   const original = { create: URL.createObjectURL, revoke: URL.revokeObjectURL };
 
@@ -67,11 +82,16 @@ describe('downloadCsv', () => {
       clicked.push({ href: this.href, download: this.download, attached: document.body.contains(this) });
     });
 
+    jest.useFakeTimers();
+
     downloadCsv('transacoes-2026-10.csv', 'a;b');
 
     expect(clicked).toEqual([{ href: 'blob:csv', download: 'transacoes-2026-10.csv', attached: true }]);
     expect(document.querySelector('a')).toBeNull();
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(REVOKE_AFTER_MS);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:csv');
+    jest.useRealTimers();
     expect(blob!.type).toBe('text/csv;charset=utf-8');
     expect(blob!.size).toBe(3);
     click.mockRestore();

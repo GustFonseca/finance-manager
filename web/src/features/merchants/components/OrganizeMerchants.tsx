@@ -20,21 +20,31 @@ export function OrganizeMerchants({ visible, onClose }: Props) {
   const { data: merchants = [], isLoading } = useUnsortedMerchants(range, visible);
   const { data: categories = [] } = useCategories('EXPENSE');
   const updateMerchant = useUpdateMerchant();
-  const [saving, setSaving] = useState<string | null>(null);
+  const [saving, setSaving] = useState<ReadonlySet<string>>(new Set());
   const [organized, setOrganized] = useState(0);
 
+  function markSaving(id: string, active: boolean) {
+    setSaving((current) => {
+      const next = new Set(current);
+      if (active) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
   async function assign(merchant: MerchantSpendingDto, categoryId: string) {
-    setSaving(merchant.merchantId);
+    const id = merchant.merchantId!;
+    markSaving(id, true);
     try {
       await updateMerchant.mutateAsync({
-        id: merchant.merchantId!,
+        id,
         data: { name: merchant.name, kind: merchant.kind, categoryId, applyToTransactions: true },
       });
       setOrganized((count) => count + 1);
     } catch (error) {
       alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível salvar a categoria') });
     } finally {
-      setSaving(null);
+      markSaving(id, false);
     }
   }
 
@@ -61,15 +71,13 @@ export function OrganizeMerchants({ visible, onClose }: Props) {
                 {kindLabel(merchant.kind)} · {merchant.count} transação(ões) · {formatCents(merchant.cents)}
               </Text>
             </View>
-            {saving === merchant.merchantId ? (
+            {saving.has(merchant.merchantId!) ? (
               <Text style={styles.muted}>Salvando...</Text>
             ) : (
               <Select
                 compact
                 placeholder="(escolha a categoria)"
-                options={categories
-                  .filter((c) => c.name !== merchant.categoryName)
-                  .map((c) => ({ id: c.id, label: c.name }))}
+                options={categories.map((c) => ({ id: c.id, label: c.name }))}
                 selectedId={null}
                 onSelect={(categoryId) => assign(merchant, categoryId)}
               />

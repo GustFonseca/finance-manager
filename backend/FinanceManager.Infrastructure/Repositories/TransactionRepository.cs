@@ -9,36 +9,8 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 {
     public TransactionRepository(AppDbContext _context) : base(_context){}
 
-    public async Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null, Guid? merchantId = null)
-    {
-        var query = _dbSet
-            .Include(t => t.Account)
-            .Include(t => t.Category)
-            .Include(t => t.Merchant)
-            .Where(t => t.UserId == userId);
-
-        if (start.HasValue)
-        {
-            query = query.Where(t => t.Date >= start.Value);
-        }
-
-        if (end.HasValue)
-        {
-            query = query.Where(t => t.Date <= end.Value);
-        }
-
-        if (accountId.HasValue)
-        {
-            query = query.Where(t => t.AccountId == accountId.Value);
-        }
-
-        if (merchantId.HasValue)
-        {
-            query = query.Where(t => t.MerchantId == merchantId.Value);
-        }
-
-        return await query.OrderByDescending(t => t.Date).ToListAsync();
-    }
+    public Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null, Guid? merchantId = null) =>
+        SearchAsync(userId, new TransactionFilter(start, end, accountId, merchantId));
 
     public async Task<List<Transaction>> SearchAsync(Guid userId, TransactionFilter filter)
     {
@@ -57,8 +29,10 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var term = filter.Search.Trim().ToLower();
+            var key = filter.SearchKey ?? string.Empty;
             query = query.Where(t => t.Description.ToLower().Contains(term)
-                                     || (t.Merchant != null && t.Merchant.Name.ToLower().Contains(term)));
+                                     || (t.Merchant != null && t.Merchant.Name.ToLower().Contains(term))
+                                     || (key != string.Empty && t.Merchant != null && t.Merchant.Key.Contains(key)));
         }
 
         return await query.OrderByDescending(t => t.Date).ToListAsync();

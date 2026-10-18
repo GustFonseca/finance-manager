@@ -56,12 +56,8 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
                     ?? throw new BusinessRuleException("Categoria não encontrada.");
                 TransactionInput.EnsureCategoryFits(category, line.Type);
 
-                var merchant = await MerchantCatalog.ResolveAsync(_merchantRepository, rules, request.UserId, line.Description, owner?.Name, merchants);
-                if (merchant != null && MerchantCatalog.ShouldLearn(merchant, category, rules))
-                {
-                    merchant.CategoryId = category.Id;
-                    await _merchantRepository.UpdateAsync(merchant);
-                }
+                var merchant = await MerchantCatalog.FileAsync(
+                    _merchantRepository, rules, request.UserId, line.Description, owner?.Name, category, cache: merchants);
 
                 transactions.Add(new Transaction
                 {

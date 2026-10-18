@@ -3,8 +3,14 @@ import { TransactionDto } from './types';
 
 const HEADER = ['Data', 'Descrição', 'Estabelecimento', 'Categoria', 'Conta', 'Tipo', 'Valor'];
 
+export const REVOKE_AFTER_MS = 1000;
+
 function cell(value: string): string {
   return /[;"\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function text(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
 }
 
 function amount(transaction: TransactionDto): string {
@@ -15,10 +21,10 @@ function amount(transaction: TransactionDto): string {
 export function buildTransactionsCsv(transactions: TransactionDto[]): string {
   const rows = transactions.map((t) => [
     isoToDay(t.date).split('-').reverse().join('/'),
-    t.description,
-    t.merchantName,
-    t.categoryName,
-    t.accountName,
+    text(t.description),
+    text(t.merchantName),
+    text(t.categoryName),
+    text(t.accountName),
     t.type === 'EXPENSE' ? 'Despesa' : 'Receita',
     amount(t),
   ]);
@@ -33,5 +39,5 @@ export function downloadCsv(fileName: string, content: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
 }

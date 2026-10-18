@@ -105,6 +105,23 @@ public sealed class RepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task Filing_transactions_under_merchants_is_not_shown_as_an_edit()
+    {
+        var account = _db.AddAccount(_me.Id);
+        var lazer = _db.AddCategory(_me.Id, "Lazer");
+        var batch = Enumerable.Range(1, 3).Select(i => _db.AddTransaction(account, lazer, i * 100, Day, $"T{i}")).ToList();
+        var merchant = new Merchant { UserId = _me.Id, Name = "Loja", Key = "loja", Kind = MerchantKind.BUSINESS };
+        _db.Merchants.Add(merchant);
+        _db.SaveChanges();
+        var before = _db.ActivityLogs.Count();
+
+        batch.ForEach(t => t.MerchantId = merchant.Id);
+        await new TransactionRepository(_db).UpdateRangeAsync(batch);
+
+        Assert.Equal(before, _db.ActivityLogs.Count());
+    }
+
+    [Fact]
     public async Task An_account_with_transactions_cannot_be_deleted_at_the_database_level()
     {
         var account = _db.AddAccount(_me.Id);

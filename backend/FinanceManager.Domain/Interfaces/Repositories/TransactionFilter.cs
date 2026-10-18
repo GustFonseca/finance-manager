@@ -9,4 +9,5 @@ public record TransactionFilter(
     Guid? MerchantId = null,
     Guid? CategoryId = null,
     TransactionType? Type = null,
-    string? Search = null);
+    string? Search = null,
+    string? SearchKey = null);

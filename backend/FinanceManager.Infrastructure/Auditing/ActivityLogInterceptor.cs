@@ -48,7 +48,7 @@ public sealed class ActivityLogInterceptor : SaveChangesInterceptor
             entries = entries.Except(addedTransactions).ToList();
         }
         var modifiedTransactions = entries
-            .Where(e => e.State == EntityState.Modified && e.Entity is Transaction)
+            .Where(e => e.State == EntityState.Modified && e.Entity is Transaction && ActivityDescriber.EditedByUser(e))
             .ToList();
         if (modifiedTransactions.Count > 1)
         {

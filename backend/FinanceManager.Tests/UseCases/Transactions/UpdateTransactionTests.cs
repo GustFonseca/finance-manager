@@ -89,6 +89,19 @@ public class UpdateTransactionTests
     }
 
     [Fact]
+    public async Task Editing_only_the_amount_keeps_the_category_the_merchant_learned()
+    {
+        await Handler.Handle(Command(categoryId: _alimentacao.Id, description: "Compra no débito via NuPay - iFood"));
+        var ifood = _db.Merchants.Single();
+        ifood.CategoryId = _lazer.Id;
+        _db.SaveChanges();
+
+        await Handler.Handle(Command(categoryId: _alimentacao.Id, description: "Compra no débito via NuPay - iFood", cents: 5100));
+
+        Assert.Equal(_lazer.Id, _db.Merchants.Single().CategoryId);
+    }
+
+    [Fact]
     public async Task Someone_elses_transaction_is_not_found()
     {
         await Assert.ThrowsAsync<NotFoundException>(() => Handler.Handle(Command(userId: Guid.NewGuid())));
