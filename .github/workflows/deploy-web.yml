@@ -38,8 +38,8 @@ jobs:
         run: npm ci
         working-directory: web
 
-      - name: Run tests
-        run: npm test
+      - name: Run tests with coverage (minimum 90%)
+        run: npx jest --ci --coverage
         working-directory: web
 
       - name: Type-check

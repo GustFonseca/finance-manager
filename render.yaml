@@ -7,7 +7,7 @@ services:
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /swagger/index.html
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     buildFilter:
       paths:
         - backend/**

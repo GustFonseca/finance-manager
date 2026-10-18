@@ -1,0 +1,50 @@
+name: Backend tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore FinanceManager.Tests/FinanceManager.Tests.csproj
+
+      - name: Test with coverage
+        run: >
+          dotnet test FinanceManager.Tests/FinanceManager.Tests.csproj
+          --no-restore
+          --settings coverage.runsettings
+          --collect:"XPlat Code Coverage"
+          --results-directory TestResults
+          --logger "console;verbosity=normal"
+
+      - name: Require 90% line coverage
+        run: |
+          python3 - <<'EOF'
+          import glob, sys, xml.etree.ElementTree as ET
+          report = glob.glob('TestResults/**/coverage.cobertura.xml', recursive=True)[0]
+          rate = float(ET.parse(report).getroot().get('line-rate')) * 100
+          print(f'Line coverage: {rate:.2f}% (minimum 90%)')
+          sys.exit(0 if rate >= 90 else 1)
+          EOF
