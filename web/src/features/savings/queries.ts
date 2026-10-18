@@ -19,11 +19,16 @@ function useSavingsMutation<TInput, TResult>(mutationFn: (input: TInput) => Prom
   const qc = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.savings }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.savings });
+      qc.invalidateQueries({ queryKey: queryKeys.summary });
+    },
   });
 }
 
 export const useSetSavingsGoal = () => useSavingsMutation((cents: number) => savingsApi.setGoal(cents));
+
+export const useSetWorkHours = () => useSavingsMutation((hours: number) => savingsApi.setWorkHours(hours));
 
 export const useSetBudget = () =>
   useSavingsMutation((input: { categoryId: string; limitCents: number | null }) =>

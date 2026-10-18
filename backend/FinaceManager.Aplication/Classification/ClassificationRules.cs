@@ -65,6 +65,8 @@ public sealed class ClassificationRules
 
     public string? SubscriptionGroup(string text) => FirstValue(RuleType.SUBSCRIPTION_GROUP, text);
 
+    public string? Fee(string text) => FirstValue(RuleType.FEE, text);
+
     private bool Any(RuleType type, string text)
     {
         if (!_rules.TryGetValue(type, out var list)) return false;

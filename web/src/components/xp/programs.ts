@@ -73,6 +73,13 @@ export const PROGRAMS: Program[] = [
     description: 'Meta, orçamento e onde cortar',
   },
   {
+    route: '/challenges',
+    title: 'Desafios',
+    icon: 'trophy',
+    color: '#F9A825',
+    description: 'Desafios para gastar menos',
+  },
+  {
     route: '/events',
     title: 'Visualizar eventos',
     icon: 'list-alt',

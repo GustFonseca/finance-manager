@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
     public DbSet<Merchant> Merchants => Set<Merchant>();
     public DbSet<ClassificationRule> ClassificationRules => Set<ClassificationRule>();
+    public DbSet<Challenge> Challenges => Set<Challenge>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,15 @@ public class AppDbContext : DbContext
             e.HasKey(p => p.Id);
             e.HasIndex(p => p.UserId).IsUnique();
             e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId);
+        });
+
+        modelBuilder.Entity<Challenge>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => c.UserId);
+            e.Property(c => c.Name).HasMaxLength(100);
+            e.Property(c => c.Scope).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId);
         });
 
         modelBuilder.Entity<CategoryBudget>(e =>

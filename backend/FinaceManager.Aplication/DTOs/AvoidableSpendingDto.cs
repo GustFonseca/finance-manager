@@ -16,6 +16,8 @@ public class AvoidableSpendingDto
     public SmallPurchasesDto SmallPurchases { get; set; } = new();
     public List<SpendingSpikeDto> Spikes { get; set; } = [];
     public List<FirstTimePurchaseDto> FirstTimePurchases { get; set; } = [];
+    public FeesDto Fees { get; set; } = new();
+    public long HourValueCents { get; set; }
 }
 
 public class AvoidableMerchantDto
@@ -93,4 +95,20 @@ public class FirstTimePurchaseDto
     public long Cents { get; set; }
     public DateTime Date { get; set; }
     public SpendingClass Class { get; set; }
+}
+
+public class FeesDto
+{
+    public long MonthCents { get; set; }
+    public long YearCents { get; set; }
+    public List<FeeItemDto> Items { get; set; } = [];
+}
+
+public class FeeItemDto
+{
+    public string Label { get; set; } = string.Empty;
+    public long MonthCents { get; set; }
+    public long YearCents { get; set; }
+    public int Count { get; set; }
+    public DateTime LastDate { get; set; }
 }

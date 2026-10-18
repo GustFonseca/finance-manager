@@ -2,7 +2,8 @@ import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
-import { useForecast, useRecurringExpenses, useSummary } from '../queries';
+import { todayStartIso } from '@/lib/periods';
+import { useDailyBudget, useForecast, useRecurringExpenses, useSummary } from '../queries';
 import { summaryApi } from '../api';
 
 jest.mock('../api');
@@ -54,5 +55,23 @@ describe('dashboard queries', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(summaryApi.forecast).toHaveBeenCalledWith({});
     expect(client.getQueryData(['summary', 'forecast', {}])).toEqual({});
+  });
+
+  it('loads the daily budget for the month and today, without the account', async () => {
+    jest.mocked(summaryApi.daily).mockResolvedValue({ leftTodayCents: 4 } as never);
+    const { client, Wrapper } = wrapper();
+    const { result } = renderHook(() => useDailyBudget({ start: 's', end: 'e', accountId: 'a1' }), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.data).toEqual({ leftTodayCents: 4 }));
+    const dayStart = todayStartIso();
+    expect(summaryApi.daily).toHaveBeenCalledWith({ start: 's', end: 'e' }, dayStart);
+    expect(client.getQueryData(['summary', 'daily', { start: 's', end: 'e' }, dayStart])).toEqual({ leftTodayCents: 4 });
+  });
+
+  it('loads the daily budget with an empty filter by default', async () => {
+    jest.mocked(summaryApi.daily).mockResolvedValue({} as never);
+    const { Wrapper } = wrapper();
+    const { result } = renderHook(() => useDailyBudget(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(summaryApi.daily).toHaveBeenCalledWith({ start: undefined, end: undefined }, todayStartIso());
   });
 });

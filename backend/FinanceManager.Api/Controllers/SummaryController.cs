@@ -6,6 +6,7 @@ using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetRecurringExpenses;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetAvoidableSpending;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetCashFlowForecast;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetDailyBudget;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetSpendingAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,6 +65,18 @@ public class SummaryController : ControllerBase
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
         return Ok(await _mediator.Send(new GetCashFlowForecastQuery(GetUserId(), monthStart, now, accountId)));
+    }
+
+    [HttpGet("daily")]
+    public async Task<ActionResult<DailyBudgetDto>> GetDaily(
+        [FromQuery] DateTime? start,
+        [FromQuery] DateTime? end,
+        [FromQuery] DateTime? dayStart)
+    {
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
+        var day = dayStart?.ToUniversalTime() ?? new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
+        if (day > now) day = now;
+        return Ok(await _mediator.Send(new GetDailyBudgetQuery(GetUserId(), monthStart, now, day)));
     }
 
     [HttpGet("spending")]

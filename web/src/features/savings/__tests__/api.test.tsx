@@ -5,7 +5,14 @@ import { createTestQueryClient } from '@/test/render';
 import { http } from '@/lib/http';
 import { monthKeyOf, monthRange } from '@/lib/periods';
 import { savingsApi } from '../api';
-import { currentMonth, useApplySuggestedBudgets, useSavingsPlan, useSetBudget, useSetSavingsGoal } from '../queries';
+import {
+  currentMonth,
+  useApplySuggestedBudgets,
+  useSavingsPlan,
+  useSetBudget,
+  useSetSavingsGoal,
+  useSetWorkHours,
+} from '../queries';
 
 jest.mock('@/lib/http', () => ({ http: { get: jest.fn(), put: jest.fn(), post: jest.fn() } }));
 
@@ -20,6 +27,12 @@ describe('savingsApi', () => {
     jest.mocked(http.put).mockResolvedValue({ data: 'ignored' });
     await expect(savingsApi.setGoal(5000)).resolves.toBeUndefined();
     expect(http.put).toHaveBeenCalledWith('/savings/goal', { monthlyGoalCents: 5000 });
+  });
+
+  it('sets the work hours', async () => {
+    jest.mocked(http.put).mockResolvedValue({ data: 'ignored' });
+    await expect(savingsApi.setWorkHours(160)).resolves.toBeUndefined();
+    expect(http.put).toHaveBeenCalledWith('/savings/work-hours', { hours: 160 });
   });
 
   it('sets a budget', async () => {
@@ -71,12 +84,17 @@ describe('savings queries', () => {
     await act(() => budget.result.current.mutateAsync({ categoryId: 'c9', limitCents: 200 }));
     expect(http.put).toHaveBeenCalledWith('/savings/budgets/c9', { limitCents: 200 });
 
+    const hours = renderHook(() => useSetWorkHours(), { wrapper });
+    await act(() => hours.result.current.mutateAsync(150));
+    expect(http.put).toHaveBeenCalledWith('/savings/work-hours', { hours: 150 });
+
     const apply = renderHook(() => useApplySuggestedBudgets(), { wrapper });
     await act(async () => {
       await expect(apply.result.current.mutateAsync({ start: 's', end: 'e' })).resolves.toBe(2);
     });
 
-    expect(invalidate).toHaveBeenCalledTimes(3);
+    expect(invalidate).toHaveBeenCalledTimes(8);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
   });
 });

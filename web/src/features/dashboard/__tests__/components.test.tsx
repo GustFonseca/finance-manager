@@ -2,9 +2,11 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { formatCents } from '@/lib/money';
 import { longMonthOf } from '@/lib/periods';
+import { BudgetAlerts } from '../components/BudgetAlerts';
+import { DailyBudgetCard } from '../components/DailyBudgetCard';
 import { ForecastCard } from '../components/ForecastCard';
 import { Installments } from '../components/Installments';
-import { CashFlowForecastDto, ForecastItemDto, InstallmentDto } from '../types';
+import { BudgetStatusDto, CashFlowForecastDto, DailyBudgetDto, ForecastItemDto, InstallmentDto } from '../types';
 
 const money = (cents: number) => formatCents(cents).replace(/\s+/g, ' ');
 const shortDay = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -142,5 +144,115 @@ describe('Installments', () => {
     expect(screen.getByText(money(-12000))).toBeTruthy();
     expect(screen.getByText(`Comprometido por mês · falta pagar ${money(211000)}`)).toBeTruthy();
     expect(screen.getByText(money(-37000))).toBeTruthy();
+  });
+});
+
+const daily = (overrides: Partial<DailyBudgetDto>): DailyBudgetDto => ({
+  isCurrentMonth: true,
+  daysLeft: 10,
+  monthlyGoalCents: 100000,
+  freeToSpendCents: 90000,
+  todayAllowanceCents: 9000,
+  spentTodayCents: 2000,
+  leftTodayCents: 7000,
+  hourValueCents: 3125,
+  workHoursPerMonth: 160,
+  budgets: [],
+  ...overrides,
+});
+
+const NO_ROOM = /Sem folga neste mês/;
+const OVER = 'O que passar de hoje diminui o limite dos próximos dias.';
+
+describe('DailyBudgetCard', () => {
+  it('renders nothing for a closed month', () => {
+    const { container } = render(<DailyBudgetCard daily={daily({ isCurrentMonth: false })} />);
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('shows what is left today with the goal, the days left and the hour value', () => {
+    render(<DailyBudgetCard daily={daily({})} />);
+
+    expect(screen.getByText('Quanto posso gastar hoje')).toBeTruthy();
+    expect(screen.getByText('Ainda pode gastar hoje')).toBeTruthy();
+    expect(screen.getByText(money(7000))).toBeTruthy();
+    expect(
+      screen.getByText(
+        `Limite de hoje ${money(9000)} · gasto hoje ${money(2000)} · ${money(90000)} livres até o fim do mês (10 dias contando hoje), já descontando as contas fixas e a meta de economia de ${money(100000)}.`
+      )
+    ).toBeTruthy();
+    expect(screen.getByText(`Sua hora de trabalho vale ${money(3125)} (renda média ÷ 160 h por mês).`)).toBeTruthy();
+    expect(screen.queryByText(NO_ROOM)).toBeNull();
+    expect(screen.queryByText(OVER)).toBeNull();
+  });
+
+  it('warns when today went over the limit, without a goal or hour value, on the last day', () => {
+    render(
+      <DailyBudgetCard
+        daily={daily({ daysLeft: 1, monthlyGoalCents: 0, hourValueCents: 0, freeToSpendCents: 1000, spentTodayCents: 5000, leftTodayCents: -4000 })}
+      />
+    );
+
+    expect(screen.getByText('Passou do limite de hoje em')).toBeTruthy();
+    expect(screen.getByText(money(4000))).toBeTruthy();
+    expect(screen.getByText(/livres até o fim do mês \(só hoje\), já descontando as contas fixas\.$/)).toBeTruthy();
+    expect(screen.getByText(OVER)).toBeTruthy();
+    expect(screen.queryByText(NO_ROOM)).toBeNull();
+    expect(screen.queryByText(/Sua hora de trabalho/)).toBeNull();
+  });
+
+  it('warns that there is no room in the month and never shows a negative free amount', () => {
+    render(<DailyBudgetCard daily={daily({ freeToSpendCents: -5000, spentTodayCents: 3000, leftTodayCents: -3000 })} />);
+
+    expect(screen.getByText(NO_ROOM)).toBeTruthy();
+    expect(screen.queryByText(OVER)).toBeNull();
+    expect(screen.getByText((text) => text.includes(`· ${money(0)} livres até o fim do mês`))).toBeTruthy();
+  });
+});
+
+const status = (overrides: Partial<BudgetStatusDto>): BudgetStatusDto => ({
+  categoryId: 'c1',
+  categoryName: 'Mercado',
+  color: '#0a0',
+  limitCents: 80000,
+  spentCents: 20000,
+  percent: 0.25,
+  level: 'OK',
+  perDayLeftCents: 6000,
+  ...overrides,
+});
+
+describe('BudgetAlerts', () => {
+  it('renders nothing when every budget is fine', () => {
+    const { container } = render(<BudgetAlerts budgets={[status({})]} />);
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('renders nothing without budgets', () => {
+    const { container } = render(<BudgetAlerts budgets={[]} />);
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('lists the budgets close to the limit and the exceeded ones', () => {
+    render(
+      <BudgetAlerts
+        budgets={[
+          status({}),
+          status({ categoryId: 'c2', categoryName: 'Lazer', spentCents: 68000, percent: 0.85, level: 'WARNING', perDayLeftCents: 1200 }),
+          status({ categoryId: 'c3', categoryName: 'Delivery', limitCents: 20000, spentCents: 30000, percent: 1.5, level: 'EXCEEDED' }),
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Alertas de orçamento')).toBeTruthy();
+    expect(screen.queryByText(/^Mercado:/)).toBeNull();
+    expect(screen.getByText(`Lazer: ${money(68000)} de ${money(80000)} (85%)`)).toBeTruthy();
+    expect(screen.getByText(`Chegando no limite: dá para gastar ${money(1200)} por dia até o fim do mês.`)).toBeTruthy();
+    expect(screen.getByTestId('icon-exclamation-circle')).toBeTruthy();
+    expect(screen.getByText(`Delivery: ${money(30000)} de ${money(20000)} (150%)`)).toBeTruthy();
+    expect(
+      screen.getByText(`Limite estourado em ${money(10000)}. Evite novos gastos nesta categoria até o fim do mês.`)
+    ).toBeTruthy();
+    expect(screen.getByTestId('icon-times-circle')).toBeTruthy();
   });
 });

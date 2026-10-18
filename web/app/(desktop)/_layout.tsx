@@ -6,6 +6,7 @@ import { AccountsScreen } from '@/features/accounts/AccountsScreen';
 import { ActivityScreen } from '@/features/activity/ActivityScreen';
 import { AvoidableScreen } from '@/features/avoidable/AvoidableScreen';
 import { CategoriesScreen } from '@/features/categories/CategoriesScreen';
+import { ChallengesScreen } from '@/features/challenges/ChallengesScreen';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
 import { GoalsScreen } from '@/features/goals/GoalsScreen';
@@ -24,6 +25,7 @@ const SCREENS: ProgramScreens = {
   '/merchants': MerchantsScreen,
   '/avoidable': AvoidableScreen,
   '/savings': SavingsScreen,
+  '/challenges': ChallengesScreen,
   '/events': ActivityScreen,
 };
 

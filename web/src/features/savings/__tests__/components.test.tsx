@@ -7,6 +7,7 @@ import { BudgetForm } from '../components/BudgetForm';
 import { BudgetTable } from '../components/BudgetTable';
 import { SavingsGoalForm } from '../components/SavingsGoalForm';
 import { SuggestionList } from '../components/SuggestionList';
+import { INVALID_HOURS_MESSAGE, MAX_WORK_HOURS, WorkHoursForm } from '../components/WorkHoursForm';
 import { CategoryBudgetDto, SuggestionKind } from '../types';
 
 const money = (cents: number) => formatCents(cents).replace(/\s+/g, ' ');
@@ -92,6 +93,45 @@ describe('SavingsGoalForm', () => {
     rerender(<SavingsGoalForm visible {...props} currentCents={50000} />);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(input().value).toBe('500,00');
+  });
+});
+
+describe('WorkHoursForm', () => {
+  it('starts with the current hours, rejects invalid ones and resets on reopen', () => {
+    const onSubmit = jest.fn();
+    const props = { currentHours: 176, onClose: jest.fn(), onSubmit };
+    const { rerender } = render(<WorkHoursForm visible {...props} />);
+    const input = () => screen.getByPlaceholderText('ex: 176') as HTMLInputElement;
+
+    expect(screen.getByText('Horas de trabalho')).toBeTruthy();
+    expect(input().value).toBe('176');
+
+    for (const value of ['', 'abc', '10,5', '0', String(MAX_WORK_HOURS + 1), '-3']) {
+      fireEvent.change(input(), { target: { value } });
+      fireEvent.click(screen.getByText('Salvar'));
+      expect(screen.getByRole('alert').textContent).toBe(INVALID_HOURS_MESSAGE);
+    }
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.change(input(), { target: { value: ` ${MAX_WORK_HOURS} ` } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(onSubmit).toHaveBeenCalledWith(MAX_WORK_HOURS);
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    fireEvent.change(input(), { target: { value: 'x' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(screen.getByRole('alert')).toBeTruthy();
+    rerender(<WorkHoursForm visible={false} {...props} />);
+    rerender(<WorkHoursForm visible {...props} currentHours={1} />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(input().value).toBe('1');
+  });
+
+  it('closes on cancel', () => {
+    const onClose = jest.fn();
+    render(<WorkHoursForm visible currentHours={160} onClose={onClose} onSubmit={jest.fn()} />);
+    fireEvent.click(screen.getByText('Cancelar'));
+    expect(onClose).toHaveBeenCalled();
   });
 });
 

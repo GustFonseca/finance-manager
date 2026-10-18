@@ -6,6 +6,7 @@ import DesktopLayout from '../../../app/(desktop)/_layout';
 import AccountsRoute from '../../../app/(desktop)/accounts';
 import AvoidableRoute from '../../../app/(desktop)/avoidable';
 import CategoriesRoute from '../../../app/(desktop)/categories';
+import ChallengesRoute from '../../../app/(desktop)/challenges';
 import EventsRoute from '../../../app/(desktop)/events';
 import GoalsRoute from '../../../app/(desktop)/goals';
 import DashboardRoute from '../../../app/(desktop)/index';
@@ -38,6 +39,7 @@ jest.mock('@/features/accounts/AccountsScreen', () => ({ AccountsScreen: mockScr
 jest.mock('@/features/activity/ActivityScreen', () => ({ ActivityScreen: mockScreen('eventos') }));
 jest.mock('@/features/avoidable/AvoidableScreen', () => ({ AvoidableScreen: mockScreen('gastos evitáveis') }));
 jest.mock('@/features/categories/CategoriesScreen', () => ({ CategoriesScreen: mockScreen('categorias') }));
+jest.mock('@/features/challenges/ChallengesScreen', () => ({ ChallengesScreen: mockScreen('desafios') }));
 jest.mock('@/features/dashboard/DashboardScreen', () => ({ DashboardScreen: mockScreen('painel') }));
 jest.mock('@/features/files/FileDesktop', () => ({ FileDesktop: mockScreen('arquivos na área de trabalho') }));
 jest.mock('@/features/goals/GoalsScreen', () => ({ GoalsScreen: mockScreen('metas') }));
@@ -67,7 +69,7 @@ describe('DesktopLayout', () => {
 
     const shell = screen.getByTestId('shell');
     expect(shell.textContent).toContain(
-      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /events'
+      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /challenges /events'
     );
     expect(screen.getByText('arquivos na área de trabalho')).toBeTruthy();
     expect(screen.getByText('rota atual')).toBeTruthy();
@@ -80,6 +82,7 @@ describe('program routes', () => {
     ['accounts', AccountsRoute],
     ['avoidable', AvoidableRoute],
     ['categories', CategoriesRoute],
+    ['challenges', ChallengesRoute],
     ['events', EventsRoute],
     ['goals', GoalsRoute],
     ['merchants', MerchantsRoute],

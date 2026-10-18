@@ -18,6 +18,8 @@ public class RecurringExpenseDto
 public class SavingsPlanDto
 {
     public long MonthlyGoalCents { get; set; }
+    public int WorkHoursPerMonth { get; set; }
+    public long HourValueCents { get; set; }
     public long MonthIncomeCents { get; set; }
     public long MonthExpenseCents { get; set; }
     public long MonthSavedCents { get; set; }
@@ -52,6 +54,11 @@ public class SavingsSuggestionDto
 public class SavingsGoalRequest
 {
     public long MonthlyGoalCents { get; set; }
+}
+
+public class WorkHoursRequest
+{
+    public int Hours { get; set; }
 }
 
 public class CategoryBudgetRequest

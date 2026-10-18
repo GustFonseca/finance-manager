@@ -45,6 +45,7 @@ describe('transactions queries', () => {
       ['summary'],
       ['savings'],
       ['merchants'],
+      ['challenges'],
     ]);
   });
 
@@ -64,6 +65,7 @@ describe('transactions queries', () => {
       ['summary'],
       ['savings'],
       ['merchants'],
+      ['challenges'],
     ]);
   });
 });

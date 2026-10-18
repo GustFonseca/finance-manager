@@ -77,4 +77,20 @@ export type AvoidableSpendingDto = {
   smallPurchases: SmallPurchasesDto;
   spikes: SpendingSpikeDto[];
   firstTimePurchases: FirstTimePurchaseDto[];
+  fees: FeesDto;
+  hourValueCents: number;
+};
+
+export type FeeItemDto = {
+  label: string;
+  monthCents: number;
+  yearCents: number;
+  count: number;
+  lastDate: string;
+};
+
+export type FeesDto = {
+  monthCents: number;
+  yearCents: number;
+  items: FeeItemDto[];
 };

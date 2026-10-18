@@ -13,6 +13,8 @@ export const emptyReport: AvoidableSpendingDto = {
   smallPurchases: { limitCents: 3000, monthlyCents: 0, timesPerMonth: 0, merchants: [] },
   spikes: [],
   firstTimePurchases: [],
+  fees: { monthCents: 0, yearCents: 0, items: [] },
+  hourValueCents: 0,
 };
 
 export const fullReport: AvoidableSpendingDto = {
@@ -102,4 +104,13 @@ export const fullReport: AvoidableSpendingDto = {
     { transactionId: 't2', merchantId: 'm7', name: 'Joalheria', cents: 90000, date: '2026-10-13T12:00:00Z', class: 'SUPERFLUOUS' },
     { transactionId: 't3', merchantId: null, name: 'Feira', cents: 50000, date: '2026-10-14T12:00:00Z', class: 'ESSENTIAL' },
   ],
+  fees: {
+    monthCents: 4500,
+    yearCents: 36000,
+    items: [
+      { label: 'Tarifa de pacote', monthCents: 2500, yearCents: 30000, count: 12, lastDate: '2026-10-03T12:00:00Z' },
+      { label: 'Juros do cheque especial', monthCents: 2000, yearCents: 6000, count: 3, lastDate: '2026-10-09T12:00:00Z' },
+    ],
+  },
+  hourValueCents: 5000,
 };

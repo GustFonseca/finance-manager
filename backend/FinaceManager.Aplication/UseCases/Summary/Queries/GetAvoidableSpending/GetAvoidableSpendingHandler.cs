@@ -12,15 +12,18 @@ public class GetAvoidableSpendingHandler : IRequestHandler<GetAvoidableSpendingQ
     private readonly ITransactionRepository _transactionRepository;
     private readonly IClassificationRulesProvider _rulesProvider;
     private readonly IInterestRateProvider _rateProvider;
+    private readonly ISavingsPlanRepository _planRepository;
 
     public GetAvoidableSpendingHandler(
         ITransactionRepository transactionRepository,
         IClassificationRulesProvider rulesProvider,
-        IInterestRateProvider rateProvider)
+        IInterestRateProvider rateProvider,
+        ISavingsPlanRepository planRepository)
     {
         _transactionRepository = transactionRepository;
         _rulesProvider = rulesProvider;
         _rateProvider = rateProvider;
+        _planRepository = planRepository;
     }
 
     public async Task<AvoidableSpendingDto> Handle(GetAvoidableSpendingQuery request, CancellationToken cancellationToken = default)
@@ -29,6 +32,9 @@ public class GetAvoidableSpendingHandler : IRequestHandler<GetAvoidableSpendingQ
         var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, since, request.Now, request.AccountId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
         var cdi = await _rateProvider.GetCdiAnnualPercentAsync(cancellationToken);
-        return AvoidableSpendingAnalyzer.Analyze(transactions, request.MonthStart, request.Now, rules, cdi);
+        var result = AvoidableSpendingAnalyzer.Analyze(transactions, request.MonthStart, request.Now, rules, cdi);
+        var plan = await _planRepository.GetByUserIdAsync(request.UserId);
+        result.HourValueCents = WorkValue.HourCents(transactions, request.MonthStart, WorkValue.Hours(plan), rules);
+        return result;
     }
 }

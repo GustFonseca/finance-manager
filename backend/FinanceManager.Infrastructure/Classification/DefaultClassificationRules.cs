@@ -75,6 +75,12 @@ public static class DefaultClassificationRules
         Rule(RuleType.BILL, @"energia eletrica|telecomunicacoes|condominios|planos de saude|seguros|administracao publica|\bensino\b", null, "Atividade (CNAE)"),
         Rule(RuleType.GROCERY, @"supermercados|hipermercados|minimercados|combustiveis|farmaceuticos|transporte rodoviario|taxi", null, "Atividade (CNAE)"),
         Rule(RuleType.SUPERFLUOUS, @"restaurantes|lanchonetes|bares|apostas|jogos de azar|loterias|cinema|espetaculos|vestuario|calcados|cosmeticos|perfumaria|tabacaria", null, "Atividade (CNAE)"),
+
+        Rule(RuleType.FEE, @"\btarifa|pacote de servicos|cesta de servicos|manutencao de conta|taxa de saque|tarifa de saque", "Tarifas bancárias"),
+        Rule(RuleType.FEE, @"\banuidade", "Anuidade do cartão"),
+        Rule(RuleType.FEE, @"\biof\b", "IOF"),
+        Rule(RuleType.FEE, @"\bjuros|encargos|rotativo|\bmora\b|financiamento de fatura|parcelamento de fatura", "Juros e encargos"),
+        Rule(RuleType.FEE, @"\bmulta", "Multas"),
     ];
 
     private static ClassificationRule Rule(RuleType type, string pattern, string? value = null, string? note = null)

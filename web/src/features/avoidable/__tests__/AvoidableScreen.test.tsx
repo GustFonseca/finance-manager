@@ -88,6 +88,7 @@ describe('AvoidableScreen', () => {
     expect(api.get).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
     expect(screen.getByText('Evitável neste mês')).toBeTruthy();
     expect(screen.getByText(money(45000))).toBeTruthy();
+    expect(screen.getByText('em gastos supérfluos · ≈ 9 h de trabalho')).toBeTruthy();
     expect(screen.getByText('Em 12 meses')).toBeTruthy();
     expect(screen.getByText(money(480000))).toBeTruthy();
     expect(screen.getByText(`no ritmo médio de ${money(40000)} por mês`)).toBeTruthy();
@@ -178,11 +179,42 @@ describe('AvoidableScreen', () => {
     const shopee = rowOf('Shopee');
     expect(within(shopee).getByText(`Compras · 3 compra(s) · média de ${money(15000)} por mês`)).toBeTruthy();
     expect(
-      within(shopee).getByText(`Cortando pela metade: ${money(10000)} por mês, ${money(125000)} investidos em 12 meses`)
+      within(shopee).getByText(
+        `Cortando pela metade: ${money(10000)} por mês, ${money(125000)} investidos em 12 meses · ≈ 4 h de trabalho`
+      )
     ).toBeTruthy();
     expect(within(shopee).getByText(money(20000))).toBeTruthy();
     expect(within(shopee).getByText('Não é desnecessário')).toBeTruthy();
     expect(within(rowOf('Loja avulsa')).queryByRole('button')).toBeNull();
+    expect(
+      within(rowOf('Loja avulsa')).getByText(
+        `Cortando pela metade: ${money(2500)} por mês, ${money(31000)} investidos em 12 meses · ≈ 1 h de trabalho`
+      )
+    ).toBeTruthy();
+  });
+
+  it('lists the fees and interest with their cost in work hours', async () => {
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText('Tarifas e juros')).toBeTruthy());
+    expect(
+      screen.getByText((text) => text.startsWith(`${money(4500)} neste mês e ${money(36000)} nos últimos 12 meses só em`))
+    ).toBeTruthy();
+    const fee = rowOf('Tarifa de pacote');
+    expect(within(fee).getByText(`12 cobrança(s) em 12 meses · última em ${day('2026-10-03T12:00:00Z')}`)).toBeTruthy();
+    expect(within(fee).getByText('≈ 6 h de trabalho')).toBeTruthy();
+    expect(within(fee).getByText(`${money(30000)} em 12 meses`)).toBeTruthy();
+    expect(within(rowOf('Juros do cheque especial')).getByText('≈ 1,2 h de trabalho')).toBeTruthy();
+  });
+
+  it('shows the fees without work hours when the hour value is unknown', async () => {
+    api.get.mockResolvedValue({ ...emptyReport, monthCents: 1000, fees: fullReport.fees });
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText('Tarifas e juros')).toBeTruthy());
+    expect(screen.getByText('em gastos supérfluos')).toBeTruthy();
+    expect(screen.queryByText(/de trabalho/)).toBeNull();
+    expect(screen.queryByText('Nenhum gasto evitável encontrado neste mês.')).toBeNull();
   });
 
   it('shows the empty state and hides every section when nothing is avoidable', async () => {
@@ -195,6 +227,7 @@ describe('AvoidableScreen', () => {
     expect(screen.queryByText('Picos fora do normal')).toBeNull();
     expect(screen.queryByText('Compras grandes pela primeira vez')).toBeNull();
     expect(screen.queryByText('Supérfluos por estabelecimento')).toBeNull();
+    expect(screen.queryByText('Tarifas e juros')).toBeNull();
   });
 
   it('does not show the empty state while a single section has items', async () => {

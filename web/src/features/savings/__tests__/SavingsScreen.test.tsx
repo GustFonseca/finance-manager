@@ -13,6 +13,8 @@ const money = (cents: number, signed = false) => formatCents(cents, { signed }).
 
 const plan: SavingsPlanDto = {
   monthlyGoalCents: 100000,
+  workHoursPerMonth: 160,
+  hourValueCents: 3125,
   monthIncomeCents: 500000,
   monthExpenseCents: 440000,
   monthSavedCents: 60000,
@@ -46,6 +48,7 @@ beforeEach(() => {
   jest.mocked(savingsApi.setGoal).mockResolvedValue(undefined);
   jest.mocked(savingsApi.setBudget).mockResolvedValue(undefined);
   jest.mocked(savingsApi.applySuggested).mockResolvedValue(4);
+  jest.mocked(savingsApi.setWorkHours).mockResolvedValue(undefined);
 });
 
 describe('SavingsScreen', () => {
@@ -62,6 +65,7 @@ describe('SavingsScreen', () => {
     expect(screen.getByText('Despesas no mês')).toBeTruthy();
     expect(screen.getByText('Média economizada (3 meses)')).toBeTruthy();
     expect(screen.getByText(money(5590))).toBeTruthy();
+    expect(screen.getByText(`Sua hora de trabalho vale ${money(3125)} (160 h por mês).`)).toBeTruthy();
     expect(screen.queryByText(/dos 3 meses anteriores têm transações/)).toBeNull();
     expect(screen.getByText('Cancele a Netflix')).toBeTruthy();
     expect(screen.getByText('Mercado')).toBeTruthy();
@@ -149,6 +153,50 @@ describe('SavingsScreen', () => {
     expect((screen.getByPlaceholderText('ex: 1000,00') as HTMLInputElement).value).toBe('');
     fireEvent.click(screen.getByText('Cancelar'));
     await waitFor(() => expect(screen.queryByText('Meta de economia')).toBeNull());
+  });
+
+  it('sets the work hours and hides the hour value when it is unknown', async () => {
+    jest.mocked(savingsApi.get).mockResolvedValue({ ...plan, hourValueCents: 0 });
+    const { client } = renderWithProviders(<SavingsScreen />, { windowId: '/savings' });
+    const invalidate = jest.spyOn(client, 'invalidateQueries');
+    await waitFor(() => expect(screen.getByText('Economizado até agora:')).toBeTruthy());
+    expect(screen.queryByText(/Sua hora de trabalho vale/)).toBeNull();
+
+    fireEvent.click(toolbar('Horas de trabalho'));
+    const input = screen.getByPlaceholderText('ex: 176') as HTMLInputElement;
+    expect(input.value).toBe('160');
+    fireEvent.change(input, { target: { value: '0' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(savingsApi.setWorkHours).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '180' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    await waitFor(() => expect(savingsApi.setWorkHours).toHaveBeenCalledWith(180));
+    await waitFor(() => expect(screen.queryByPlaceholderText('ex: 176')).toBeNull());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+  });
+
+  it('defaults the work hours form while the plan is not loaded and closes it on cancel', async () => {
+    jest.mocked(savingsApi.get).mockRejectedValue(new Error('boom'));
+    renderWithProviders(<SavingsScreen />, { windowId: '/savings' });
+    await waitFor(() => expect(screen.getByText('Não foi possível carregar o plano')).toBeTruthy());
+
+    fireEvent.click(toolbar('Horas de trabalho'));
+    expect((screen.getByPlaceholderText('ex: 176') as HTMLInputElement).value).toBe('176');
+    fireEvent.click(screen.getByText('Cancelar'));
+    await waitFor(() => expect(screen.queryByPlaceholderText('ex: 176')).toBeNull());
+  });
+
+  it('reports a failure to save the work hours', async () => {
+    jest.mocked(savingsApi.setWorkHours).mockRejectedValue(new Error('boom'));
+    renderWithProviders(<SavingsScreen />, { windowId: '/savings' });
+    await waitFor(() => expect(screen.getByText('Economizado até agora:')).toBeTruthy());
+
+    fireEvent.click(toolbar('Horas de trabalho'));
+    fireEvent.click(screen.getByText('Salvar'));
+    await waitFor(() => expect(screen.getByText('Não foi possível salvar as horas de trabalho')).toBeTruthy());
+    expect(savingsApi.setWorkHours).toHaveBeenCalledWith(160);
   });
 
   it('edits a category budget, using the suggestion', async () => {

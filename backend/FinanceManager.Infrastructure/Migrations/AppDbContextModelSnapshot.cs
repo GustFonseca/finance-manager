@@ -141,6 +141,47 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("CategoryBudgets");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Challenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Days")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("LimitCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("StartsOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Challenges");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.ClassificationRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -750,6 +791,56 @@ namespace FinanceManager.Infrastructure.Migrations
                             Pattern = "restaurantes|lanchonetes|bares|apostas|jogos de azar|loterias|cinema|espetaculos|vestuario|calcados|cosmeticos|perfumaria|tabacaria",
                             Priority = 570,
                             Type = "SUPERFLUOUS"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000058"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\btarifa|pacote de servicos|cesta de servicos|manutencao de conta|taxa de saque|tarifa de saque",
+                            Priority = 580,
+                            Type = "FEE",
+                            Value = "Tarifas bancárias"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000059"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\banuidade",
+                            Priority = 590,
+                            Type = "FEE",
+                            Value = "Anuidade do cartão"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000060"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\biof\\b",
+                            Priority = 600,
+                            Type = "FEE",
+                            Value = "IOF"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000061"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bjuros|encargos|rotativo|\\bmora\\b|financiamento de fatura|parcelamento de fatura",
+                            Priority = 610,
+                            Type = "FEE",
+                            Value = "Juros e encargos"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000062"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bmulta",
+                            Priority = 620,
+                            Type = "FEE",
+                            Value = "Multas"
                         });
                 });
 
@@ -892,6 +983,9 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("WorkHoursPerMonth")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -1078,6 +1172,17 @@ namespace FinanceManager.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Challenge", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

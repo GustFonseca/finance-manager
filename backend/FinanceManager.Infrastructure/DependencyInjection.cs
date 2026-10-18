@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<ISavingsPlanRepository, SavingsPlanRepository>();
+        services.AddScoped<IChallengeRepository, ChallengeRepository>();
         services.AddScoped<ICategoryBudgetRepository, CategoryBudgetRepository>();
         services.AddScoped<IMerchantRepository, MerchantRepository>();
         services.AddScoped<IClassificationRuleRepository, ClassificationRuleRepository>();

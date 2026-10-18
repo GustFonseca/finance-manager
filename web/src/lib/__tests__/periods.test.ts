@@ -8,6 +8,7 @@ import {
   monthRange,
   shortMonthOf,
   todayKey,
+  todayStartIso,
   toDay,
   twelveMonthsUntil,
   yearRange,
@@ -89,5 +90,12 @@ describe('day helpers', () => {
     jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 9));
 
     expect(todayKey()).toBe('2026-10-18');
+  });
+});
+
+describe('todayStartIso', () => {
+  it('gives the start of the local day as an ISO string', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 21, 45));
+    expect(todayStartIso()).toBe(new Date(2026, 9, 18).toISOString());
   });
 });

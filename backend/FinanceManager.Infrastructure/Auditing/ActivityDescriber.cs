@@ -22,6 +22,7 @@ public static class ActivityDescriber
         SavingsPlan plan => DescribeSavingsPlan(entry, plan),
         CategoryBudget budget => DescribeBudget(entry, budget, context),
         Merchant merchant => DescribeMerchant(entry, merchant),
+        Challenge challenge => DescribeChallenge(entry, challenge),
         _ => [],
     };
 
@@ -187,6 +188,16 @@ public static class ActivityDescriber
             || (entry.State == EntityState.Modified && Changed(entry, nameof(SavingsPlan.MonthlyGoalCents)));
         if (changed)
             yield return Log(plan.UserId, "Economia", $"Meta de economia definida: {Money(plan.MonthlyGoalCents)} por mês");
+        if (entry.State == EntityState.Modified && Changed(entry, nameof(SavingsPlan.WorkHoursPerMonth)))
+            yield return Log(plan.UserId, "Economia", $"Horas de trabalho por mês definidas: {plan.WorkHoursPerMonth}h");
+    }
+
+    private static IEnumerable<ActivityLog> DescribeChallenge(EntityEntry entry, Challenge c)
+    {
+        if (entry.State == EntityState.Added)
+            yield return Log(c.UserId, "Desafios", $"Desafio criado: {c.Name} ({c.Days} dias)");
+        else if (entry.State == EntityState.Deleted)
+            yield return Log(c.UserId, "Desafios", $"Desafio excluído: {c.Name}", ActivityType.WARNING);
     }
 
     private static IEnumerable<ActivityLog> DescribeBudget(EntityEntry entry, CategoryBudget budget, DbContext context)

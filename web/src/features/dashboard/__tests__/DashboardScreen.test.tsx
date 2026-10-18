@@ -11,7 +11,7 @@ import { avoidableApi } from '@/features/avoidable/api';
 import { emptyReport } from '@/features/avoidable/__tests__/fixtures';
 import { DashboardScreen } from '../DashboardScreen';
 import { summaryApi } from '../api';
-import { CashFlowForecastDto, RecurringExpenseDto } from '../types';
+import { CashFlowForecastDto, DailyBudgetDto, RecurringExpenseDto } from '../types';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -70,6 +70,24 @@ const forecast: CashFlowForecastDto = {
   },
 };
 
+const daily: DailyBudgetDto = {
+  isCurrentMonth: true,
+  daysLeft: 10,
+  monthlyGoalCents: 0,
+  freeToSpendCents: 60000,
+  todayAllowanceCents: 6000,
+  spentTodayCents: 1000,
+  leftTodayCents: 5000,
+  hourValueCents: 0,
+  workHoursPerMonth: 176,
+  budgets: [
+    {
+      categoryId: 'c1', categoryName: 'Lazer', color: '#a00', limitCents: 10000, spentCents: 9000,
+      percent: 0.9, level: 'WARNING', perDayLeftCents: 100,
+    },
+  ],
+};
+
 function txn(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, accountId: 'a1', accountName: 'Nubank', categoryId: 'c1', categoryName: 'Alimentação',
@@ -89,6 +107,7 @@ function setup() {
   jest.mocked(summaryApi.get).mockResolvedValue(summary);
   jest.mocked(summaryApi.recurring).mockResolvedValue(recurring);
   jest.mocked(summaryApi.forecast).mockResolvedValue(forecast);
+  jest.mocked(summaryApi.daily).mockResolvedValue(daily);
   jest.mocked(transactionsApi.getAll).mockResolvedValue([
     txn('t1'),
     txn('t2', { type: 'INCOME', amountCents: 250000, description: '', categoryName: 'Salário' }),
@@ -146,6 +165,12 @@ describe('DashboardScreen', () => {
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
     expect(summaryApi.forecast).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
 
+    expect(screen.getByText('Quanto posso gastar hoje')).toBeTruthy();
+    expect(screen.getByText(money(5000))).toBeTruthy();
+    expect(screen.getByText('Alertas de orçamento')).toBeTruthy();
+    expect(screen.getByText(`Lazer: ${money(9000)} de ${money(10000)} (90%)`)).toBeTruthy();
+    expect(summaryApi.daily).toHaveBeenCalledWith(monthRange(currentKey), expect.any(String));
+
     expect(screen.getByText('Previsão do mês')).toBeTruthy();
     expect(screen.getByText(money(115000))).toBeTruthy();
     expect(screen.getByText('Próximos lançamentos')).toBeTruthy();
@@ -194,6 +219,7 @@ describe('DashboardScreen', () => {
     expect(transactionsApi.getAll).toHaveBeenCalledTimes(2);
     expect(summaryApi.recurring).toHaveBeenCalledTimes(2);
     expect(summaryApi.forecast).toHaveBeenCalledTimes(2);
+    expect(summaryApi.daily).toHaveBeenCalledTimes(2);
     expect(goalsApi.getAll).toHaveBeenCalledTimes(2);
   });
 
@@ -205,6 +231,7 @@ describe('DashboardScreen', () => {
     fireEvent.click(toolbarButton!);
     await waitFor(() => expect(goalsApi.getAll).toHaveBeenCalledTimes(2));
     expect(summaryApi.forecast).toHaveBeenCalledTimes(2);
+    expect(summaryApi.daily).toHaveBeenCalledTimes(2);
   });
 
   it('hides the forecast for a closed month and the installments when there are none', async () => {
@@ -234,6 +261,16 @@ describe('DashboardScreen', () => {
     expect(screen.queryByText('Metas ativas')).toBeNull();
     expect(screen.queryByText('Total por mês')).toBeNull();
     expect(screen.getByText('Olá,')).toBeTruthy();
+  });
+
+  it('keeps the status busy while the daily budget loads and hides its cards until then', async () => {
+    jest.mocked(summaryApi.daily).mockReturnValue(new Promise(() => {}));
+    renderWithProviders(<DashboardScreen />, { windowId: '/' });
+
+    await waitFor(() => expect(screen.getByText('Previsão do mês')).toBeTruthy());
+    expect(screen.getByText('Atualizando...')).toBeTruthy();
+    expect(screen.queryByText('Quanto posso gastar hoje')).toBeNull();
+    expect(screen.queryByText('Alertas de orçamento')).toBeNull();
   });
 
   it('hides the avoidable spending card until it loads', async () => {

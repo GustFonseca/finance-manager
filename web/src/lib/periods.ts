@@ -63,3 +63,8 @@ export function isoToDay(iso: string): string {
 export function todayKey(): string {
   return isoToDay(new Date().toISOString());
 }
+
+export function todayStartIso(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+}

@@ -67,3 +67,29 @@ export type CashFlowForecastDto = {
   nextIncome: ForecastItemDto | null;
   installments: InstallmentsDto;
 };
+
+export type BudgetLevel = 'OK' | 'WARNING' | 'EXCEEDED';
+
+export type BudgetStatusDto = {
+  categoryId: string;
+  categoryName: string;
+  color: string;
+  limitCents: number;
+  spentCents: number;
+  percent: number;
+  level: BudgetLevel;
+  perDayLeftCents: number;
+};
+
+export type DailyBudgetDto = {
+  isCurrentMonth: boolean;
+  daysLeft: number;
+  monthlyGoalCents: number;
+  freeToSpendCents: number;
+  todayAllowanceCents: number;
+  spentTodayCents: number;
+  leftTodayCents: number;
+  hourValueCents: number;
+  workHoursPerMonth: number;
+  budgets: BudgetStatusDto[];
+};

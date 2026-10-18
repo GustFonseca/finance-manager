@@ -8,6 +8,7 @@ import { colors, fontSize, spacing } from '@/theme';
 import { BudgetForm } from './components/BudgetForm';
 import { BudgetTable } from './components/BudgetTable';
 import { SavingsGoalForm } from './components/SavingsGoalForm';
+import { WorkHoursForm } from './components/WorkHoursForm';
 import { SuggestionList } from './components/SuggestionList';
 import {
   currentMonth,
@@ -15,6 +16,7 @@ import {
   useSavingsPlan,
   useSetBudget,
   useSetSavingsGoal,
+  useSetWorkHours,
 } from './queries';
 import { CategoryBudgetDto } from './types';
 
@@ -25,8 +27,10 @@ export function SavingsScreen() {
   const setGoal = useSetSavingsGoal();
   const setBudget = useSetBudget();
   const applySuggested = useApplySuggestedBudgets();
+  const setWorkHours = useSetWorkHours();
 
   const [goalVisible, setGoalVisible] = useState(false);
+  const [hoursVisible, setHoursVisible] = useState(false);
   const [editing, setEditing] = useState<CategoryBudgetDto | null>(null);
 
   async function handleGoal(cents: number) {
@@ -35,6 +39,15 @@ export function SavingsScreen() {
       setGoalVisible(false);
     } catch (error) {
       alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível salvar a meta') });
+    }
+  }
+
+  async function handleWorkHours(hours: number) {
+    try {
+      await setWorkHours.mutateAsync(hours);
+      setHoursVisible(false);
+    } catch (error) {
+      alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível salvar as horas de trabalho') });
     }
   }
 
@@ -74,6 +87,7 @@ export function SavingsScreen() {
         actions={[
           { label: 'Definir meta', icon: 'flag', onPress: () => setGoalVisible(true) },
           { label: 'Aplicar limites sugeridos', icon: 'magic', onPress: handleApplySuggested },
+          { label: 'Horas de trabalho', icon: 'clock-o', onPress: () => setHoursVisible(true) },
         ]}
         onRefresh={refetch}
         status={isFetching ? 'Analisando...' : `${progressDay}% do mês concluído`}>
@@ -109,6 +123,11 @@ export function SavingsScreen() {
                     tone="auto"
                   />
                 </View>
+                {plan.hourValueCents > 0 ? (
+                  <Text style={styles.hint}>
+                    Sua hora de trabalho vale {formatCents(plan.hourValueCents)} ({plan.workHoursPerMonth} h por mês).
+                  </Text>
+                ) : null}
               </Card>
 
               <Card title="Análise automática">
@@ -144,6 +163,13 @@ export function SavingsScreen() {
         saving={setGoal.isPending}
         onClose={() => setGoalVisible(false)}
         onSubmit={handleGoal}
+      />
+      <WorkHoursForm
+        visible={hoursVisible}
+        currentHours={plan?.workHoursPerMonth ?? 176}
+        saving={setWorkHours.isPending}
+        onClose={() => setHoursVisible(false)}
+        onSubmit={handleWorkHours}
       />
       <BudgetForm
         budget={editing}

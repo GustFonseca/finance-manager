@@ -55,6 +55,7 @@ public static class AvoidableSpendingAnalyzer
             SmallPurchases = SmallPurchases(historyMonths > 0 ? history : current, divisor),
             Spikes = Spikes(current, expenses, monthStart, rules),
             FirstTimePurchases = FirstTimePurchases(current, expenses, monthStart),
+            Fees = FeeAnalyzer.Analyze(transactions, monthStart, now, rules),
         };
     }
 

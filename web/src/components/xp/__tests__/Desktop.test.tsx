@@ -98,7 +98,8 @@ describe('Desktop', () => {
     expect(iconStyle('Transações')).toEqual({ left: '8px', top: '88px' });
     expect(iconStyle('Gastos evitáveis')).toEqual({ left: '8px', top: '568px' });
     expect(iconStyle('Plano de economia')).toEqual({ left: '8px', top: '648px' });
-    expect(iconStyle('Visualizar eventos')).toEqual({ left: '92px', top: '8px' });
+    expect(iconStyle('Desafios')).toEqual({ left: '92px', top: '8px' });
+    expect(iconStyle('Visualizar eventos')).toEqual({ left: '92px', top: '88px' });
     expect(iconStyle('Extrato')).toEqual({ left: '1108px', top: '682px' });
     expect(screen.getByText('extra')).toBeTruthy();
   });

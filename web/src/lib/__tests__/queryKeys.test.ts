@@ -6,6 +6,7 @@ describe('queryKeys', () => {
 
     expect(new Set(keys).size).toBe(keys.length);
     expect(queryKeys.activity).toEqual(['activity']);
+    expect(queryKeys.challenges).toEqual(['challenges']);
   });
 
   it('nests the avoidable spending under the summary so summary invalidation refreshes it', () => {

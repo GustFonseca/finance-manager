@@ -10,11 +10,13 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { AvoidableSummaryCard } from '@/features/avoidable/components/AvoidableSummaryCard';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
+import { BudgetAlerts } from './components/BudgetAlerts';
+import { DailyBudgetCard } from './components/DailyBudgetCard';
 import { ForecastCard } from './components/ForecastCard';
 import { Installments } from './components/Installments';
 import { RecurringExpenses } from './components/RecurringExpenses';
 import { SummaryCards } from './components/SummaryCards';
-import { useForecast, useRecurringExpenses, useSummary } from './queries';
+import { useDailyBudget, useForecast, useRecurringExpenses, useSummary } from './queries';
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -29,6 +31,7 @@ export function DashboardScreen() {
   const transactionsQuery = useTransactions(filter);
   const recurringQuery = useRecurringExpenses(filter);
   const forecastQuery = useForecast(filter);
+  const dailyQuery = useDailyBudget(filter);
   const goalsQuery = useGoals();
 
   const isFetching =
@@ -36,6 +39,7 @@ export function DashboardScreen() {
     transactionsQuery.isFetching ||
     recurringQuery.isFetching ||
     forecastQuery.isFetching ||
+    dailyQuery.isFetching ||
     goalsQuery.isFetching;
 
   function refetchAll() {
@@ -43,6 +47,7 @@ export function DashboardScreen() {
     transactionsQuery.refetch();
     recurringQuery.refetch();
     forecastQuery.refetch();
+    dailyQuery.refetch();
     goalsQuery.refetch();
   }
 
@@ -71,6 +76,10 @@ export function DashboardScreen() {
           <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
         ) : null}
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+
+        {dailyQuery.data && <DailyBudgetCard daily={dailyQuery.data} />}
+
+        {dailyQuery.data && <BudgetAlerts budgets={dailyQuery.data.budgets} />}
 
         {forecastQuery.data && <ForecastCard forecast={forecastQuery.data} />}
 

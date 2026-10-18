@@ -30,10 +30,14 @@ public class GetSavingsPlanHandler : IRequestHandler<GetSavingsPlanQuery, Saving
 
     public async Task<SavingsPlanDto> Handle(GetSavingsPlanQuery request, CancellationToken cancellationToken = default)
     {
+        var rules = await _rulesProvider.GetAsync(cancellationToken);
         var input = await SavingsAnalysisLoader.LoadAsync(
             request.UserId, request.MonthStart, request.Now,
-            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository,
-            await _rulesProvider.GetAsync(cancellationToken));
-        return SavingsAnalyzer.Analyze(input);
+            _transactionRepository, _categoryRepository, _budgetRepository, _planRepository, rules);
+        var result = SavingsAnalyzer.Analyze(input);
+        var plan = await _planRepository.GetByUserIdAsync(request.UserId);
+        result.WorkHoursPerMonth = WorkValue.Hours(plan);
+        result.HourValueCents = WorkValue.HourCents(input.Transactions, request.MonthStart, result.WorkHoursPerMonth, rules);
+        return result;
     }
 }

@@ -11,6 +11,7 @@ import { SpendingClass } from '@/features/spending/types';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
 import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/periods';
+import { workHoursOf } from '@/lib/workHours';
 import { colors, fontSize, spacing } from '@/theme';
 import { AvoidableRow, RowAction } from './components/AvoidableRow';
 import { useAvoidableSpending } from './queries';
@@ -72,7 +73,8 @@ export function AvoidableScreen() {
     data.subscriptions.length === 0 &&
     data.smallPurchases.merchants.length === 0 &&
     data.spikes.length === 0 &&
-    data.firstTimePurchases.length === 0;
+    data.firstTimePurchases.length === 0 &&
+    data.fees.items.length === 0;
 
   return (
     <>
@@ -97,7 +99,7 @@ export function AvoidableScreen() {
                 <StatTile
                   label="Evitável neste mês"
                   value={<MoneyText cents={data.monthCents} tone="expense" style={styles.tileValue} />}
-                  detail="em gastos supérfluos"
+                  detail={['em gastos supérfluos', workHoursOf(data.monthCents, data.hourValueCents)].filter(Boolean).join(' · ')}
                 />
                 <StatTile
                   label="Em 12 meses"
@@ -112,6 +114,24 @@ export function AvoidableScreen() {
               </View>
 
               {nothing ? <EmptyState message="Nenhum gasto evitável encontrado neste mês." /> : null}
+
+              {data.fees.items.length > 0 ? (
+                <Card title="Tarifas e juros">
+                  <Text style={styles.lead}>
+                    {formatCents(data.fees.monthCents)} neste mês e {formatCents(data.fees.yearCents)} nos últimos 12 meses só em
+                    tarifas, juros e multas. Quase tudo isso dá para negociar, trocar por conta gratuita ou evitar pagando em dia.
+                  </Text>
+                  {data.fees.items.map((f) => (
+                    <AvoidableRow
+                      key={f.label}
+                      title={f.label}
+                      detail={`${f.count} cobrança(s) em 12 meses · última em ${day(f.lastDate)}`}
+                      highlight={workHoursOf(f.yearCents, data.hourValueCents) ?? undefined}
+                      value={`${formatCents(f.yearCents)} em 12 meses`}
+                    />
+                  ))}
+                </Card>
+              ) : null}
 
               {data.subscriptions.length > 0 ? (
                 <Card title="Assinaturas">
@@ -195,7 +215,12 @@ export function AvoidableScreen() {
                       key={m.merchantId ?? m.name}
                       title={m.name}
                       detail={`${m.categoryName} · ${m.count} compra(s) · média de ${formatCents(m.monthlyAverageCents)} por mês`}
-                      highlight={`Cortando pela metade: ${formatCents(m.cutCents)} por mês, ${formatCents(m.cutInvestedIn12MonthsCents)} investidos em 12 meses`}
+                      highlight={[
+                        `Cortando pela metade: ${formatCents(m.cutCents)} por mês, ${formatCents(m.cutInvestedIn12MonthsCents)} investidos em 12 meses`,
+                        workHoursOf(m.monthCents, data.hourValueCents),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                       value={formatCents(m.monthCents)}
                       actions={actions(m.merchantId, m.name, 'ESSENTIAL')}
                     />

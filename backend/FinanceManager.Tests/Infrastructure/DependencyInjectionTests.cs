@@ -90,6 +90,7 @@ public class DependencyInjectionTests
         Assert.IsType<SavingsPlanRepository>(services.GetRequiredService<ISavingsPlanRepository>());
         Assert.IsType<CategoryBudgetRepository>(services.GetRequiredService<ICategoryBudgetRepository>());
         Assert.IsType<MerchantRepository>(services.GetRequiredService<IMerchantRepository>());
+        Assert.IsType<ChallengeRepository>(services.GetRequiredService<IChallengeRepository>());
         Assert.IsType<ClassificationRuleRepository>(services.GetRequiredService<IClassificationRuleRepository>());
         Assert.IsType<SupabaseFileStorage>(services.GetRequiredService<IFileStorage>());
         Assert.IsType<GoogleTokenValidator>(services.GetRequiredService<IGoogleTokenValidator>());

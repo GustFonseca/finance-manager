@@ -39,4 +39,10 @@ describe('summaryApi', () => {
     await summaryApi.forecast();
     expect(http.get).toHaveBeenCalledWith('/summary/forecast', { params: { start: undefined, end: undefined, accountId: undefined } });
   });
+
+  it('gets the daily budget for the month and the start of today, ignoring the account', async () => {
+    jest.mocked(http.get).mockResolvedValue({ data: { leftTodayCents: 3 } });
+    await expect(summaryApi.daily({ start: 's', end: 'e', accountId: 'a1' }, 'd')).resolves.toEqual({ leftTodayCents: 3 });
+    expect(http.get).toHaveBeenCalledWith('/summary/daily', { params: { start: 's', end: 'e', dayStart: 'd' } });
+  });
 });

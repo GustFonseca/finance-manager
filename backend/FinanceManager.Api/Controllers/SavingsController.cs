@@ -5,6 +5,7 @@ using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Savings.Commands.ApplySuggestedBudgets;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetCategoryBudget;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetSavingsGoal;
+using FinanceManager.Aplication.UseCases.Savings.Commands.SetWorkHours;
 using FinanceManager.Aplication.UseCases.Savings.Queries.GetSavingsPlan;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,13 @@ public class SavingsController : ControllerBase
     public async Task<IActionResult> SetGoal([FromBody] SavingsGoalRequest request)
     {
         await _mediator.Send(new SetSavingsGoalCommand(GetUserId(), request.MonthlyGoalCents));
+        return NoContent();
+    }
+
+    [HttpPut("work-hours")]
+    public async Task<IActionResult> SetWorkHours([FromBody] WorkHoursRequest request)
+    {
+        await _mediator.Send(new SetWorkHoursCommand(GetUserId(), request.Hours));
         return NoContent();
     }
 

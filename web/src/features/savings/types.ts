@@ -20,6 +20,8 @@ export type SavingsSuggestionDto = {
 
 export type SavingsPlanDto = {
   monthlyGoalCents: number;
+  workHoursPerMonth: number;
+  hourValueCents: number;
   monthIncomeCents: number;
   monthExpenseCents: number;
   monthSavedCents: number;

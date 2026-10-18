@@ -76,7 +76,7 @@ public class MerchantClassAndAvoidableTests
         var lazer = _db.AddCategory(_me.Id, "Lazer");
         _db.AddTransaction(account, lazer, 5000, new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc), "Cinema");
         _db.AddTransaction(account, lazer, 7000, new DateTime(2025, 9, 10, 12, 0, 0, DateTimeKind.Utc), "Cinema antigo");
-        var handler = new GetAvoidableSpendingHandler(new TransactionRepository(_db), TestRules.Provider, new FixedRate(10m));
+        var handler = new GetAvoidableSpendingHandler(new TransactionRepository(_db), TestRules.Provider, new FixedRate(10m), new SavingsPlanRepository(_db));
 
         var result = await handler.Handle(new GetAvoidableSpendingQuery(_me.Id, MonthStart, Now, null));
 
