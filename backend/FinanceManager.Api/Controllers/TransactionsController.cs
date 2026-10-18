@@ -5,7 +5,9 @@ using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteAllTransactions;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.ImportTransactions;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.UpdateTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Queries.GetTransactionByDateRange;
+using FinanceManager.Domain.Enuns;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,9 +32,13 @@ public class TransactionsController : ControllerBase
         [FromQuery] DateTime? start,
         [FromQuery] DateTime? end,
         [FromQuery] Guid? accountId,
-        [FromQuery] Guid? merchantId)
+        [FromQuery] Guid? merchantId,
+        [FromQuery] Guid? categoryId,
+        [FromQuery] TransactionType? type,
+        [FromQuery] string? search)
     {
-        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId, merchantId));
+        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(
+            GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId, merchantId, categoryId, type, search));
         return Ok(transactions);
     }
 
@@ -49,6 +55,15 @@ public class TransactionsController : ControllerBase
             request.Date,
             request.Recurrence));
         return Created($"/api/transactions/{transaction.Id}", transaction);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<TransactionDto>> Update(Guid id, [FromBody] CreateTransactionRequest request)
+    {
+        var transaction = await _mediator.Send(new UpdateTransactionCommand(
+            GetUserId(), id, request.AccountId, request.CategoryId, request.Type,
+            request.AmountCents, request.Description, request.Date, request.Recurrence));
+        return Ok(transaction);
     }
 
     [HttpDelete("{id}")]

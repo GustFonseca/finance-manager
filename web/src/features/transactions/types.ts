@@ -33,3 +33,5 @@ export type ImportTransactionsRequest = {
 export type DateRange = { start?: string; end?: string };
 
 export type PeriodFilter = DateRange & { accountId?: string; merchantId?: string };
+
+export type TransactionFilter = PeriodFilter & { categoryId?: string; type?: TransactionType; search?: string };

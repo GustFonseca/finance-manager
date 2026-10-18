@@ -6,17 +6,54 @@ jest.mock('@/lib/http', () => ({ http: { get: jest.fn(), post: jest.fn(), put: j
 const mocked = jest.mocked(http);
 
 describe('transactionsApi', () => {
-  it('lists transactions with the period filter as params', async () => {
+  it('lists transactions with every filter as params', async () => {
     mocked.get.mockResolvedValue({ data: [{ id: 't' }] });
-    await expect(transactionsApi.getAll({ start: 's', end: 'e', accountId: 'a', merchantId: 'm' })).resolves.toEqual([{ id: 't' }]);
-    expect(mocked.get).toHaveBeenCalledWith('/transactions', { params: { start: 's', end: 'e', accountId: 'a', merchantId: 'm' } });
+    await expect(
+      transactionsApi.getAll({
+        start: 's',
+        end: 'e',
+        accountId: 'a',
+        merchantId: 'm',
+        categoryId: 'c',
+        type: 'INCOME',
+        search: 'ifood',
+      })
+    ).resolves.toEqual([{ id: 't' }]);
+    expect(mocked.get.mock.calls[0]).toStrictEqual([
+      '/transactions',
+      { params: { start: 's', end: 'e', accountId: 'a', merchantId: 'm', categoryId: 'c', type: 'INCOME', search: 'ifood' } },
+    ]);
+  });
+
+  it('omits an empty search', async () => {
+    mocked.get.mockResolvedValue({ data: [] });
+    await transactionsApi.getAll({ search: '' });
+    expect(mocked.get.mock.calls[0][1]).toStrictEqual({
+      params: {
+        start: undefined,
+        end: undefined,
+        accountId: undefined,
+        merchantId: undefined,
+        categoryId: undefined,
+        type: undefined,
+        search: undefined,
+      },
+    });
   });
 
   it('lists transactions without a filter', async () => {
     mocked.get.mockResolvedValue({ data: [] });
     await transactionsApi.getAll();
     expect(mocked.get).toHaveBeenCalledWith('/transactions', {
-      params: { start: undefined, end: undefined, accountId: undefined, merchantId: undefined },
+      params: {
+        start: undefined,
+        end: undefined,
+        accountId: undefined,
+        merchantId: undefined,
+        categoryId: undefined,
+        type: undefined,
+        search: undefined,
+      },
     });
   });
 
@@ -25,6 +62,13 @@ describe('transactionsApi', () => {
     mocked.post.mockResolvedValue({ data: { id: 'n' } });
     await expect(transactionsApi.create(body)).resolves.toEqual({ id: 'n' });
     expect(mocked.post).toHaveBeenCalledWith('/transactions', body);
+  });
+
+  it('updates a transaction', async () => {
+    const body = { accountId: 'a', categoryId: 'c', type: 'INCOME' as const, amountCents: 10, description: 'x', date: 'd', recurrence: 'MONTHLY' as const };
+    mocked.put.mockResolvedValue({ data: { id: 't1' } });
+    await expect(transactionsApi.update('t1', body)).resolves.toEqual({ id: 't1' });
+    expect(mocked.put).toHaveBeenCalledWith('/transactions/t1', body);
   });
 
   it('imports many lines and returns the imported count', async () => {

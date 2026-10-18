@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { DialogButtons, Input, Modal } from '@/components/ui';
-import { parseToCents } from '@/lib/money';
+import { DialogButtons, FormError, Input, Modal } from '@/components/ui';
+import { INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
 import { GoalDto } from '../types';
 
 type Props = {
@@ -12,14 +12,19 @@ type Props = {
 
 export function ProgressForm({ goal, saving, onClose, onSubmit }: Props) {
   const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (goal) setAmount('');
+    if (!goal) return;
+    setAmount('');
+    setError(null);
   }, [goal]);
 
   function handleSubmit() {
     const amountCents = parseToCents(amount);
-    if (amountCents === null) return;
+    const invalid = amountCents === null || amountCents <= 0;
+    setError(invalid ? INVALID_AMOUNT_MESSAGE : null);
+    if (invalid) return;
     onSubmit(amountCents);
   }
 
@@ -37,6 +42,7 @@ export function ProgressForm({ goal, saving, onClose, onSubmit }: Props) {
         onChangeText={setAmount}
         autoFocus
       />
+      <FormError message={error} />
       <DialogButtons
         confirmLabel="Adicionar"
         onConfirm={handleSubmit}

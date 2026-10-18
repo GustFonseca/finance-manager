@@ -1,10 +1,14 @@
 import {
+  dayToIso,
   isCurrentMonth,
+  isoToDay,
   longMonthOf,
   monthKeyOf,
   monthLabel,
   monthRange,
   shortMonthOf,
+  todayKey,
+  toDay,
   twelveMonthsUntil,
   yearRange,
 } from '../periods';
@@ -62,5 +66,28 @@ describe('isCurrentMonth', () => {
 
     expect(isCurrentMonth('2026-10')).toBe(true);
     expect(isCurrentMonth('2026-09')).toBe(false);
+  });
+});
+
+describe('day helpers', () => {
+  it('builds a day key only for real dates', () => {
+    expect(toDay(2026, 2, 29)).toBeNull();
+    expect(toDay(2024, 2, 9)).toBe('2024-02-09');
+  });
+
+  it('converts a day key to a midday ISO and back', () => {
+    const iso = dayToIso('2026-10-03');
+    expect(new Date(iso).getHours()).toBe(12);
+    expect(isoToDay(iso)).toBe('2026-10-03');
+  });
+
+  it('keeps the raw prefix when the ISO is not a date', () => {
+    expect(isoToDay('invalido-xx')).toBe('invalido-x');
+  });
+
+  it('returns today as a day key', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 9));
+
+    expect(todayKey()).toBe('2026-10-18');
   });
 });

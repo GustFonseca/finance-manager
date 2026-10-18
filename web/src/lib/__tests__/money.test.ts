@@ -1,4 +1,11 @@
-import { formatCents, formatCentsCompact, formatCentsForInput, parseSignedAmountToCents, parseToCents } from '../money';
+import {
+  formatCents,
+  formatCentsCompact,
+  formatCentsForInput,
+  INVALID_AMOUNT_MESSAGE,
+  parseSignedAmountToCents,
+  parseToCents,
+} from '../money';
 
 const normalize = (value: string) => value.replace(/ /g, ' ');
 
@@ -102,5 +109,11 @@ describe('formatCentsCompact', () => {
     expect(formatCentsCompact(1500000)).toBe('R$ 15 mil');
     expect(formatCentsCompact(45050)).toBe('R$ 451');
     expect(formatCentsCompact(0)).toBe('R$ 0');
+  });
+});
+
+describe('INVALID_AMOUNT_MESSAGE', () => {
+  it('shows an example of a valid amount', () => {
+    expect(INVALID_AMOUNT_MESSAGE).toBe('Informe um valor válido, por exemplo 150,00.');
   });
 });

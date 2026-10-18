@@ -1,5 +1,6 @@
 import { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { getErrorMessage, http, setUnauthorizedHandler, TOKEN_KEY } from '../http';
+import { isServerWaking, SLOW_REQUEST_MS } from '../serverWake';
 
 function axiosError(status?: number, data?: unknown, headers: Record<string, string> = {}) {
   const config = { headers: new AxiosHeaders() } as InternalAxiosRequestConfig;
@@ -109,5 +110,77 @@ describe('getErrorMessage', () => {
   it('falls back for errors that did not come from the API', () => {
     expect(getErrorMessage(new Error('x'), 'Erro')).toBe('Erro');
     expect(getErrorMessage('x', 'Erro')).toBe('Erro');
+  });
+});
+
+describe('slow request tracking', () => {
+  const originalAdapter = http.defaults.adapter;
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    http.defaults.adapter = originalAdapter;
+    jest.useRealTimers();
+  });
+
+  function deferredAdapter() {
+    let finish: (ok: boolean) => void = () => {};
+    http.defaults.adapter = (config: InternalAxiosRequestConfig) =>
+      new Promise((resolve, reject) => {
+        finish = (ok) => {
+          if (ok) resolve({ data: 'ok', status: 200, statusText: 'OK', headers: {}, config });
+          else reject(new AxiosError('falhou', 'ERR', config, null, { status: 401, statusText: '', data: {}, headers: {}, config }));
+        };
+      });
+    return (ok: boolean) => finish(ok);
+  }
+
+  async function flush() {
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  }
+
+  it('marks a slow successful request and clears it when it answers', async () => {
+    const finish = deferredAdapter();
+    const request = http.get('/accounts');
+    await flush();
+
+    jest.advanceTimersByTime(SLOW_REQUEST_MS);
+    expect(isServerWaking()).toBe(true);
+
+    finish(true);
+    await expect(request).resolves.toMatchObject({ data: 'ok' });
+    expect(isServerWaking()).toBe(false);
+  });
+
+  it('clears a slow failed request and still reports unauthorized', async () => {
+    const onUnauthorized = jest.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    const finish = deferredAdapter();
+    const request = http.get('/accounts');
+    await flush();
+
+    jest.advanceTimersByTime(SLOW_REQUEST_MS);
+    expect(isServerWaking()).toBe(true);
+
+    finish(false);
+    await expect(request).rejects.toBeInstanceOf(AxiosError);
+    expect(isServerWaking()).toBe(false);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not flag requests that answer before the delay', async () => {
+    const finish = deferredAdapter();
+    const request = http.get('/accounts');
+    await flush();
+    finish(true);
+    await request;
+
+    jest.advanceTimersByTime(SLOW_REQUEST_MS);
+    expect(isServerWaking()).toBe(false);
+  });
+
+  it('ignores errors without a request config', async () => {
+    http.defaults.adapter = () => Promise.reject(new AxiosError('sem config'));
+
+    await expect(http.get('/a')).rejects.toBeInstanceOf(AxiosError);
   });
 });

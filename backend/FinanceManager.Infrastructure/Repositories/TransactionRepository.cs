@@ -40,6 +40,30 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         return await query.OrderByDescending(t => t.Date).ToListAsync();
     }
 
+    public async Task<List<Transaction>> SearchAsync(Guid userId, TransactionFilter filter)
+    {
+        var query = _dbSet
+            .Include(t => t.Account)
+            .Include(t => t.Category)
+            .Include(t => t.Merchant)
+            .Where(t => t.UserId == userId);
+
+        if (filter.Start.HasValue) query = query.Where(t => t.Date >= filter.Start.Value);
+        if (filter.End.HasValue) query = query.Where(t => t.Date <= filter.End.Value);
+        if (filter.AccountId.HasValue) query = query.Where(t => t.AccountId == filter.AccountId.Value);
+        if (filter.MerchantId.HasValue) query = query.Where(t => t.MerchantId == filter.MerchantId.Value);
+        if (filter.CategoryId.HasValue) query = query.Where(t => t.CategoryId == filter.CategoryId.Value);
+        if (filter.Type.HasValue) query = query.Where(t => t.Type == filter.Type.Value);
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim().ToLower();
+            query = query.Where(t => t.Description.ToLower().Contains(term)
+                                     || (t.Merchant != null && t.Merchant.Name.ToLower().Contains(term)));
+        }
+
+        return await query.OrderByDescending(t => t.Date).ToListAsync();
+    }
+
     public async Task<List<Transaction>> GetUncataloguedAsync()
     {
         return await _dbSet.Include(t => t.Category).Where(t => t.MerchantId == null).ToListAsync();

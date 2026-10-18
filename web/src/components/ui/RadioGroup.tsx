@@ -23,7 +23,7 @@ export function RadioGroup<T extends string>({ options, value, onChange }: Props
             key={option.value}
             onPress={() => onChange(option.value)}
             accessibilityRole="radio"
-            accessibilityState={{ checked }}
+            aria-checked={checked}
             style={styles.option}>
             <View style={styles.circle}>{checked ? <View style={styles.dot} /> : null}</View>
             <Text style={styles.label}>{option.label}</Text>

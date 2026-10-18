@@ -3,7 +3,7 @@ import { act, render, renderHook, screen, waitFor } from '@testing-library/react
 import { setUnauthorizedHandler } from '@/lib/http';
 import { reportError } from '@/lib/logger';
 import { queryClient } from '@/lib/queryClient';
-import { AuthProvider, useAuth } from '../AuthContext';
+import { AuthProvider, LOGIN_FAILED, useAuth } from '../AuthContext';
 import { authApi } from '../api';
 
 jest.mock('../api');
@@ -11,8 +11,8 @@ jest.mock('@/lib/logger', () => ({ reportError: jest.fn() }));
 jest.mock('@/lib/http', () => ({ TOKEN_KEY: 'jwt_token', setUnauthorizedHandler: jest.fn() }));
 
 function Probe() {
-  const { token, user, isLoading } = useAuth();
-  return <span data-testid="state">{JSON.stringify({ token, user, isLoading })}</span>;
+  const { token, user, isLoading, error } = useAuth();
+  return <span data-testid="state">{JSON.stringify({ token, user, isLoading, error })}</span>;
 }
 
 const state = () => JSON.parse(screen.getByTestId('state').textContent!);
@@ -31,7 +31,7 @@ describe('AuthProvider', () => {
 
     expect(state().isLoading).toBe(true);
     await waitFor(() => expect(state().isLoading).toBe(false));
-    expect(state()).toEqual({ token: 'tok', user: { email: 'g@x.com', name: 'Gustavo' }, isLoading: false });
+    expect(state()).toEqual({ token: 'tok', user: { email: 'g@x.com', name: 'Gustavo' }, isLoading: false, error: null });
     expect(authApi.googleLogin).not.toHaveBeenCalled();
   });
 
@@ -41,7 +41,7 @@ describe('AuthProvider', () => {
     render(<Probe />, { wrapper });
 
     await waitFor(() => expect(state().isLoading).toBe(false));
-    expect(state()).toEqual({ token: null, user: null, isLoading: false });
+    expect(state()).toEqual({ token: null, user: null, isLoading: false, error: null });
   });
 
   it('ignores a hash without an id_token', async () => {
@@ -66,6 +66,7 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(state().token).toBe('app-jwt'));
     expect(authApi.googleLogin).toHaveBeenCalledWith('google-jwt');
     expect(state().user).toEqual({ email: 'g@x.com', name: 'Gustavo' });
+    expect(state().error).toBeNull();
     expect(localStorage.getItem('jwt_token')).toBe('app-jwt');
     expect(JSON.parse(localStorage.getItem('user_data')!)).toEqual({ email: 'g@x.com', name: 'Gustavo' });
   });
@@ -78,6 +79,18 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(state().isLoading).toBe(false));
     expect(reportError).toHaveBeenCalledWith('Login com o Google falhou: 401');
     expect(state().token).toBeNull();
+    expect(state().error).toBe(LOGIN_FAILED);
+  });
+
+  it('clears the login error when signing out', async () => {
+    window.history.replaceState(null, '', '/#id_token=bad');
+    jest.mocked(authApi.googleLogin).mockRejectedValue(new Error('401'));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.error).toBe(LOGIN_FAILED));
+
+    await act(() => result.current.signOut());
+
+    expect(result.current.error).toBeNull();
   });
 
   it('reports a failed Google login that is not an Error', async () => {
@@ -87,6 +100,7 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(state().isLoading).toBe(false));
     expect(reportError).toHaveBeenCalledWith('Login com o Google falhou');
+    expect(state().error).toBe(LOGIN_FAILED);
   });
 
   it('signs out, clearing storage and the query cache', async () => {
@@ -97,7 +111,7 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(result.current.token).toBe('tok'));
 
     await act(() => result.current.signOut());
-    expect(result.current).toMatchObject({ token: null, user: null, isLoading: false });
+    expect(result.current).toMatchObject({ token: null, user: null, isLoading: false, error: null });
     expect(localStorage.getItem('jwt_token')).toBeNull();
     expect(localStorage.getItem('user_data')).toBeNull();
     expect(clear).toHaveBeenCalled();
@@ -147,7 +161,7 @@ describe('AuthProvider', () => {
 describe('useAuth without a provider', () => {
   it('returns a loading, signed-out default with no-op actions', async () => {
     const { result } = renderHook(() => useAuth());
-    expect(result.current).toMatchObject({ token: null, user: null, isLoading: true });
+    expect(result.current).toMatchObject({ token: null, user: null, isLoading: true, error: null });
     await expect(result.current.signInWithGoogle()).resolves.toBeUndefined();
     await expect(result.current.signOut()).resolves.toBeUndefined();
   });

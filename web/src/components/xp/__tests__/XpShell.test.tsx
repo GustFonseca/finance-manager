@@ -2,9 +2,11 @@ import React from 'react';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { queryClient } from '@/lib/queryClient';
+import { SLOW_REQUEST_MS, trackRequest } from '@/lib/serverWake';
 import { renderWithProviders } from '@/test/render';
 import { playClick } from '../sound/clickSound';
 import { Window } from '../Window';
+import { WAKE_MESSAGE, WAKE_TITLE } from '../WakeBalloon';
 import { useWindowManager } from '../WindowManager';
 import { XpShell } from '../XpShell';
 import { hover, setViewport, unhover } from './helpers';
@@ -79,6 +81,10 @@ describe('XpShell', () => {
 
   it('opens and closes the start menu', async () => {
     await renderShell();
+    expect(startButton().getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(startButton());
+    expect(startButton().getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(startButton());
     fireEvent.click(startButton());
     expect(screen.getByText('gustavo')).toBeTruthy();
     expect(screen.getByText('G')).toBeTruthy();
@@ -121,6 +127,26 @@ describe('XpShell', () => {
     fireEvent.click(screen.getByText('Contas e saldos'));
     expect(taskButtons()).toEqual(['Minhas metas', 'Contas']);
     expect(wm.activeWindow).toBe('/accounts');
+    expect(taskButton('Contas').getAttribute('aria-selected')).toBe('true');
+    expect(taskButton('Minhas metas').getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('shows the wake balloon only while a request is slow', async () => {
+    await renderShell();
+    expect(screen.queryByText(WAKE_TITLE)).toBeNull();
+
+    jest.useFakeTimers();
+    let done = () => {};
+    act(() => {
+      done = trackRequest();
+      jest.advanceTimersByTime(SLOW_REQUEST_MS);
+    });
+    expect(screen.getByText(WAKE_TITLE)).toBeTruthy();
+    expect(screen.getByText(WAKE_MESSAGE)).toBeTruthy();
+
+    act(() => done());
+    expect(screen.queryByText(WAKE_TITLE)).toBeNull();
+    jest.useRealTimers();
   });
 
   it('minimizes and restores windows from the taskbar', async () => {

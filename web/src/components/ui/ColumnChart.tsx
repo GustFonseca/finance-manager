@@ -50,11 +50,11 @@ export function ColumnChart({ columns, formatValue, height = 160 }: Props) {
                       </Text>
                     ) : null}
                     <View style={styles.stack}>
-                      {visible.map((segment, i) => (
+                      {visible.map(({ key, value: size, color }, i) => (
                         <View
-                          key={segment.key}
+                          key={key}
                           style={[
-                            { height: (segment.value / max) * height, backgroundColor: segment.color },
+                            { height: (size / max) * height, backgroundColor: color },
                             i > 0 && styles.segmentGap,
                             i === visible.length - 1 && styles.top,
                           ]}

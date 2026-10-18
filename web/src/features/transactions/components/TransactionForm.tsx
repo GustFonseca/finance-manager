@@ -1,61 +1,72 @@
 import React, { useEffect, useState } from 'react';
-import { DialogButtons, Input, Modal, RadioGroup, Select } from '@/components/ui';
-import { parseToCents } from '@/lib/money';
+import { DateInput, DialogButtons, FormError, Input, Modal, RadioGroup, Select } from '@/components/ui';
+import { formatCentsForInput, INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
+import { dayToIso, isoToDay, todayKey } from '@/lib/periods';
 import { useAccounts } from '@/features/accounts/queries';
 import { useCategories } from '@/features/categories/queries';
-import { CreateTransactionRequest, TransactionType } from '../types';
+import { CreateTransactionRequest, TransactionDto, TransactionType } from '../types';
 
 type Props = {
   visible: boolean;
+  transaction?: TransactionDto | null;
   submitting?: boolean;
   onClose: () => void;
   onSubmit: (data: CreateTransactionRequest) => void;
 };
 
-export function TransactionForm({ visible, submitting, onClose, onSubmit }: Props) {
+export const MISSING_DATE = 'Informe a data da transação.';
+export const MISSING_ACCOUNT = 'Crie uma conta antes de lançar transações.';
+export const MISSING_CATEGORY = 'Crie uma categoria deste tipo antes de lançar a transação.';
+
+export function TransactionForm({ visible, transaction, submitting, onClose, onSubmit }: Props) {
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [day, setDay] = useState(todayKey());
   const [accountId, setAccountId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories(type);
 
   useEffect(() => {
     if (!visible) return;
-    setAmount('');
-    setDescription('');
-    setType('EXPENSE');
-  }, [visible]);
+    setError(null);
+    setType(transaction?.type ?? 'EXPENSE');
+    setAmount(transaction ? formatCentsForInput(transaction.amountCents) : '');
+    setDescription(transaction?.description ?? '');
+    setDay(transaction ? isoToDay(transaction.date) : todayKey());
+    setAccountId(transaction?.accountId ?? null);
+    setCategoryId(transaction?.categoryId ?? null);
+  }, [visible, transaction]);
 
-  useEffect(() => {
-    if (accounts.length && !accounts.some((a) => a.id === accountId)) {
-      setAccountId(accounts[0].id);
-    }
-  }, [accounts, accountId]);
-
-  useEffect(() => {
-    if (!categories.some((c) => c.id === categoryId)) {
-      setCategoryId(categories[0]?.id ?? null);
-    }
-  }, [categories, categoryId]);
+  const selectedAccountId = accounts.some((a) => a.id === accountId) ? accountId : (accounts[0]?.id ?? null);
+  const selectedCategoryId = categories.some((c) => c.id === categoryId) ? categoryId : (categories[0]?.id ?? null);
 
   function handleSubmit() {
     const amountCents = parseToCents(amount);
-    if (amountCents === null || !accountId || !categoryId) return;
+    const problem =
+      amountCents === null || amountCents <= 0 ? INVALID_AMOUNT_MESSAGE
+      : !day ? MISSING_DATE
+      : !selectedAccountId ? MISSING_ACCOUNT
+      : !selectedCategoryId ? MISSING_CATEGORY
+      : null;
+    setError(problem);
+    if (problem) return;
     onSubmit({
-      accountId,
-      categoryId,
+      accountId: selectedAccountId!,
+      categoryId: selectedCategoryId!,
       type,
-      amountCents,
+      amountCents: amountCents!,
       description,
-      date: new Date().toISOString(),
+      date: dayToIso(day),
+      recurrence: transaction?.recurrence,
     });
   }
 
   return (
-    <Modal visible={visible} onClose={onClose} icon="exchange" title="Nova Transação">
+    <Modal visible={visible} onClose={onClose} icon="exchange" title={transaction ? 'Editar Transação' : 'Nova Transação'}>
       <RadioGroup
         value={type}
         onChange={setType}
@@ -73,20 +84,22 @@ export function TransactionForm({ visible, submitting, onClose, onSubmit }: Prop
         onChangeText={setAmount}
       />
       <Input label="Descrição:" value={description} onChangeText={setDescription} />
+      <DateInput label="Data:" value={day} onChange={setDay} />
 
       <Select
         label="Conta:"
         options={accounts.map((a) => ({ id: a.id, label: a.name }))}
-        selectedId={accountId}
+        selectedId={selectedAccountId}
         onSelect={setAccountId}
       />
       <Select
         label="Categoria:"
         options={categories.map((c) => ({ id: c.id, label: c.name }))}
-        selectedId={categoryId}
+        selectedId={selectedCategoryId}
         onSelect={setCategoryId}
       />
 
+      <FormError message={error} />
       <DialogButtons
         confirmLabel="Salvar"
         onConfirm={handleSubmit}

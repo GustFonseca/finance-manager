@@ -1,20 +1,27 @@
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { accountsApi } from '@/features/accounts/api';
 import { categoriesApi } from '@/features/categories/api';
 import { merchantsApi } from '@/features/merchants/api';
-import { TransactionsScreen } from '../TransactionsScreen';
+import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
+import { SEARCH_DELAY_MS, TransactionsScreen } from '../TransactionsScreen';
 import { transactionsApi } from '../api';
+import { buildTransactionsCsv, downloadCsv } from '../exportCsv';
 import { TransactionDto } from '../types';
 
 jest.mock('../api');
+jest.mock('../exportCsv', () => ({ ...jest.requireActual('../exportCsv'), downloadCsv: jest.fn() }));
 jest.mock('@/features/merchants/api');
 jest.mock('@/features/accounts/api');
 jest.mock('@/features/categories/api');
 jest.mock('@/features/files/api');
 
 const api = jest.mocked(transactionsApi);
+const now = new Date();
+const currentKey = monthKeyOf(now);
+const previousKey = monthKeyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+const currentYear = now.getFullYear();
 
 const ifood: TransactionDto = {
   id: 't1',
@@ -46,7 +53,16 @@ const bare: TransactionDto = { ...salary, id: 't3', description: '', categoryNam
 const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function fieldOf(label: string, tag: 'input' | 'select') {
-  return screen.getByText(label).parentElement!.querySelector(tag)!;
+  const labels = screen.getAllByText(label);
+  return labels[labels.length - 1].parentElement!.querySelector(tag)!;
+}
+
+function filterOf(label: string) {
+  return screen.getAllByText(label)[0].parentElement!.querySelector('select')!;
+}
+
+function lastFilter() {
+  return api.getAll.mock.calls[api.getAll.mock.calls.length - 1][0];
 }
 
 function renderScreen() {
@@ -62,24 +78,34 @@ beforeEach(() => {
     { id: 'a1', name: 'Nubank', balanceCents: 0, createdAt: '' },
     { id: 'a2', name: 'Inter', balanceCents: 0, createdAt: '' },
   ]);
-  jest.mocked(categoriesApi.getAll).mockImplementation(async (type) =>
-    type === 'INCOME'
-      ? [
-          { id: 'c2', name: 'Salário', type: 'INCOME', color: '#000' },
-          { id: 'c3', name: 'Freela', type: 'INCOME', color: '#000' },
-        ]
-      : [{ id: 'c1', name: 'Alimentação', type: 'EXPENSE', color: '#000' }]
-  );
+  jest.mocked(categoriesApi.getAll).mockImplementation(async (type) => {
+    const income = [
+      { id: 'c2', name: 'Salário', type: 'INCOME' as const, color: '#000' },
+      { id: 'c3', name: 'Freela', type: 'INCOME' as const, color: '#000' },
+    ];
+    const expense = [{ id: 'c1', name: 'Alimentação', type: 'EXPENSE' as const, color: '#000' }];
+    return type === 'INCOME' ? income : type === 'EXPENSE' ? expense : [...expense, ...income];
+  });
 });
 
 describe('TransactionsScreen', () => {
-  it('lists the transactions with their merchant', async () => {
+  it('lists the transactions of the current month with their merchant', async () => {
     renderScreen();
 
-    await waitFor(() => expect(screen.getAllByText('iFood').length).toBeGreaterThan(0));
-    expect(screen.getByText('1 transação(ões)')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText(`1 transação(ões) · ${monthLabel(currentKey)}`)).toBeTruthy());
+    expect(api.getAll).toHaveBeenCalledWith(monthRange(currentKey));
+    expect(screen.getAllByText('iFood').length).toBeGreaterThan(0);
     expect(screen.getByText('Compra no débito via NuPay - iFood')).toBeTruthy();
     expect(screen.getByTestId('icon-arrow-circle-down')).toBeTruthy();
+  });
+
+  it('totals the income, expenses and balance', async () => {
+    api.getAll.mockResolvedValue([ifood, salary]);
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText('Pagamento empresa')).toBeTruthy());
+    const totals = screen.getByText(/^Entradas/).parentElement!.textContent!.replace(/\s+/g, ' ');
+    expect(totals).toBe('Entradas R$ 6.500,00 · Saídas R$ 45,90 · Saldo + R$ 6.454,10');
   });
 
   it('falls back to the description or category when there is no merchant', async () => {
@@ -94,18 +120,104 @@ describe('TransactionsScreen', () => {
   it('shows the empty state', async () => {
     api.getAll.mockResolvedValue([]);
     renderScreen();
-    await waitFor(() => expect(screen.getByText('Nenhuma transação encontrada')).toBeTruthy());
+
+    await waitFor(() => expect(screen.getByText(`0 transação(ões) · ${monthLabel(currentKey)}`)).toBeTruthy());
+    expect(screen.getByText('Nenhuma transação encontrada com esses filtros')).toBeTruthy();
   });
 
-  it('filters by merchant', async () => {
+  it('shows the error state and retries', async () => {
+    api.getAll.mockRejectedValueOnce(apiError('Serviço indisponível'));
     renderScreen();
-    await waitFor(() => expect(screen.getByText('Todos')).toBeTruthy());
-    await waitFor(() => expect(fieldOf('Estabelecimento:', 'select').querySelectorAll('option')).toHaveLength(2));
 
-    fireEvent.change(fieldOf('Estabelecimento:', 'select'), { target: { value: 'm1' } });
+    await waitFor(() => expect(screen.getByText('Serviço indisponível')).toBeTruthy());
+    fireEvent.click(screen.getByText('Tentar de novo'));
 
-    await waitFor(() => expect(api.getAll).toHaveBeenCalledWith({ merchantId: 'm1' }));
-    expect(api.getAll).toHaveBeenCalledWith({});
+    await waitFor(() => expect(screen.getByText('Compra no débito via NuPay - iFood')).toBeTruthy());
+  });
+
+  it('switches between months and years', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Compra no débito via NuPay - iFood')).toBeTruthy());
+
+    fireEvent.change(filterOf('Mês:'), { target: { value: previousKey } });
+    await waitFor(() => expect(api.getAll).toHaveBeenCalledWith(monthRange(previousKey)));
+
+    fireEvent.change(screen.getByDisplayValue('Por mês'), { target: { value: 'year' } });
+    await waitFor(() => expect(api.getAll).toHaveBeenCalledWith(yearRange(currentYear)));
+    await waitFor(() => expect(screen.getByText(`1 transação(ões) · ${currentYear}`)).toBeTruthy());
+
+    fireEvent.change(filterOf('Ano:'), { target: { value: String(currentYear - 1) } });
+    await waitFor(() => expect(api.getAll).toHaveBeenCalledWith(yearRange(currentYear - 1)));
+  });
+
+  it('filters by account, merchant, category and type', async () => {
+    renderScreen();
+    await waitFor(() => expect(filterOf('Estabelecimento:').querySelectorAll('option')).toHaveLength(2));
+    await waitFor(() => expect(filterOf('Conta:').querySelectorAll('option')).toHaveLength(3));
+    await waitFor(() => expect(filterOf('Categoria:').querySelectorAll('option')).toHaveLength(4));
+    expect(Array.from(filterOf('Categoria:').querySelectorAll('option')).map((o) => o.textContent)).toEqual([
+      'Todas',
+      'Alimentação',
+      'Salário',
+      'Freela',
+    ]);
+    expect(Array.from(filterOf('Tipo:').querySelectorAll('option')).map((o) => o.textContent)).toEqual([
+      'Todos',
+      'Despesas',
+      'Receitas',
+    ]);
+
+    fireEvent.change(filterOf('Conta:'), { target: { value: 'a2' } });
+    await waitFor(() => expect(lastFilter()).toMatchObject({ accountId: 'a2' }));
+
+    fireEvent.change(filterOf('Estabelecimento:'), { target: { value: 'm1' } });
+    await waitFor(() => expect(lastFilter()).toMatchObject({ accountId: 'a2', merchantId: 'm1' }));
+
+    fireEvent.change(filterOf('Categoria:'), { target: { value: 'c2' } });
+    await waitFor(() => expect(lastFilter()).toMatchObject({ categoryId: 'c2' }));
+
+    fireEvent.change(filterOf('Tipo:'), { target: { value: 'INCOME' } });
+    await waitFor(() =>
+      expect(lastFilter()).toEqual({
+        ...monthRange(currentKey),
+        accountId: 'a2',
+        merchantId: 'm1',
+        categoryId: 'c2',
+        type: 'INCOME',
+        search: undefined,
+      })
+    );
+
+    fireEvent.change(filterOf('Tipo:'), { target: { value: '' } });
+    await waitFor(() => expect(lastFilter()!.type).toBeUndefined());
+  });
+
+  it('searches after the typing pause', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Compra no débito via NuPay - iFood')).toBeTruthy());
+    jest.useFakeTimers();
+    try {
+      const search = screen.getByLabelText('Procurar transações');
+      fireEvent.change(search, { target: { value: '  ifo' } });
+      act(() => jest.advanceTimersByTime(SEARCH_DELAY_MS - 1));
+      fireEvent.change(search, { target: { value: '  ifood  ' } });
+      act(() => jest.advanceTimersByTime(SEARCH_DELAY_MS - 1));
+      expect(api.getAll.mock.calls.some(([filter]) => filter?.search)).toBe(false);
+
+      await act(async () => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(lastFilter()).toMatchObject({ search: 'ifood' });
+      expect(api.getAll.mock.calls.some(([filter]) => filter?.search === 'ifo')).toBe(false);
+
+      fireEvent.change(search, { target: { value: '   ' } });
+      await act(async () => {
+        jest.advanceTimersByTime(SEARCH_DELAY_MS);
+      });
+      expect(lastFilter()!.search).toBeUndefined();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('creates an income transaction through the form', async () => {
@@ -119,9 +231,11 @@ describe('TransactionsScreen', () => {
 
     fireEvent.click(screen.getByText('Salvar'));
     expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('radio', { name: 'Receita' }));
     await waitFor(() => expect(fieldOf('Categoria:', 'select').value).toBe('c2'));
+    await act(async () => {});
     fireEvent.change(fieldOf('Valor:', 'input'), { target: { value: '150,00' } });
     fireEvent.change(fieldOf('Descrição:', 'input'), { target: { value: 'Projeto' } });
     fireEvent.change(fieldOf('Conta:', 'select'), { target: { value: 'a2' } });
@@ -139,6 +253,7 @@ describe('TransactionsScreen', () => {
       })
     );
     await waitFor(() => expect(screen.queryByText('Nova Transação')).toBeNull());
+    expect(api.update).not.toHaveBeenCalled();
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['merchants'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
   });
@@ -156,16 +271,53 @@ describe('TransactionsScreen', () => {
     await waitFor(() => expect(screen.queryByText('Nova Transação')).toBeNull());
   });
 
-  it('alerts when creating fails', async () => {
+  it('alerts when saving fails', async () => {
     api.create.mockRejectedValue(apiError('Conta inexistente'));
     renderScreen();
 
     fireEvent.click(await screen.findByText('Nova transação'));
     await waitFor(() => expect(fieldOf('Categoria:', 'select').value).toBe('c1'));
+    await act(async () => {});
     fireEvent.change(fieldOf('Valor:', 'input'), { target: { value: '10' } });
     fireEvent.click(screen.getByText('Salvar'));
 
     await waitFor(() => expect(screen.getByText('Conta inexistente')).toBeTruthy());
+    expect(screen.getByText('Nova Transação')).toBeTruthy();
+  });
+
+  it('edits a transaction from the options menu', async () => {
+    api.update.mockResolvedValue({ ...ifood, amountCents: 5000 });
+    renderScreen();
+    await waitFor(() => expect(fieldOf('Categoria:', 'select')).toBeTruthy());
+
+    fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+    fireEvent.click(screen.getByText('Editar'));
+
+    expect(await screen.findByText('Editar Transação')).toBeTruthy();
+    expect(fieldOf('Valor:', 'input').value).toBe('45,90');
+    expect(fieldOf('Descrição:', 'input').value).toBe('Compra no débito via NuPay - iFood');
+    await waitFor(() => expect(fieldOf('Categoria:', 'select').value).toBe('c1'));
+    await act(async () => {});
+    fireEvent.change(fieldOf('Valor:', 'input'), { target: { value: '50' } });
+    fireEvent.click(screen.getByText('Salvar'));
+
+    await waitFor(() =>
+      expect(api.update).toHaveBeenCalledWith('t1', {
+        accountId: 'a1',
+        categoryId: 'c1',
+        type: 'EXPENSE',
+        amountCents: 5000,
+        description: 'Compra no débito via NuPay - iFood',
+        date: expect.any(String),
+        recurrence: 'NONE',
+      })
+    );
+    expect(api.create).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByText('Editar Transação')).toBeNull());
+
+    fireEvent.click(screen.getByText('Nova transação'));
+    expect(await screen.findByText('Nova Transação')).toBeTruthy();
+    expect(fieldOf('Valor:', 'input').value).toBe('');
   });
 
   it('removes a transaction from the options menu', async () => {
@@ -173,7 +325,7 @@ describe('TransactionsScreen', () => {
     renderScreen();
 
     fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
-    expect(screen.getAllByText('Compra no débito via NuPay - iFood')).toHaveLength(2);
+    expect(screen.getByText('iFood', { selector: '[role=dialog] *' })).toBeTruthy();
     fireEvent.click(screen.getByText('Remover'));
     expect(screen.getByText('Deseja remover esta transação?')).toBeTruthy();
     fireEvent.click(screen.getByText('Remover'));
@@ -204,6 +356,38 @@ describe('TransactionsScreen', () => {
     fireEvent.click(screen.getByText('Remover'));
 
     await waitFor(() => expect(screen.getByText('Não foi possível remover a transação')).toBeTruthy());
+  });
+
+  it('exports the filtered transactions of the month', async () => {
+    api.getAll.mockResolvedValue([ifood, salary]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Pagamento empresa')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Exportar CSV'));
+
+    expect(downloadCsv).toHaveBeenCalledWith(`transacoes-${currentKey}.csv`, buildTransactionsCsv([ifood, salary]));
+  });
+
+  it('names the export after the year when grouping by year', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Compra no débito via NuPay - iFood')).toBeTruthy());
+    fireEvent.change(screen.getByDisplayValue('Por mês'), { target: { value: 'year' } });
+    await waitFor(() => expect(screen.getByText(`1 transação(ões) · ${currentYear}`)).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Exportar CSV'));
+
+    expect(downloadCsv).toHaveBeenCalledWith(`transacoes-${currentYear}.csv`, buildTransactionsCsv([ifood]));
+  });
+
+  it('alerts instead of exporting an empty list', async () => {
+    api.getAll.mockResolvedValue([]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText(`0 transação(ões) · ${monthLabel(currentKey)}`)).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Exportar CSV'));
+
+    expect(await screen.findByText('Não há transações no filtro atual para exportar.')).toBeTruthy();
+    expect(downloadCsv).not.toHaveBeenCalled();
   });
 
   it('deletes every transaction after confirming', async () => {

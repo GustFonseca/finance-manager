@@ -98,6 +98,7 @@ function renderScreen() {
 }
 
 beforeEach(() => {
+  api.unsorted.mockResolvedValue([]);
   api.spending.mockResolvedValue(report);
   api.history.mockResolvedValue(history(ifood));
   jest.mocked(accountsApi.getAll).mockResolvedValue([{ id: 'a1', name: 'Nubank', balanceCents: 0, createdAt: '' }]);
@@ -331,5 +332,30 @@ describe('MerchantsScreen', () => {
     fireEvent.click(screen.getByText('Salvar'));
 
     await waitFor(() => expect(screen.getByText('Não foi possível salvar o estabelecimento')).toBeTruthy());
+  });
+
+  it('asks to organize the merchants without a category', async () => {
+    api.unsorted.mockResolvedValue([report.merchants[1], report.merchants[0]]);
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText(/2 estabelecimento\(s\) sem categoria nos últimos 12 meses/)).toBeTruthy());
+    expect(api.unsorted).toHaveBeenCalledWith(twelveMonthsUntil(currentKey));
+
+    fireEvent.click(screen.getByText('Organizar agora'));
+
+    expect(await screen.findByText(/do maior gasto para o menor/)).toBeTruthy();
+    expect(screen.getAllByText('Organizar gastos')).toHaveLength(2);
+    fireEvent.click(screen.getByText('Fechar'));
+    await waitFor(() => expect(screen.queryByText(/do maior gasto para o menor/)).toBeNull());
+  });
+
+  it('hides the banner when everything is organized and opens the modal from the window action', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Ana Souza')).toBeTruthy());
+    expect(screen.queryByText('Organizar agora')).toBeNull();
+
+    fireEvent.click(screen.getByText('Organizar gastos'));
+
+    await waitFor(() => expect(screen.getByText('Tudo organizado! Nenhum estabelecimento sem categoria.')).toBeTruthy());
   });
 });

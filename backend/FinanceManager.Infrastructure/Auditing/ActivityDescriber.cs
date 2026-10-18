@@ -25,6 +25,9 @@ public static class ActivityDescriber
         _ => [],
     };
 
+    public static ActivityLog BulkUpdate(IReadOnlyCollection<Transaction> transactions) =>
+        Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações alteradas de uma vez");
+
     public static ActivityLog BulkCreate(IReadOnlyCollection<Transaction> transactions) =>
         Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações importadas de uma vez");
 
@@ -37,6 +40,8 @@ public static class ActivityDescriber
         var amount = Money(t.Type == TransactionType.EXPENSE ? -t.AmountCents : t.AmountCents, signed: true);
         if (entry.State == EntityState.Added)
             yield return Log(t.UserId, "Transações", $"Transação criada: {label} ({amount})");
+        else if (entry.State == EntityState.Modified && EditedByUser(entry))
+            yield return Log(t.UserId, "Transações", $"Transação alterada: {label} ({amount})");
         else if (entry.State == EntityState.Deleted)
             yield return Log(t.UserId, "Transações", $"Transação excluída: {label} ({amount})", ActivityType.WARNING);
     }
@@ -49,6 +54,14 @@ public static class ActivityDescriber
         else if (Changed(entry, nameof(Merchant.Kind)))
             yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento atualizado: {m.Name}");
     }
+
+    private static readonly string[] EditableTransactionFields =
+    [
+        nameof(Transaction.AccountId), nameof(Transaction.CategoryId), nameof(Transaction.Type),
+        nameof(Transaction.AmountCents), nameof(Transaction.Description), nameof(Transaction.Date), nameof(Transaction.Recurrence),
+    ];
+
+    private static bool EditedByUser(EntityEntry entry) => EditableTransactionFields.Any(field => Changed(entry, field));
 
     private static IEnumerable<ActivityLog> DescribeAccount(EntityEntry entry, Account a)
     {

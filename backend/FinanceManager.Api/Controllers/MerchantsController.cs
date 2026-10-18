@@ -5,6 +5,7 @@ using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantSpending;
+using FinanceManager.Aplication.UseCases.Merchants.Queries.GetUnsortedMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.ResolveMerchants;
 using Microsoft.AspNetCore.Authorization;
@@ -58,6 +59,13 @@ public class MerchantsController : ControllerBase
     {
         var (periodStart, periodEnd) = MonthPeriod.Resolve(start, end);
         return Ok(await _mediator.Send(new GetMerchantSpendingQuery(GetUserId(), periodStart, periodEnd, accountId)));
+    }
+
+    [HttpGet("unsorted")]
+    public async Task<ActionResult<List<MerchantSpendingDto>>> GetUnsorted([FromQuery] DateTime? start, [FromQuery] DateTime? end)
+    {
+        var (periodStart, periodEnd) = MonthPeriod.Resolve(start, end);
+        return Ok(await _mediator.Send(new GetUnsortedMerchantsQuery(GetUserId(), periodStart, periodEnd)));
     }
 
     [HttpGet("{id}/history")]

@@ -1,5 +1,7 @@
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
+export const INVALID_AMOUNT_MESSAGE = 'Informe um valor válido, por exemplo 150,00.';
+
 export function formatCents(cents: number, options: { signed?: boolean } = {}): string {
   const formatted = BRL.format(Math.abs(cents) / 100);
   if (cents < 0) return `- ${formatted}`;

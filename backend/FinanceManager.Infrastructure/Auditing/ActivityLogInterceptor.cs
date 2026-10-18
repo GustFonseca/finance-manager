@@ -47,6 +47,14 @@ public sealed class ActivityLogInterceptor : SaveChangesInterceptor
             logs.Add(ActivityDescriber.BulkCreate(addedTransactions.Select(e => (Transaction)e.Entity).ToList()));
             entries = entries.Except(addedTransactions).ToList();
         }
+        var modifiedTransactions = entries
+            .Where(e => e.State == EntityState.Modified && e.Entity is Transaction)
+            .ToList();
+        if (modifiedTransactions.Count > 1)
+        {
+            logs.Add(ActivityDescriber.BulkUpdate(modifiedTransactions.Select(e => (Transaction)e.Entity).ToList()));
+            entries = entries.Except(modifiedTransactions).ToList();
+        }
         logs.AddRange(entries.SelectMany(e => ActivityDescriber.Describe(e, context)));
 
         if (logs.Count > 0) context.Set<ActivityLog>().AddRange(logs);

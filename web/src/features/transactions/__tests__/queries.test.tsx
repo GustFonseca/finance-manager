@@ -1,9 +1,9 @@
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
 import { transactionsApi } from '../api';
-import { invalidateMoney, useTransactions } from '../queries';
+import { invalidateMoney, useTransactions, useUpdateTransaction } from '../queries';
 
 jest.mock('../api');
 
@@ -39,6 +39,25 @@ describe('transactions queries', () => {
 
     invalidateMoney(client);
 
+    expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toEqual([
+      ['transactions'],
+      ['accounts'],
+      ['summary'],
+      ['savings'],
+      ['merchants'],
+    ]);
+  });
+
+  it('updates a transaction and refreshes the money queries', async () => {
+    jest.mocked(transactionsApi.update).mockResolvedValue({ id: 't1' } as never);
+    const { client, wrapper } = wrapperFor();
+    const invalidate = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useUpdateTransaction(), { wrapper });
+    const data = { accountId: 'a', categoryId: 'c', type: 'EXPENSE' as const, amountCents: 1, description: '', date: 'd' };
+
+    await act(() => result.current.mutateAsync({ id: 't1', data }));
+
+    expect(transactionsApi.update).toHaveBeenCalledWith('t1', data);
     expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toEqual([
       ['transactions'],
       ['accounts'],

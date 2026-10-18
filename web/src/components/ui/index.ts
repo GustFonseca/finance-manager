@@ -14,6 +14,8 @@ export { MoneyText } from './MoneyText';
 export { ProgressBar } from './ProgressBar';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
+export { DateInput } from './DateInput';
+export { FormError } from './FormError';
 export { StatTile } from './StatTile';
 export { MonthSelect } from './MonthSelect';
 export { YearSelect } from './YearSelect';

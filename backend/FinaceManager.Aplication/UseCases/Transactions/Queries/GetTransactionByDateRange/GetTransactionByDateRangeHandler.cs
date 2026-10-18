@@ -18,7 +18,8 @@ public class GetTransactionsByDateRangeHandler : IRequestHandler<GetTransactions
 
     public async Task<List<TransactionDto>> Handle(GetTransactionsByDateRangeQuery request, CancellationToken cancellationToken = default)
     {
-        var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, request.Start, request.End, request.AccountId, request.MerchantId);
+        var transactions = await _transactionRepository.SearchAsync(request.UserId, new TransactionFilter(
+            request.Start, request.End, request.AccountId, request.MerchantId, request.CategoryId, request.Type, request.Search));
         return _mapper.Map<List<TransactionDto>>(transactions);
     }
 }

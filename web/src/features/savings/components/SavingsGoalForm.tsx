@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { DialogButtons, Input, Modal } from '@/components/ui';
-import { formatCents, formatCentsForInput, parseToCents } from '@/lib/money';
+import { DialogButtons, FormError, Input, Modal } from '@/components/ui';
+import { formatCents, formatCentsForInput, INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 
 type Props = {
@@ -15,13 +15,17 @@ type Props = {
 
 export function SavingsGoalForm({ visible, currentCents, averageSavedCents, saving, onClose, onSubmit }: Props) {
   const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (visible) setAmount(currentCents ? formatCentsForInput(currentCents) : '');
+    if (!visible) return;
+    setError(null);
+    setAmount(currentCents ? formatCentsForInput(currentCents) : '');
   }, [visible, currentCents]);
 
   function handleSubmit() {
     const cents = parseToCents(amount);
+    setError(cents === null ? INVALID_AMOUNT_MESSAGE : null);
     if (cents === null) return;
     onSubmit(cents);
   }
@@ -39,6 +43,7 @@ export function SavingsGoalForm({ visible, currentCents, averageSavedCents, savi
       <Text style={styles.hint}>
         Nos últimos 3 meses você economizou, em média, {formatCents(averageSavedCents)} por mês.
       </Text>
+      <FormError message={error} />
       <DialogButtons confirmLabel="Salvar" onConfirm={handleSubmit} onCancel={onClose} loading={saving} />
     </Modal>
   );

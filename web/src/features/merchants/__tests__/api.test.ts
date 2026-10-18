@@ -33,4 +33,10 @@ describe('merchantsApi', () => {
     expect(mocked.get).toHaveBeenCalledWith('/merchants/spending', { params: { start: 's', end: 'e', accountId: 'a' } });
     expect(mocked.get).toHaveBeenCalledWith('/merchants/m/history', { params: { start: 's', end: 'e' } });
   });
+
+  it('lists the merchants without a category in a period', async () => {
+    mocked.get.mockResolvedValue({ data: [{ merchantId: 'm' }] });
+    await expect(merchantsApi.unsorted({ start: 's', end: 'e' })).resolves.toEqual([{ merchantId: 'm' }]);
+    expect(mocked.get).toHaveBeenCalledWith('/merchants/unsorted', { params: { start: 's', end: 'e' } });
+  });
 });

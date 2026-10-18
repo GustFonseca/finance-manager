@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import { trackRequest } from './serverWake';
 import { getItem } from './storage';
 
 export const TOKEN_KEY = 'jwt_token';
@@ -11,11 +12,20 @@ export const http = axios.create({
   timeout: 90_000,
 });
 
+const pending = new WeakMap<InternalAxiosRequestConfig, () => void>();
+
+function settle(config: InternalAxiosRequestConfig | undefined) {
+  if (!config) return;
+  pending.get(config)?.();
+  pending.delete(config);
+}
+
 http.interceptors.request.use(async (config) => {
   const token = await getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  pending.set(config, trackRequest());
   return config;
 });
 
@@ -25,12 +35,19 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
-http.interceptors.response.use(undefined, (error) => {
-  if (axios.isAxiosError(error) && error.response?.status === 401) {
-    onUnauthorized?.();
+http.interceptors.response.use(
+  (response) => {
+    settle(response.config);
+    return response;
+  },
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      settle(error.config);
+      if (error.response?.status === 401) onUnauthorized?.();
+    }
+    return Promise.reject(error);
   }
-  return Promise.reject(error);
-});
+);
 
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {

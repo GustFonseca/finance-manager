@@ -16,11 +16,11 @@ export function StackedBar({ segments, thickness = 18 }: Props) {
 
   return (
     <View style={[styles.bar, { height: thickness }]}>
-      {visible.map((segment, i) => (
+      {visible.map(({ key, value: size, color }, i) => (
         <View
-          key={segment.key}
+          key={key}
           style={[
-            { flexGrow: segment.value, flexBasis: 0, backgroundColor: segment.color },
+            { flexGrow: size, flexBasis: 0, backgroundColor: color },
             i > 0 && styles.gap,
             i === visible.length - 1 && styles.end,
           ]}

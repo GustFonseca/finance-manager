@@ -1,40 +1,94 @@
-import React, { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { EmptyState, useDialog } from '@/components/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { EmptyState, ErrorState, MoneyText, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { ImportWizard } from '@/features/import/ImportWizard';
-import { ALL_MERCHANTS, MerchantSelect } from '@/features/merchants/components/MerchantSelect';
 import { getErrorMessage } from '@/lib/http';
-import { spacing } from '@/theme';
+import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
+import { colors, fontSize, spacing } from '@/theme';
+import { ALL, FilterValues, TransactionFilters } from './components/TransactionFilters';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
+import { buildTransactionsCsv, downloadCsv } from './exportCsv';
 import {
   useCreateTransaction,
   useDeleteAllTransactions,
   useDeleteTransaction,
   useTransactions,
+  useUpdateTransaction,
 } from './queries';
 import { CreateTransactionRequest, TransactionDto } from './types';
 
+export const SEARCH_DELAY_MS = 300;
+
+function initialFilters(): FilterValues {
+  const now = new Date();
+  return {
+    grouping: 'month',
+    monthKey: monthKeyOf(now),
+    year: now.getFullYear(),
+    accountId: ALL,
+    categoryId: ALL,
+    type: ALL,
+    merchantId: ALL,
+    search: '',
+  };
+}
+
 export function TransactionsScreen() {
   const { confirm, alert, menu } = useDialog();
-  const [merchantId, setMerchantId] = useState(ALL_MERCHANTS);
-  const { data: transactions = [], isFetching, refetch } = useTransactions(
-    merchantId ? { merchantId } : {}
+  const [filters, setFilters] = useState(initialFilters);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(filters.search.trim()), SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
+  const period = useMemo(
+    () => (filters.grouping === 'month' ? monthRange(filters.monthKey) : yearRange(filters.year)),
+    [filters.grouping, filters.monthKey, filters.year]
   );
+  const { data: transactions = [], error, isFetching, refetch } = useTransactions({
+    ...period,
+    accountId: filters.accountId || undefined,
+    categoryId: filters.categoryId || undefined,
+    type: filters.type || undefined,
+    merchantId: filters.merchantId || undefined,
+    search: search || undefined,
+  });
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const deleteAll = useDeleteAllTransactions();
 
+  const [editing, setEditing] = useState<TransactionDto | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
 
-  async function handleCreate(data: CreateTransactionRequest) {
+  const periodName = filters.grouping === 'month' ? monthLabel(filters.monthKey) : String(filters.year);
+  const totals = transactions.reduce(
+    (sum, t) => ({ ...sum, [t.type]: sum[t.type] + t.amountCents }),
+    { INCOME: 0, EXPENSE: 0 }
+  );
+
+  function openNew() {
+    setEditing(null);
+    setFormVisible(true);
+  }
+
+  function openEdit(transaction: TransactionDto) {
+    setEditing(transaction);
+    setFormVisible(true);
+  }
+
+  async function handleSave(data: CreateTransactionRequest) {
     try {
-      await createTransaction.mutateAsync(data);
+      if (editing) await updateTransaction.mutateAsync({ id: editing.id, data });
+      else await createTransaction.mutateAsync(data);
       setFormVisible(false);
-    } catch (error) {
-      alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível criar a transação') });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível salvar a transação') });
     }
   }
 
@@ -48,8 +102,8 @@ export function TransactionsScreen() {
     if (!ok) return;
     try {
       await deleteTransaction.mutateAsync(transaction.id);
-    } catch (error) {
-      alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível remover a transação') });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível remover a transação') });
     }
   }
 
@@ -67,15 +121,25 @@ export function TransactionsScreen() {
     try {
       const deleted = await deleteAll.mutateAsync();
       alert({ title: 'Transações apagadas', message: `${deleted} transação(ões) apagada(s).` });
-    } catch (error) {
-      alert({ title: 'Erro', message: getErrorMessage(error, 'Não foi possível apagar as transações') });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível apagar as transações') });
     }
+  }
+
+  function handleExport() {
+    if (transactions.length === 0) {
+      alert({ title: 'Exportar CSV', message: 'Não há transações no filtro atual para exportar.' });
+      return;
+    }
+    const name = filters.grouping === 'month' ? filters.monthKey : String(filters.year);
+    downloadCsv(`transacoes-${name}.csv`, buildTransactionsCsv(transactions));
   }
 
   function openOptions(transaction: TransactionDto) {
     menu({
-      title: transaction.description || transaction.categoryName,
+      title: transaction.merchantName || transaction.description || transaction.categoryName,
       actions: [
+        { label: 'Editar', onPress: () => openEdit(transaction) },
         { label: 'Remover', destructive: true, onPress: () => handleDelete(transaction) },
       ],
     });
@@ -87,33 +151,47 @@ export function TransactionsScreen() {
         title="Transações"
         icon="exchange"
         actions={[
-          { label: 'Nova transação', icon: 'plus-circle', onPress: () => setFormVisible(true) },
+          { label: 'Nova transação', icon: 'plus-circle', onPress: openNew },
           { label: 'Importar extrato', icon: 'upload', onPress: () => setImportVisible(true) },
+          { label: 'Exportar CSV', icon: 'download', onPress: handleExport },
           { label: 'Apagar todas', icon: 'trash', onPress: handleDeleteAll },
         ]}
         onRefresh={refetch}
-        status={`${transactions.length} transação(ões)`}>
+        status={isFetching ? 'Atualizando...' : `${transactions.length} transação(ões) · ${periodName}`}>
         <FlatList
-          data={transactions}
+          data={error ? [] : transactions}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TransactionListItem transaction={item} onPress={openOptions} />
-          )}
+          renderItem={({ item }) => <TransactionListItem transaction={item} onPress={openOptions} />}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
           ListHeaderComponent={
-            <View style={styles.filters}>
-              <MerchantSelect value={merchantId} onChange={setMerchantId} />
-            </View>
+            <>
+              <TransactionFilters values={filters} onChange={(change) => setFilters((f) => ({ ...f, ...change }))} />
+              <View style={styles.totals}>
+                <Text style={styles.total}>Entradas </Text>
+                <MoneyText cents={totals.INCOME} tone="income" style={styles.value} />
+                <Text style={styles.total}> · Saídas </Text>
+                <MoneyText cents={totals.EXPENSE} tone="expense" style={styles.value} />
+                <Text style={styles.total}> · Saldo </Text>
+                <MoneyText cents={totals.INCOME - totals.EXPENSE} signed style={styles.value} />
+              </View>
+            </>
           }
-          ListEmptyComponent={<EmptyState message="Nenhuma transação encontrada" />}
+          ListEmptyComponent={
+            error ? (
+              <ErrorState error={error} fallback="Não foi possível carregar as transações" onRetry={refetch} />
+            ) : (
+              <EmptyState message="Nenhuma transação encontrada com esses filtros" />
+            )
+          }
         />
       </Window>
 
       <TransactionForm
         visible={formVisible}
-        submitting={createTransaction.isPending}
+        transaction={editing}
+        submitting={createTransaction.isPending || updateTransaction.isPending}
         onClose={() => setFormVisible(false)}
-        onSubmit={handleCreate}
+        onSubmit={handleSave}
       />
 
       <ImportWizard visible={importVisible} onClose={() => setImportVisible(false)} />
@@ -122,5 +200,15 @@ export function TransactionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  filters: { flexDirection: 'row', justifyContent: 'flex-end', padding: spacing.sm },
+  totals: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.surfaceLight,
+  },
+  total: { fontSize: fontSize.sm, color: colors.textSecondary },
+  value: { fontSize: fontSize.sm, fontWeight: '700' },
 });

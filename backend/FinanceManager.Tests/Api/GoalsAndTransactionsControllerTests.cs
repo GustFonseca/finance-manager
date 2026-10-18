@@ -9,6 +9,7 @@ using FinanceManager.Aplication.UseCases.Transactions.Commands.CreateTransaction
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteAllTransactions;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.DeleteTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Commands.ImportTransactions;
+using FinanceManager.Aplication.UseCases.Transactions.Commands.UpdateTransaction;
 using FinanceManager.Aplication.UseCases.Transactions.Queries.GetTransactionByDateRange;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Tests.Support;
@@ -77,13 +78,35 @@ public class GoalsAndTransactionsControllerTests
         var account = Guid.NewGuid();
         _mediator.Returns<GetTransactionsByDateRangeQuery>(_ => transactions);
 
-        var result = await Transactions.GetAll(start, end, account, Known);
-        var unfiltered = await Transactions.GetAll(null, null, null, null);
+        var category = Guid.NewGuid();
+        var result = await Transactions.GetAll(start, end, account, Known, category, TransactionType.EXPENSE, "ifood");
+        var unfiltered = await Transactions.GetAll(null, null, null, null, null, null, null);
 
         Assert.Same(transactions, Assert.IsType<OkObjectResult>(result.Result).Value);
-        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, start.ToUniversalTime(), end, account, Known), _mediator.Sent[0]);
-        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, null, null, null, null), _mediator.Sent[1]);
+        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, start.ToUniversalTime(), end, account, Known, category, TransactionType.EXPENSE, "ifood"), _mediator.Sent[0]);
+        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, null, null, null, null, null, null, null), _mediator.Sent[1]);
         Assert.IsType<OkObjectResult>(unfiltered.Result);
+    }
+
+    [Fact]
+    public async Task Transactions_Update_sends_the_whole_transaction()
+    {
+        var date = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+        var id = Guid.NewGuid();
+        var request = new CreateTransactionRequest
+        {
+            AccountId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Type = TransactionType.INCOME,
+            AmountCents = 900, Description = "Estorno", Date = date, Recurrence = Recurrence.MONTHLY,
+        };
+        var updated = new TransactionDto { Id = id };
+        _mediator.Returns<UpdateTransactionCommand>(_ => updated);
+
+        var result = await Transactions.Update(id, request);
+
+        Assert.Same(updated, Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(
+            new UpdateTransactionCommand(Me, id, request.AccountId, request.CategoryId, TransactionType.INCOME, 900, "Estorno", date, Recurrence.MONTHLY),
+            Assert.Single(_mediator.Sent));
     }
 
     [Fact]

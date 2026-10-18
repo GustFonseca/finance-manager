@@ -46,6 +46,8 @@ const match = (categoryId: string | null, skipReason: string | null = null) => (
   skipReason,
 });
 
+const MISSING_CATEGORY_TEXT = '1 linha(s) marcada(s) sem categoria. Escolha a categoria delas para importar.';
+
 const systemFolder = { id: 'f1', name: 'Extratos', isSystem: true };
 const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
@@ -193,7 +195,13 @@ describe('ImportWizard', () => {
     expect(rowSelect('Pagamento recebido').querySelectorAll('option')).toHaveLength(1);
 
     expect(rowCheckbox('Posto Shell').checked).toBe(true);
-    expect(rowSelect('Posto Shell').querySelectorAll('option')).toHaveLength(2);
+    const options = rowSelect('Posto Shell').querySelectorAll('option');
+    expect(options).toHaveLength(3);
+    expect(options[0].textContent).toBe('(escolha a categoria)');
+    expect(options[0].disabled).toBe(true);
+    expect(rowSelect('Posto Shell').value).toBe('');
+    expect(rowSelect('iFood *Restaurante').querySelectorAll('option')).toHaveLength(2);
+    expect(screen.getByText(MISSING_CATEGORY_TEXT)).toBeTruthy();
 
     expect(screen.getByText('03/10/2026')).toBeTruthy();
     expect(screen.getByText(/1 de 3 selecionada\(s\)/)).toBeTruthy();
@@ -206,6 +214,8 @@ describe('ImportWizard', () => {
 
     fireEvent.change(rowSelect('Posto Shell'), { target: { value: 'car' } });
     expect(isDisabled('Importar')).toBe(false);
+    expect(screen.queryByText(/sem categoria/)).toBeNull();
+    expect(rowSelect('Posto Shell').querySelectorAll('option')).toHaveLength(2);
 
     fireEvent.click(rowCheckbox('Posto Shell'));
     expect(screen.getByText(/0 de 3 selecionada\(s\)/)).toBeTruthy();

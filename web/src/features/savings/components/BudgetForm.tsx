@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Button, DialogButtons, Input, Modal } from '@/components/ui';
-import { formatCents, formatCentsForInput, parseToCents } from '@/lib/money';
+import { Button, DialogButtons, FormError, Input, Modal } from '@/components/ui';
+import { formatCents, formatCentsForInput, INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { CategoryBudgetDto } from '../types';
 
@@ -14,13 +14,17 @@ type Props = {
 
 export function BudgetForm({ budget, saving, onClose, onSubmit }: Props) {
   const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (budget) setAmount(budget.limitCents ? formatCentsForInput(budget.limitCents) : '');
+    if (!budget) return;
+    setError(null);
+    setAmount(budget.limitCents ? formatCentsForInput(budget.limitCents) : '');
   }, [budget]);
 
   function handleSubmit() {
     const cents = parseToCents(amount);
+    setError(cents === null ? INVALID_AMOUNT_MESSAGE : null);
     if (cents === null) return;
     onSubmit(cents);
   }
@@ -57,6 +61,7 @@ export function BudgetForm({ budget, saving, onClose, onSubmit }: Props) {
               <Button size="sm" variant="danger" label="Remover limite" onPress={() => onSubmit(null)} />
             ) : null}
           </View>
+          <FormError message={error} />
           <DialogButtons confirmLabel="Salvar" onConfirm={handleSubmit} onCancel={onClose} loading={saving} />
         </>
       ) : null}

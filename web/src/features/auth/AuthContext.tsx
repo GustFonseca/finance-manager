@@ -7,12 +7,15 @@ import { authApi } from './api';
 
 const USER_KEY = 'user_data';
 
+export const LOGIN_FAILED = 'Não foi possível entrar com o Google. Tente novamente.';
+
 type User = { email: string; name: string };
 
 type AuthState = {
   token: string | null;
   user: User | null;
   isLoading: boolean;
+  error: string | null;
 };
 
 type AuthContextType = AuthState & {
@@ -24,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   token: null,
   user: null,
   isLoading: true,
+  error: null,
   signInWithGoogle: async () => {},
   signOut: async () => {},
 });
@@ -75,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     user: null,
     isLoading: true,
+    error: null,
   });
   const hashTokenRef = useRef(extractIdTokenFromHash());
 
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userJson = await getItem(USER_KEY);
     const user = parseUser(userJson);
     if (existingToken && user) {
-      setState({ token: existingToken, user, isLoading: false });
+      setState({ token: existingToken, user, isLoading: false, error: null });
       return;
     }
 
@@ -109,10 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setItem(TOKEN_KEY, data.token);
       const user: User = { email: data.email, name: data.name };
       await setItem(USER_KEY, JSON.stringify(user));
-      setState({ token: data.token, user, isLoading: false });
+      setState({ token: data.token, user, isLoading: false, error: null });
     } catch (error) {
       reportError(error instanceof Error ? `Login com o Google falhou: ${error.message}` : 'Login com o Google falhou');
-      setState((prev) => ({ ...prev, isLoading: false }));
+      setState((prev) => ({ ...prev, isLoading: false, error: LOGIN_FAILED }));
     }
   }
 
@@ -124,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await deleteItem(TOKEN_KEY);
     await deleteItem(USER_KEY);
     queryClient.clear();
-    setState({ token: null, user: null, isLoading: false });
+    setState({ token: null, user: null, isLoading: false, error: null });
   }
 
   return (

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Card, ErrorState, Input, MoneyText, MonthSelect, Select, StatTile, YearSelect, useDialog } from '@/components/ui';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Card, ErrorState, Input, MoneyText, MonthSelect, Select, StatTile, YearSelect, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
@@ -8,11 +8,12 @@ import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil, yearRange } from
 import { normalizeText } from '@/lib/text';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
-import { fontSize, spacing } from '@/theme';
+import { colors, fontSize, spacing } from '@/theme';
 import { MerchantDetail } from './components/MerchantDetail';
 import { MerchantForm } from './components/MerchantForm';
 import { MerchantTable } from './components/MerchantTable';
-import { useMerchantSpending, useUpdateMerchant } from './queries';
+import { OrganizeMerchants } from './components/OrganizeMerchants';
+import { useMerchantSpending, useUnsortedMerchants, useUpdateMerchant } from './queries';
 import { MerchantDto, UpdateMerchantInput } from './types';
 
 type Grouping = 'month' | 'year';
@@ -28,6 +29,9 @@ export function MerchantsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<MerchantDto | null>(null);
   const updateMerchant = useUpdateMerchant();
+  const [organizing, setOrganizing] = useState(false);
+  const lastYear = useMemo(() => twelveMonthsUntil(monthKeyOf(new Date())), []);
+  const { data: unsorted = [] } = useUnsortedMerchants(lastYear);
 
   const period = useMemo(
     () => (grouping === 'month' ? monthRange(monthKey) : yearRange(year)),
@@ -67,6 +71,7 @@ export function MerchantsScreen() {
       <Window
         title="Estabelecimentos"
         icon="shopping-cart"
+        actions={[{ label: 'Organizar gastos', icon: 'tags', onPress: () => setOrganizing(true) }]}
         onRefresh={refetch}
         status={
           isFetching
@@ -93,6 +98,16 @@ export function MerchantsScreen() {
             )}
             <AccountSelect value={accountId} onChange={setAccountId} />
           </View>
+
+          {unsorted.length > 0 ? (
+            <View style={styles.banner}>
+              <Text style={styles.bannerText}>
+                {unsorted.length} estabelecimento(s) sem categoria nos últimos 12 meses. Organize para a análise e o
+                plano ficarem mais precisos.
+              </Text>
+              <Button size="sm" label="Organizar agora" onPress={() => setOrganizing(true)} />
+            </View>
+          ) : null}
 
           {error ? (
             <ErrorState error={error} fallback="Não foi possível carregar os estabelecimentos" onRetry={refetch} />
@@ -132,6 +147,7 @@ export function MerchantsScreen() {
         onClose={() => setOpenId(null)}
         onEdit={(merchant) => setEditing(merchant)}
       />
+      <OrganizeMerchants visible={organizing} onClose={() => setOrganizing(false)} />
       <MerchantForm
         merchant={editing}
         saving={updateMerchant.isPending}
@@ -147,4 +163,15 @@ const styles = StyleSheet.create({
   filters: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: spacing.md },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tileValue: { fontSize: fontSize.xxl - 2, fontWeight: '700' },
+  banner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.sm,
+    backgroundColor: '#FFFFE1',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  bannerText: { flex: 1, minWidth: 200, fontSize: fontSize.sm, color: colors.textPrimary },
 });

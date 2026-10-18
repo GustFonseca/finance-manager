@@ -4,6 +4,7 @@ import { ContextMenuProvider } from './ContextMenu';
 import { Desktop, ProgramScreens } from './Desktop';
 import { StartMenu } from './StartMenu';
 import { Taskbar } from './Taskbar';
+import { WakeBalloon } from './WakeBalloon';
 import { SoundProvider } from './sound/SoundProvider';
 import { WindowManagerProvider } from './WindowManager';
 
@@ -26,6 +27,7 @@ export function XpShell({ screens, desktopExtras, children }: Props) {
             </Desktop>
             <StartMenu visible={startOpen} onClose={() => setStartOpen(false)} />
             <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((open) => !open)} />
+            <WakeBalloon />
           </View>
         </ContextMenuProvider>
       </SoundProvider>

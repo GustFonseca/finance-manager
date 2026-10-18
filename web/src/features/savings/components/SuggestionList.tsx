@@ -1,6 +1,8 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
+import { Button } from '@/components/ui';
+import { useWindowManager } from '@/components/xp';
 import { formatCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { SavingsSuggestionDto, SuggestionKind } from '../types';
@@ -24,6 +26,7 @@ export function SuggestionList({
   suggestions: SavingsSuggestionDto[];
   historyMonths: number;
 }) {
+  const wm = useWindowManager();
   if (suggestions.length === 0) {
     return (
       <Text style={styles.empty}>
@@ -46,6 +49,11 @@ export function SuggestionList({
             <View style={styles.info}>
               <Text style={styles.title}>{suggestion.title}</Text>
               <Text style={styles.detail}>{suggestion.detail}</Text>
+              {suggestion.kind === 'ORGANIZE' ? (
+                <View style={styles.action}>
+                  <Button size="sm" label="Abrir Estabelecimentos" onPress={() => wm.open('/merchants')} />
+                </View>
+              ) : null}
             </View>
             {showSavings ? (
               <Text style={styles.savings}>{formatCents(suggestion.potentialCents)}/mês</Text>
@@ -72,4 +80,5 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
   detail: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
   savings: { fontSize: fontSize.md, fontWeight: '700', color: colors.income },
+  action: { flexDirection: 'row', marginTop: spacing.xs },
 });

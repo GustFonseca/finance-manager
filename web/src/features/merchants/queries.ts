@@ -16,6 +16,14 @@ export function useMerchantSpending(filter: PeriodFilter) {
   });
 }
 
+export function useUnsortedMerchants(range: DateRange, enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.merchants, 'unsorted', range],
+    queryFn: () => merchantsApi.unsorted(range),
+    enabled,
+  });
+}
+
 export function useMerchantHistory(id: string | null, range: DateRange) {
   return useQuery({
     queryKey: [...queryKeys.merchants, 'history', id, range],

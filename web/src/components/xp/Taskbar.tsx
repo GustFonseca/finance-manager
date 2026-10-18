@@ -23,7 +23,7 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
         onPress={onToggleStart}
         accessibilityRole="button"
         accessibilityLabel="Iniciar"
-        accessibilityState={{ expanded: startOpen }}
+        aria-expanded={startOpen}
         style={(state) => {
           const { hovered } = state as PressState;
           return [
@@ -49,7 +49,7 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
               key={id}
               onPress={() => wm.toggleFromTaskbar(id)}
               accessibilityRole="button"
-              accessibilityState={{ selected: active }}
+              aria-selected={active}
               style={(state) => [
                 styles.task,
                 webStyle({ backgroundImage: active ? gradients.taskButtonActive : gradients.taskButton }),

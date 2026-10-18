@@ -5,6 +5,7 @@ export type { WindowAction } from './Window';
 export { TitleBar } from './TitleBar';
 export type { IconName } from './TitleBar';
 export { WindowsLogo } from './WindowsLogo';
+export { WakeBalloon, WAKE_MESSAGE, WAKE_TITLE } from './WakeBalloon';
 export { useWindowManager, useWindowId, WindowIdProvider } from './WindowManager';
 export { useContextMenu, onContextMenu } from './ContextMenu';
 export { DesktopIcon } from './DesktopIcon';

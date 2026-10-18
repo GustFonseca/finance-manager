@@ -1,11 +1,13 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { WindowsLogo } from '@/components/xp';
+import { WAKE_MESSAGE, WindowsLogo } from '@/components/xp';
+import { useServerWaking } from '@/lib/serverWake';
 import { fonts, PressState, spacing, webStyle } from '@/theme';
 import { useAuth } from './AuthContext';
 
 export function LoginScreen() {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, error } = useAuth();
+  const waking = useServerWaking();
 
   return (
     <View style={styles.screen}>
@@ -31,6 +33,12 @@ export function LoginScreen() {
               <Text style={styles.userHint}>Use sua conta Google</Text>
             </View>
           </Pressable>
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
+          ) : null}
+          {waking ? <Text style={styles.waking}>{WAKE_MESSAGE}</Text> : null}
         </View>
       </View>
       <View style={styles.bottomBar}>
@@ -72,6 +80,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   hint: { color: '#FFFFFF', fontSize: 15, textAlign: 'right' },
+  error: { color: '#FFFFE1', fontSize: 14, fontWeight: '700', marginTop: spacing.md },
+  waking: { color: '#FFFFFF', fontSize: 14, marginTop: spacing.md },
   users: {
     flexGrow: 1,
     flexBasis: 280,

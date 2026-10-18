@@ -13,9 +13,10 @@ type Props = {
   onSelect: (id: string) => void;
   label?: string;
   compact?: boolean;
+  placeholder?: string;
 };
 
-export function Select({ options, selectedId, onSelect, label, compact }: Props) {
+export function Select({ options, selectedId, onSelect, label, compact, placeholder }: Props) {
   return (
     <View style={compact ? undefined : styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -23,6 +24,11 @@ export function Select({ options, selectedId, onSelect, label, compact }: Props)
         value={selectedId ?? ''}
         onChange={(event) => onSelect(event.target.value)}
         style={compact ? compactStyle : selectStyle}>
+        {placeholder !== undefined && !options.some((option) => option.id === selectedId) ? (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        ) : null}
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.label}

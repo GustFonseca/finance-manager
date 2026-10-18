@@ -4,6 +4,7 @@ using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantSpending;
+using FinanceManager.Aplication.UseCases.Merchants.Queries.GetUnsortedMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.ResolveMerchants;
 using FinanceManager.Aplication.UseCases.Savings.Commands.ApplySuggestedBudgets;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetCategoryBudget;
@@ -81,6 +82,18 @@ public class MerchantsSavingsAndSummaryControllerTests
         Assert.Equal(2, Assert.IsType<UpdateMerchantResultDto>(Assert.IsType<OkObjectResult>(found.Result).Value).UpdatedTransactions);
         Assert.IsType<NotFoundResult>(missing.Result);
         Assert.Equal(new UpdateMerchantCommand(Me, Known, "iFood", MerchantKind.BUSINESS, category, true), _mediator.Sent[0]);
+    }
+
+    [Fact]
+    public async Task Merchants_GetUnsorted_uses_the_requested_period()
+    {
+        var unsorted = new List<MerchantSpendingDto>();
+        _mediator.Returns<GetUnsortedMerchantsQuery>(_ => unsorted);
+
+        var result = await Merchants.GetUnsorted(Start, End);
+
+        Assert.Same(unsorted, Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(new GetUnsortedMerchantsQuery(Me, Start, End), Assert.Single(_mediator.Sent));
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { DialogButtons, Input, Modal } from '@/components/ui';
-import { parseToCents } from '@/lib/money';
+import { DateInput, DialogButtons, FormError, Input, Modal } from '@/components/ui';
+import { INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
+import { dayToIso } from '@/lib/periods';
 import { CreateGoalInput } from '../types';
 
 type Props = {
@@ -10,21 +11,32 @@ type Props = {
   onSubmit: (data: CreateGoalInput) => void;
 };
 
+export const GOAL_NAME_REQUIRED = 'Dê um nome para a meta.';
+
 export function GoalForm({ visible, saving, onClose, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
       setName('');
       setTarget('');
+      setDeadline('');
+      setError(null);
     }
   }, [visible]);
 
   function handleSubmit() {
     const targetCents = parseToCents(target);
-    if (!name.trim() || targetCents === null) return;
-    onSubmit({ name: name.trim(), targetCents });
+    const problem =
+      !name.trim() ? GOAL_NAME_REQUIRED
+      : targetCents === null || targetCents <= 0 ? INVALID_AMOUNT_MESSAGE
+      : null;
+    setError(problem);
+    if (problem) return;
+    onSubmit({ name: name.trim(), targetCents: targetCents!, deadline: deadline ? dayToIso(deadline) : undefined });
   }
 
   return (
@@ -37,6 +49,8 @@ export function GoalForm({ visible, saving, onClose, onSubmit }: Props) {
         value={target}
         onChangeText={setTarget}
       />
+      <DateInput label="Prazo (opcional):" value={deadline} onChange={setDeadline} />
+      <FormError message={error} />
       <DialogButtons
         confirmLabel="Criar"
         onConfirm={handleSubmit}

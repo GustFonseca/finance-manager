@@ -1,8 +1,11 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { formatCents } from '@/lib/money';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useWindowManager } from '@/components/xp';
+import { formatCents, INVALID_AMOUNT_MESSAGE } from '@/lib/money';
+import { renderWithProviders } from '@/test/render';
 import { BudgetForm } from '../components/BudgetForm';
 import { BudgetTable } from '../components/BudgetTable';
+import { SavingsGoalForm } from '../components/SavingsGoalForm';
 import { SuggestionList } from '../components/SuggestionList';
 import { CategoryBudgetDto, SuggestionKind } from '../types';
 
@@ -42,6 +45,54 @@ describe('BudgetForm', () => {
     render(<BudgetForm budget={null} onClose={jest.fn()} onSubmit={jest.fn()} />);
     expect(screen.queryByText('Salvar')).toBeNull();
   });
+
+  it('explains an invalid limit and clears it when the budget changes', () => {
+    const onSubmit = jest.fn();
+    const { rerender } = render(<BudgetForm budget={budget({})} onClose={jest.fn()} onSubmit={onSubmit} />);
+    const input = () => screen.getByPlaceholderText('ex: 800,00') as HTMLInputElement;
+
+    fireEvent.change(input(), { target: { value: 'abc' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(screen.getByRole('alert').textContent).toBe(INVALID_AMOUNT_MESSAGE);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    rerender(
+      <BudgetForm budget={budget({ categoryId: 'c2', limitCents: null })} onClose={jest.fn()} onSubmit={onSubmit} />
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(input().value).toBe('');
+
+    fireEvent.change(input(), { target: { value: '500,00' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(onSubmit).toHaveBeenCalledWith(50000);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('SavingsGoalForm', () => {
+  it('explains an invalid amount, submits a valid one and resets on reopen', () => {
+    const onSubmit = jest.fn();
+    const props = { currentCents: 0, averageSavedCents: 30000, onClose: jest.fn(), onSubmit };
+    const { rerender } = render(<SavingsGoalForm visible {...props} />);
+    const input = () => screen.getByPlaceholderText('ex: 1000,00') as HTMLInputElement;
+
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(screen.getByRole('alert').textContent).toBe(INVALID_AMOUNT_MESSAGE);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.change(input(), { target: { value: '1000,00' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(onSubmit).toHaveBeenCalledWith(100000);
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    fireEvent.change(input(), { target: { value: 'x' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(screen.getByRole('alert')).toBeTruthy();
+    rerender(<SavingsGoalForm visible={false} {...props} />);
+    rerender(<SavingsGoalForm visible {...props} currentCents={50000} />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(input().value).toBe('500,00');
+  });
 });
 
 describe('SuggestionList', () => {
@@ -55,7 +106,7 @@ describe('SuggestionList', () => {
   ];
 
   it('shows an icon per kind and the savings except for goals or zero', () => {
-    render(
+    renderWithProviders(
       <SuggestionList
         historyMonths={3}
         suggestions={[
@@ -69,5 +120,39 @@ describe('SuggestionList', () => {
       expect(screen.getAllByTestId(`icon-${icon}`).length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText(`${money(1000)}/mês`)).toHaveLength(5);
+    expect(screen.getAllByText('Abrir Estabelecimentos')).toHaveLength(1);
+  });
+
+  it('opens the merchants window from an organize suggestion', () => {
+    let wm: ReturnType<typeof useWindowManager> | undefined;
+    function Probe() {
+      wm = useWindowManager();
+      return null;
+    }
+    renderWithProviders(
+      <>
+        <Probe />
+        <SuggestionList
+          historyMonths={3}
+          suggestions={[{ kind: 'ORGANIZE', title: 'Organize', detail: 'sem categoria', potentialCents: 0 }]}
+        />
+      </>
+    );
+    expect(wm!.openWindows).not.toContain('/merchants');
+
+    act(() => {
+      fireEvent.click(screen.getByText('Abrir Estabelecimentos'));
+    });
+
+    expect(wm!.openWindows).toContain('/merchants');
+    expect(wm!.activeWindow).toBe('/merchants');
+  });
+
+  it('explains why there are no suggestions', () => {
+    const { rerender } = renderWithProviders(<SuggestionList historyMonths={0} suggestions={[]} />);
+    expect(screen.getByText(/Importe os extratos desses meses/)).toBeTruthy();
+
+    rerender(<SuggestionList historyMonths={3} suggestions={[]} />);
+    expect(screen.getByText(/Nenhum ajuste necessário/)).toBeTruthy();
   });
 });

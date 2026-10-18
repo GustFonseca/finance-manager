@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { transactionsApi } from './api';
-import { CreateTransactionRequest, PeriodFilter } from './types';
+import { CreateTransactionRequest, TransactionFilter } from './types';
 
-export function useTransactions(range: PeriodFilter = {}, enabled = true) {
+export function useTransactions(range: TransactionFilter = {}, enabled = true) {
   return useQuery({
     queryKey: [...queryKeys.transactions, range],
     queryFn: () => transactionsApi.getAll(range),
@@ -23,6 +23,14 @@ export function useCreateTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateTransactionRequest) => transactionsApi.create(data),
+    onSuccess: () => invalidateMoney(qc),
+  });
+}
+
+export function useUpdateTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateTransactionRequest }) => transactionsApi.update(id, data),
     onSuccess: () => invalidateMoney(qc),
   });
 }

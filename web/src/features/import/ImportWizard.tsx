@@ -75,6 +75,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
 
   const rows = statement?.rows ?? [];
   const selected = rows.filter((row) => choices[row.key]?.include);
+  const withoutCategory = selected.filter((row) => !choices[row.key].categoryId).length;
   const totals = selected.reduce(
     (sum, row) => ({ ...sum, [row.type]: sum[row.type] + row.amountCents }),
     { INCOME: 0, EXPENSE: 0 }
@@ -254,6 +255,11 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
               <Text style={styles.info}> · Saídas </Text>
               <MoneyText cents={totals.EXPENSE} tone="expense" style={styles.summaryValue} />
             </View>
+            {withoutCategory > 0 ? (
+              <Text style={styles.error}>
+                {withoutCategory} linha(s) marcada(s) sem categoria. Escolha a categoria delas para importar.
+              </Text>
+            ) : null}
           </>
         )}
 
@@ -299,7 +305,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
                 !accountId ||
                 (step === 'file'
                   ? !statement
-                  : selected.length === 0 || selected.some((row) => !choices[row.key].categoryId))
+                  : selected.length === 0 || withoutCategory > 0)
               }
               loading={busy}
               onPress={step === 'review' ? runImport : goToReview}
@@ -343,6 +349,7 @@ function ReviewRow({ row, choice, categories, onChange }: ReviewRowProps) {
       <View style={styles.colCategory}>
         <Select
           compact
+          placeholder="(escolha a categoria)"
           options={categories}
           selectedId={choice.categoryId}
           onSelect={(categoryId) => onChange({ categoryId })}

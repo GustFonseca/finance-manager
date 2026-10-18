@@ -101,6 +101,7 @@ public sealed class RepositoryTests : IDisposable
         Assert.Equal(0, await repository.DeleteByUserIdAsync(_me.Id));
         Assert.Empty(_db.Transactions);
         Assert.Contains(_db.ActivityLogs, a => a.Description == "3 transações importadas de uma vez");
+        Assert.Contains(_db.ActivityLogs, a => a.Description == "3 transações alteradas de uma vez");
     }
 
     [Fact]
