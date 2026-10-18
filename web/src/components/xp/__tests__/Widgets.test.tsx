@@ -4,7 +4,7 @@ import { reportError } from '@/lib/logger';
 import { Clock } from '../Clock';
 import { CrashDialog } from '../CrashDialog';
 import { MenuBar } from '../MenuBar';
-import { findProgram, PROGRAMS } from '../programs';
+import { findProgram, PROGRAMS, visiblePrograms } from '../programs';
 import { TitleBar } from '../TitleBar';
 import { Toolbar } from '../Toolbar';
 import { WindowsLogo } from '../WindowsLogo';
@@ -40,8 +40,16 @@ describe('programs', () => {
     expect(new Set(PROGRAMS.map((program) => program.route)).size).toBe(PROGRAMS.length);
   });
 
+  it('shows the admin only programs to admins only', () => {
+    expect(findProgram('/rules')).toMatchObject({ title: 'Regras de classificação', adminOnly: true });
+    expect(visiblePrograms(false).map((program) => program.route)).not.toContain('/rules');
+    expect(visiblePrograms(false)).toHaveLength(PROGRAMS.length - 1);
+    expect(visiblePrograms(true)).toEqual(PROGRAMS);
+  });
+
   it('is re-exported from the package entry', () => {
     expect(xp.PROGRAMS).toBe(PROGRAMS);
+    expect(typeof xp.useVisiblePrograms).toBe('function');
     expect(typeof xp.XpShell).toBe('function');
   });
 });

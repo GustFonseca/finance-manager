@@ -15,7 +15,10 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using FinanceManager.Api.Authorization;
+using FinanceManager.Api.Caching;
 using FinanceManager.Api.Errors;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,14 +78,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddSingleton<IAuthorizationHandler, AdminRequirementHandler>();
 builder.Services.AddAuthorization(options =>
-    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    options.AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
+
+builder.Services.AddOutputCache(options =>
+{
+    options.SizeLimit = 32 * 1024 * 1024;
+    options.AddPolicy(UserDataCachePolicy.Name, new UserDataCachePolicy());
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -119,6 +141,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseResponseCompression();
 
 app.Use(async (http, next) =>
 {
@@ -151,13 +174,18 @@ using (var scope = app.Services.CreateScope())
     if (catalogued > 0) app.Logger.LogInformation("Catalogued {Count} transactions under their merchants", catalogued);
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<UserCacheEviction>();
+app.UseOutputCache();
 app.MapControllers();
 
 app.Run();

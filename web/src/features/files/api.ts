@@ -11,11 +11,7 @@ export const foldersApi = {
   upload: (id: string, files: File[]) => {
     const form = new FormData();
     files.forEach((file) => form.append('files', file));
-    return http
-      .post<StoredFileDto[]>(`/folders/${id}/files`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      .then((r) => r.data);
+    return http.post<StoredFileDto[]>(`/folders/${id}/files`, form).then((r) => r.data);
   },
 };
 

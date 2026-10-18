@@ -24,8 +24,10 @@ public static class AvoidableSpendingAnalyzer
     private sealed record Expense(Transaction Tx, SpendingClass Class, string Key, string Name);
 
     public static AvoidableSpendingDto Analyze(
-        IReadOnlyList<Transaction> transactions, DateTime monthStart, DateTime now, ClassificationRules rules, decimal cdiAnnualPercent)
+        IReadOnlyList<Transaction> transactions, DateTime monthStart, DateTime now, ClassificationRules rules, decimal cdiAnnualPercent,
+        AvoidableContext? context = null)
     {
+        context ??= AvoidableContext.Empty;
         var expenses = transactions
             .Where(t => t.Type == TransactionType.EXPENSE && t.Date <= now && !t.IsOwnMoney(rules))
             .Select(t => new Expense(t, SpendingClassifier.Classify(t, rules), t.MerchantKey(rules), t.MerchantName(rules)))
@@ -50,12 +52,15 @@ public static class AvoidableSpendingAnalyzer
             CdiAnnualPercent = cdiAnnualPercent,
             HistoryMonths = historyMonths,
             Superfluous = SuperfluousMerchants(current, history, divisor, historyMonths, monthlyRate),
-            Subscriptions = Subscriptions(expenses, now, rules, monthlyRate, out var similar),
+            Subscriptions = Subscriptions(expenses, now, rules, monthlyRate, context.Decisions, out var similar),
             SimilarSubscriptions = similar,
             SmallPurchases = SmallPurchases(historyMonths > 0 ? history : current, divisor),
             Spikes = Spikes(current, expenses, monthStart, rules),
             FirstTimePurchases = FirstTimePurchases(current, expenses, monthStart),
             Fees = FeeAnalyzer.Analyze(transactions, monthStart, now, rules),
+            Duplicates = DuplicateChargeDetector.Detect(transactions, monthStart, now, rules, context.Dismissed),
+            BillIncreases = BillIncreaseDetector.Detect(transactions, monthStart, now, rules, context.InflationPercent, context.Dismissed),
+            InflationPercent = context.InflationPercent,
         };
     }
 
@@ -93,7 +98,8 @@ public static class AvoidableSpendingAnalyzer
             .ToList();
 
     private static List<SubscriptionAuditDto> Subscriptions(
-        List<Expense> expenses, DateTime now, ClassificationRules rules, double monthlyRate, out List<SimilarSubscriptionsDto> similar)
+        List<Expense> expenses, DateTime now, ClassificationRules rules, double monthlyRate,
+        IReadOnlyDictionary<string, SubscriptionDecision> decisions, out List<SimilarSubscriptionsDto> similar)
     {
         var audits = expenses
             .Where(e => rules.IsSubscription($"{e.Name} {e.Tx.Description}"))
@@ -107,8 +113,13 @@ public static class AvoidableSpendingAnalyzer
                 var resumed = charges.Count > 1 && (latest.Tx.Date - charges[^2].Tx.Date).TotalDays > ResumedGapDays
                     ? charges[^2].Tx.Date
                     : (DateTime?)null;
+                var decision = decisions.GetValueOrDefault(latest.Key);
                 return new SubscriptionAuditDto
                 {
+                    Key = latest.Key,
+                    Choice = decision?.Choice,
+                    DecidedAt = decision?.DecidedAt,
+                    ChargedAfterCancel = decision?.Choice == SubscriptionChoice.CANCEL && latest.Tx.Date > decision.DecidedAt,
                     MerchantId = latest.Tx.MerchantId,
                     Name = latest.Name,
                     Group = rules.SubscriptionGroup(latest.Name) ?? rules.SubscriptionGroup(latest.Tx.Description),
@@ -178,23 +189,39 @@ public static class AvoidableSpendingAnalyzer
             .ToList();
         if (months.Count == 0) return [];
 
-        var history = expenses.Where(e => e.Tx.Date >= monthStart.AddMonths(-LookbackMonths) && e.Tx.Date < monthStart).ToList();
-        List<long> Series(Func<Expense, bool> belongs) => months
-            .Select(m => Sum(history.Where(e => belongs(e) && e.Tx.Date >= m && e.Tx.Date < m.AddMonths(1))))
+        var history = expenses
+            .Where(e => e.Tx.Date >= monthStart.AddMonths(-LookbackMonths) && e.Tx.Date < monthStart)
+            .Select(e => (Expense: e, Month: months.FindIndex(m => e.Tx.Date >= m && e.Tx.Date < m.AddMonths(1))))
+            .Where(e => e.Month >= 0)
             .ToList();
+        Dictionary<TKey, long[]> Totals<TKey>(Func<Expense, TKey> keyOf) where TKey : notnull
+        {
+            var totals = new Dictionary<TKey, long[]>();
+            foreach (var (expense, month) in history)
+            {
+                var key = keyOf(expense);
+                if (!totals.TryGetValue(key, out var series)) totals[key] = series = new long[months.Count];
+                series[month] += expense.Tx.AmountCents;
+            }
+            return totals;
+        }
+        var byKey = Totals(e => e.Key);
+        var byCategory = Totals(e => e.Tx.CategoryId);
+        List<long> Series<TKey>(Dictionary<TKey, long[]> totals, TKey key) where TKey : notnull =>
+            totals.TryGetValue(key, out var series) ? [.. series] : [.. new long[months.Count]];
 
         var byMerchant = current
             .Where(e => e.Class != SpendingClass.ESSENTIAL)
             .GroupBy(e => e.Key)
             .Select(g => Spike(SpikeKind.MERCHANT, g.MaxBy(e => e.Tx.Date)!.Tx.MerchantId, g.MaxBy(e => e.Tx.Date)!.Name,
-                Sum(g), Series(e => e.Key == g.Key)));
-        var byCategory = current
+                Sum(g), Series(byKey, g.Key)));
+        var byCategorySpikes = current
             .Where(e => e.Tx.Category != null && rules.CategoryClass(e.Tx.Category.Name) != SpendingClass.ESSENTIAL)
             .GroupBy(e => e.Tx.CategoryId)
             .Select(g => Spike(SpikeKind.CATEGORY, g.Key, g.First().Tx.Category!.Name,
-                Sum(g), Series(e => e.Tx.CategoryId == g.Key)));
+                Sum(g), Series(byCategory, g.Key)));
 
-        return byCategory.Concat(byMerchant)
+        return byCategorySpikes.Concat(byMerchant)
             .Where(s => s != null)
             .Select(s => s!)
             .OrderByDescending(s => s.MonthCents - s.AverageCents)

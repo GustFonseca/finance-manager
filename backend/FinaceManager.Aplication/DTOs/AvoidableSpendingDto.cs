@@ -18,6 +18,9 @@ public class AvoidableSpendingDto
     public List<FirstTimePurchaseDto> FirstTimePurchases { get; set; } = [];
     public FeesDto Fees { get; set; } = new();
     public long HourValueCents { get; set; }
+    public List<DuplicateChargeDto> Duplicates { get; set; } = [];
+    public List<BillIncreaseDto> BillIncreases { get; set; } = [];
+    public decimal InflationPercent { get; set; }
 }
 
 public class AvoidableMerchantDto
@@ -34,6 +37,7 @@ public class AvoidableMerchantDto
 
 public class SubscriptionAuditDto
 {
+    public string Key { get; set; } = string.Empty;
     public Guid? MerchantId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Group { get; set; }
@@ -44,6 +48,9 @@ public class SubscriptionAuditDto
     public DateTime LastDate { get; set; }
     public DateTime? ResumedAfter { get; set; }
     public long InvestedIn12MonthsCents { get; set; }
+    public SubscriptionChoice? Choice { get; set; }
+    public DateTime? DecidedAt { get; set; }
+    public bool ChargedAfterCancel { get; set; }
 }
 
 public class SimilarSubscriptionsDto
@@ -111,4 +118,38 @@ public class FeeItemDto
     public long YearCents { get; set; }
     public int Count { get; set; }
     public DateTime LastDate { get; set; }
+}
+
+public class DuplicateChargeDto
+{
+    public string Key { get; set; } = string.Empty;
+    public Guid TransactionId { get; set; }
+    public Guid? MerchantId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public long AmountCents { get; set; }
+    public DateTime FirstDate { get; set; }
+    public DateTime SecondDate { get; set; }
+}
+
+public class BillIncreaseDto
+{
+    public string Key { get; set; } = string.Empty;
+    public Guid? MerchantId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public long PreviousCents { get; set; }
+    public long CurrentCents { get; set; }
+    public double IncreasePercent { get; set; }
+    public long YearlyImpactCents { get; set; }
+}
+
+public class DismissInsightRequest
+{
+    public string Key { get; set; } = string.Empty;
+}
+
+public class SubscriptionChoiceRequest
+{
+    public string Key { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public SubscriptionChoice? Choice { get; set; }
 }

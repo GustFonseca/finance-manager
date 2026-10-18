@@ -103,8 +103,9 @@ describe('AuthProvider', () => {
     expect(state().error).toBe(LOGIN_FAILED);
   });
 
-  it('signs out, clearing storage and the query cache', async () => {
+  it('signs out, clearing storage, the offline copy and the query cache', async () => {
     localStorage.setItem('jwt_token', 'tok');
+    localStorage.setItem('fm_offline_summary', '[]');
     localStorage.setItem('user_data', JSON.stringify({ email: 'g@x.com', name: 'Gustavo' }));
     const clear = jest.spyOn(queryClient, 'clear');
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -114,6 +115,7 @@ describe('AuthProvider', () => {
     expect(result.current).toMatchObject({ token: null, user: null, isLoading: false, error: null });
     expect(localStorage.getItem('jwt_token')).toBeNull();
     expect(localStorage.getItem('user_data')).toBeNull();
+    expect(localStorage.getItem('fm_offline_summary')).toBeNull();
     expect(clear).toHaveBeenCalled();
     clear.mockRestore();
   });

@@ -14,3 +14,4 @@ export type { MenuEntry } from './MenuBar';
 export { useSound } from './sound/SoundProvider';
 export { PROGRAMS } from './programs';
 export type { Program } from './programs';
+export { useVisiblePrograms } from './useVisiblePrograms';

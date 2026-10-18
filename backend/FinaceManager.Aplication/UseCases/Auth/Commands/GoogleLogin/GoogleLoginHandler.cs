@@ -20,6 +20,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly IGoogleTokenValidator _googleTokenValidator;
     private readonly IConfiguration _config;
+    private readonly IAdminDirectory _admins;
 
     public GoogleLoginHandler(
         IUserRepository userRepository,
@@ -27,7 +28,8 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
         ICategoryRepository categoryRepository,
         IActivityLogRepository activityLogRepository,
         IGoogleTokenValidator googleTokenValidator,
-        IConfiguration config)
+        IConfiguration config,
+        IAdminDirectory admins)
     {
         _userRepository = userRepository;
         _accountRepository = accountRepository;
@@ -35,6 +37,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
         _activityLogRepository = activityLogRepository;
         _googleTokenValidator = googleTokenValidator;
         _config = config;
+        _admins = admins;
     }
 
     public async Task<LoginResponse> Handle(GoogleLoginCommand request, CancellationToken cancellationToken = default)
@@ -67,7 +70,8 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
         {
             Token = token,
             Email = user.Email,
-            Name = user.Name
+            Name = user.Name,
+            IsAdmin = _admins.IsAdmin(user.Email)
         };
     }
 

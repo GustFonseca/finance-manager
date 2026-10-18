@@ -6,6 +6,7 @@ import { SLOW_REQUEST_MS, trackRequest } from '@/lib/serverWake';
 import { useAuth } from '../AuthContext';
 import { LoginScreen } from '../LoginScreen';
 import { authApi } from '../api';
+import { httpResponse } from '@/test/http';
 
 jest.mock('../AuthContext', () => ({ useAuth: jest.fn() }));
 
@@ -57,8 +58,8 @@ describe('LoginScreen', () => {
 
 describe('authApi', () => {
   it('posts the Google id token', async () => {
-    const post = jest.spyOn(http, 'post').mockResolvedValue({ data: { token: 't' } });
-    await expect(authApi.googleLogin('id-tok')).resolves.toEqual({ data: { token: 't' } });
+    const post = jest.spyOn(http, 'post').mockResolvedValue(httpResponse({ token: 't' }));
+    await expect(authApi.googleLogin('id-tok')).resolves.toEqual(httpResponse({ token: 't' }));
     expect(post).toHaveBeenCalledWith('/auth/google', { idToken: 'id-tok' });
     post.mockRestore();
   });

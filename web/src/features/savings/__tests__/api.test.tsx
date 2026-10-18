@@ -13,36 +13,37 @@ import {
   useSetSavingsGoal,
   useSetWorkHours,
 } from '../queries';
+import { httpResponse } from '@/test/http';
 
 jest.mock('@/lib/http', () => ({ http: { get: jest.fn(), put: jest.fn(), post: jest.fn() } }));
 
 describe('savingsApi', () => {
   it('gets the plan for the month', async () => {
-    jest.mocked(http.get).mockResolvedValue({ data: { monthlyGoalCents: 1 } });
+    jest.mocked(http.get).mockResolvedValue(httpResponse({ monthlyGoalCents: 1 }));
     await expect(savingsApi.get({ start: 's', end: 'e' })).resolves.toEqual({ monthlyGoalCents: 1 });
     expect(http.get).toHaveBeenCalledWith('/savings', { params: { start: 's', end: 'e' } });
   });
 
   it('sets the goal', async () => {
-    jest.mocked(http.put).mockResolvedValue({ data: 'ignored' });
+    jest.mocked(http.put).mockResolvedValue(httpResponse('ignored'));
     await expect(savingsApi.setGoal(5000)).resolves.toBeUndefined();
     expect(http.put).toHaveBeenCalledWith('/savings/goal', { monthlyGoalCents: 5000 });
   });
 
   it('sets the work hours', async () => {
-    jest.mocked(http.put).mockResolvedValue({ data: 'ignored' });
+    jest.mocked(http.put).mockResolvedValue(httpResponse('ignored'));
     await expect(savingsApi.setWorkHours(160)).resolves.toBeUndefined();
     expect(http.put).toHaveBeenCalledWith('/savings/work-hours', { hours: 160 });
   });
 
   it('sets a budget', async () => {
-    jest.mocked(http.put).mockResolvedValue({ data: 'ignored' });
+    jest.mocked(http.put).mockResolvedValue(httpResponse('ignored'));
     await expect(savingsApi.setBudget('c1', null)).resolves.toBeUndefined();
     expect(http.put).toHaveBeenCalledWith('/savings/budgets/c1', { limitCents: null });
   });
 
   it('applies the suggested budgets', async () => {
-    jest.mocked(http.post).mockResolvedValue({ data: 3 });
+    jest.mocked(http.post).mockResolvedValue(httpResponse(3));
     await expect(savingsApi.applySuggested({ start: 's', end: 'e' })).resolves.toBe(3);
     expect(http.post).toHaveBeenCalledWith('/savings/budgets/apply-suggested', null, { params: { start: 's', end: 'e' } });
   });
@@ -63,7 +64,7 @@ describe('savings queries', () => {
   });
 
   it('loads the plan', async () => {
-    jest.mocked(http.get).mockResolvedValue({ data: { historyMonths: 2 } });
+    jest.mocked(http.get).mockResolvedValue(httpResponse({ historyMonths: 2 }));
     const { client, wrapper } = setup();
     const range = { start: 's', end: 'e' };
     const { result } = renderHook(() => useSavingsPlan(range), { wrapper });
@@ -72,8 +73,8 @@ describe('savings queries', () => {
   });
 
   it('invalidates the plan after each mutation', async () => {
-    jest.mocked(http.put).mockResolvedValue({ data: null });
-    jest.mocked(http.post).mockResolvedValue({ data: 2 });
+    jest.mocked(http.put).mockResolvedValue(httpResponse(null));
+    jest.mocked(http.post).mockResolvedValue(httpResponse(2));
     const { wrapper, invalidate } = setup();
 
     const goal = renderHook(() => useSetSavingsGoal(), { wrapper });

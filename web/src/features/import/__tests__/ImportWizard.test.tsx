@@ -10,6 +10,7 @@ import { TransactionDto } from '@/features/transactions/types';
 import { ImportWizard } from '../ImportWizard';
 import { dayToIso } from '../text';
 import { bufferOf, installTextCodec } from './textCodec';
+import { apiError } from '@/test/http';
 
 installTextCodec();
 
@@ -49,7 +50,6 @@ const match = (categoryId: string | null, skipReason: string | null = null) => (
 const MISSING_CATEGORY_TEXT = '1 linha(s) marcada(s) sem categoria. Escolha a categoria delas para importar.';
 
 const systemFolder = { id: 'f1', name: 'Extratos', isSystem: true };
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function statementFile(text: string, name = 'fatura.csv') {
   const file = new File([text], name, { type: 'text/csv' });

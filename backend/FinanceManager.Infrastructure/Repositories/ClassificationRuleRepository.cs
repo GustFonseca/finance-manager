@@ -16,4 +16,11 @@ public class ClassificationRuleRepository : Repository<ClassificationRule>, ICla
             .OrderBy(r => r.Type).ThenBy(r => r.Priority)
             .ToListAsync();
     }
+
+    public async Task<List<ClassificationRule>> GetAllAsync()
+    {
+        return await _dbSet.AsNoTracking()
+            .OrderBy(r => r.Type).ThenBy(r => r.Priority).ThenBy(r => r.CreatedAt)
+            .ToListAsync();
+    }
 }

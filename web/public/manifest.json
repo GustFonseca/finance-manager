@@ -1,0 +1,15 @@
+{
+  "name": "Finance Manager",
+  "short_name": "Finanças",
+  "description": "Controle de receitas, despesas, metas e planejamento financeiro",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0831D9",
+  "background_color": "#3A6EA5",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "196x196", "type": "image/png" },
+    { "src": "/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}

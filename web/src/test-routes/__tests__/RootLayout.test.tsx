@@ -5,7 +5,6 @@ import { router, useSegments } from 'expo-router';
 import { useAuth } from '@/features/auth/AuthContext';
 import RootLayout, { ErrorBoundary, unstable_settings } from '../../../app/_layout';
 
-jest.mock('react-native-reanimated', () => ({}));
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
 jest.mock('expo-router', () => {
   const React = require('react');

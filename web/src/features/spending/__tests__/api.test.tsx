@@ -5,12 +5,13 @@ import { createTestQueryClient } from '@/test/render';
 import { http } from '@/lib/http';
 import { spendingApi } from '../api';
 import { useSpendingAnalysis } from '../queries';
+import { httpResponse } from '@/test/http';
 
 jest.mock('@/lib/http', () => ({ http: { get: jest.fn() } }));
 
 describe('spendingApi', () => {
   it('gets the analysis for the period and account', async () => {
-    jest.mocked(http.get).mockResolvedValue({ data: { monthExpenseCents: 3 } });
+    jest.mocked(http.get).mockResolvedValue(httpResponse({ monthExpenseCents: 3 }));
     await expect(spendingApi.get({ start: 's', end: 'e', accountId: 'a1' })).resolves.toEqual({ monthExpenseCents: 3 });
     expect(http.get).toHaveBeenCalledWith('/summary/spending', { params: { start: 's', end: 'e', accountId: 'a1' } });
   });
@@ -18,7 +19,7 @@ describe('spendingApi', () => {
 
 describe('useSpendingAnalysis', () => {
   it('caches the analysis under the summary key', async () => {
-    jest.mocked(http.get).mockResolvedValue({ data: { monthExpenseCents: 7 } });
+    jest.mocked(http.get).mockResolvedValue(httpResponse({ monthExpenseCents: 7 }));
     const client = createTestQueryClient();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>

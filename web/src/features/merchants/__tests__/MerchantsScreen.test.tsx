@@ -9,6 +9,7 @@ import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil, yearRange } from
 import { MerchantsScreen } from '../MerchantsScreen';
 import { merchantsApi } from '../api';
 import { MerchantDto, MerchantHistoryDto, MerchantSpendingDto, MerchantSpendingReportDto } from '../types';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -83,9 +84,8 @@ const txn = (id: string, type: 'EXPENSE' | 'INCOME', description: string): Trans
   recurrence: 'NONE',
   merchantId: 'm1',
   merchantName: 'iFood',
+  receiptFileId: null,
 });
-
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function fieldOf(label: string, tag: 'input' | 'select') {
   return screen.getByText(label).parentElement!.querySelector(tag)!;

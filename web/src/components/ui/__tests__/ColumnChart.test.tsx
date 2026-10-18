@@ -3,8 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { ChartColumn, ColumnChart } from '../ColumnChart';
 import { hover, unhover } from './pointer';
 
-jest.mock('react-native-reanimated', () => ({ getUseOfValueInStyleWarning: () => 'aviso do reanimated' }));
-
 beforeEach(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
 
 const formatValue = (value: number) => `R$ ${value}`;

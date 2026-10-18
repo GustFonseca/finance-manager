@@ -1,5 +1,4 @@
 import React from 'react';
-import { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Text } from 'react-native';
 import { BarTrack } from '../BarTrack';
@@ -11,8 +10,7 @@ import { MoneyText } from '../MoneyText';
 import { ProgressBar } from '../ProgressBar';
 import { StackedBar } from '../StackedBar';
 import { StatTile } from '../StatTile';
-
-jest.mock('react-native-reanimated', () => ({ getUseOfValueInStyleWarning: () => 'aviso do reanimated' }));
+import { apiError } from '@/test/http';
 
 beforeEach(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
 
@@ -80,14 +78,7 @@ describe('ErrorState', () => {
   });
 
   it('shows the message sent by the API', () => {
-    const config = { headers: new AxiosHeaders() } as InternalAxiosRequestConfig;
-    const error = new AxiosError('x', 'ERR', config, null, {
-      status: 400,
-      statusText: '',
-      data: { message: 'Conta inválida' },
-      headers: {},
-      config,
-    });
+    const error = apiError('Conta inválida');
     render(<ErrorState error={error} fallback="Erro" onRetry={jest.fn()} />);
 
     expect(screen.getByText('Conta inválida')).toBeTruthy();

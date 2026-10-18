@@ -7,13 +7,16 @@ using FinanceManager.Aplication.UseCases.Goals.Commands.DeleteGoal;
 using FinanceManager.Aplication.UseCases.Goals.Commands.UpdateGoal;
 using FinanceManager.Aplication.UseCases.Goals.Queries.GetAllGoals;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/goals")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class GoalsController : ControllerBase
 {
     private readonly IMediator _mediator;

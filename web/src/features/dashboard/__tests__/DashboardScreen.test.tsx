@@ -9,9 +9,9 @@ import { goalsApi } from '@/features/goals/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { avoidableApi } from '@/features/avoidable/api';
 import { emptyReport } from '@/features/avoidable/__tests__/fixtures';
-import { DashboardScreen } from '../DashboardScreen';
+import { DashboardScreen, RECENT_TRANSACTIONS } from '../DashboardScreen';
 import { summaryApi } from '../api';
-import { CashFlowForecastDto, DailyBudgetDto, RecurringExpenseDto } from '../types';
+import { CashFlowForecastDto, DailyBudgetDto, DigestDto, RecurringExpenseDto } from '../types';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -88,6 +88,21 @@ const daily: DailyBudgetDto = {
   ],
 };
 
+const period = {
+  start: '2026-10-12T03:00:00Z',
+  end: '2026-10-18T03:00:00Z',
+  spentCents: 41000,
+  previousSpentCents: 50000,
+  changePercent: -18,
+  incomeCents: 0,
+  savedCents: -41000,
+  superfluousCents: 0,
+  topMerchant: null,
+  topIncrease: null,
+};
+
+const digest: DigestDto = { week: period, month: { ...period, spentCents: 320000 }, goals: [] };
+
 function txn(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, accountId: 'a1', accountName: 'Nubank', categoryId: 'c1', categoryName: 'Alimentação',
@@ -108,6 +123,7 @@ function setup() {
   jest.mocked(summaryApi.recurring).mockResolvedValue(recurring);
   jest.mocked(summaryApi.forecast).mockResolvedValue(forecast);
   jest.mocked(summaryApi.daily).mockResolvedValue(daily);
+  jest.mocked(summaryApi.digest).mockResolvedValue(digest);
   jest.mocked(transactionsApi.getAll).mockResolvedValue([
     txn('t1'),
     txn('t2', { type: 'INCOME', amountCents: 250000, description: '', categoryName: 'Salário' }),
@@ -162,6 +178,7 @@ describe('DashboardScreen', () => {
     expect(screen.getAllByText(`${new Date('2026-10-03T15:00:00Z').toLocaleDateString('pt-BR')} · Nubank`)).toHaveLength(5);
 
     expect(summaryApi.get).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
+    expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined, limit: 5 });
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
     expect(summaryApi.forecast).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
 
@@ -170,6 +187,10 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('Alertas de orçamento')).toBeTruthy();
     expect(screen.getByText(`Lazer: ${money(9000)} de ${money(10000)} (90%)`)).toBeTruthy();
     expect(summaryApi.daily).toHaveBeenCalledWith(monthRange(currentKey), expect.any(String));
+
+    expect(screen.getByText('Resumo')).toBeTruthy();
+    expect(screen.getByText(`Você gastou ${money(41000)}`)).toBeTruthy();
+    expect(summaryApi.digest).toHaveBeenCalledWith(monthRange(currentKey), expect.any(String));
 
     expect(screen.getByText('Previsão do mês')).toBeTruthy();
     expect(screen.getByText(money(115000))).toBeTruthy();
@@ -197,7 +218,7 @@ describe('DashboardScreen', () => {
 
     fireEvent.change(accountSelect, { target: { value: 'a1' } });
     await waitFor(() =>
-      expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' })
+      expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1', limit: RECENT_TRANSACTIONS })
     );
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
     expect(summaryApi.forecast).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
@@ -220,6 +241,7 @@ describe('DashboardScreen', () => {
     expect(summaryApi.recurring).toHaveBeenCalledTimes(2);
     expect(summaryApi.forecast).toHaveBeenCalledTimes(2);
     expect(summaryApi.daily).toHaveBeenCalledTimes(2);
+    expect(summaryApi.digest).toHaveBeenCalledTimes(2);
     expect(goalsApi.getAll).toHaveBeenCalledTimes(2);
   });
 
@@ -271,6 +293,15 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('Atualizando...')).toBeTruthy();
     expect(screen.queryByText('Quanto posso gastar hoje')).toBeNull();
     expect(screen.queryByText('Alertas de orçamento')).toBeNull();
+  });
+
+  it('keeps the status busy while the digest loads and hides it until then', async () => {
+    jest.mocked(summaryApi.digest).mockReturnValue(new Promise(() => {}));
+    renderWithProviders(<DashboardScreen />, { windowId: '/' });
+
+    await waitFor(() => expect(screen.getByText('Quanto posso gastar hoje')).toBeTruthy());
+    expect(screen.getByText('Atualizando...')).toBeTruthy();
+    expect(screen.queryByText('Resumo')).toBeNull();
   });
 
   it('hides the avoidable spending card until it loads', async () => {

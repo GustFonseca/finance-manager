@@ -3,13 +3,16 @@ using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Activity.Queries.GetActivity;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/activity")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class ActivityController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
 import { avoidableApi } from '../api';
-import { useAvoidableSpending } from '../queries';
+import { useAvoidableSpending, useDismissInsight, useSetSubscriptionChoice } from '../queries';
 import { emptyReport } from './fixtures';
 
 jest.mock('../api');
@@ -24,5 +24,37 @@ describe('avoidable queries', () => {
 
     await act(() => client.invalidateQueries({ queryKey: ['summary'] }));
     await waitFor(() => expect(avoidableApi.get).toHaveBeenCalledTimes(2));
+  });
+
+  function setup() {
+    const client = createTestQueryClient();
+    const invalidate = jest.spyOn(client, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    return { invalidate, wrapper };
+  }
+
+  it('dismisses an alert and refreshes the summary, which holds the analysis', async () => {
+    jest.mocked(avoidableApi.dismiss).mockResolvedValue(undefined);
+    const { invalidate, wrapper } = setup();
+    const { result } = renderHook(() => useDismissInsight(), { wrapper });
+
+    await act(() => result.current.mutateAsync('dup:t1'));
+
+    expect(avoidableApi.dismiss).toHaveBeenCalledWith('dup:t1');
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+  });
+
+  it('saves the subscription choice and refreshes the summary, which holds the analysis', async () => {
+    jest.mocked(avoidableApi.setSubscriptionChoice).mockResolvedValue(undefined);
+    const { invalidate, wrapper } = setup();
+    const { result } = renderHook(() => useSetSubscriptionChoice(), { wrapper });
+    const choice = { key: 'sub:netflix', name: 'Netflix', choice: 'KEEP' as const };
+
+    await act(() => result.current.mutateAsync(choice));
+
+    expect(avoidableApi.setSubscriptionChoice).toHaveBeenCalledWith(choice);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
   });
 });

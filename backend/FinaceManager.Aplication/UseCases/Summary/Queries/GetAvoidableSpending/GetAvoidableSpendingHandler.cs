@@ -13,17 +13,23 @@ public class GetAvoidableSpendingHandler : IRequestHandler<GetAvoidableSpendingQ
     private readonly IClassificationRulesProvider _rulesProvider;
     private readonly IInterestRateProvider _rateProvider;
     private readonly ISavingsPlanRepository _planRepository;
+    private readonly IInsightDismissalRepository _dismissalRepository;
+    private readonly ISubscriptionDecisionRepository _decisionRepository;
 
     public GetAvoidableSpendingHandler(
         ITransactionRepository transactionRepository,
         IClassificationRulesProvider rulesProvider,
         IInterestRateProvider rateProvider,
-        ISavingsPlanRepository planRepository)
+        ISavingsPlanRepository planRepository,
+        IInsightDismissalRepository dismissalRepository,
+        ISubscriptionDecisionRepository decisionRepository)
     {
         _transactionRepository = transactionRepository;
         _rulesProvider = rulesProvider;
         _rateProvider = rateProvider;
         _planRepository = planRepository;
+        _dismissalRepository = dismissalRepository;
+        _decisionRepository = decisionRepository;
     }
 
     public async Task<AvoidableSpendingDto> Handle(GetAvoidableSpendingQuery request, CancellationToken cancellationToken = default)
@@ -32,7 +38,11 @@ public class GetAvoidableSpendingHandler : IRequestHandler<GetAvoidableSpendingQ
         var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, since, request.Now, request.AccountId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
         var cdi = await _rateProvider.GetCdiAnnualPercentAsync(cancellationToken);
-        var result = AvoidableSpendingAnalyzer.Analyze(transactions, request.MonthStart, request.Now, rules, cdi);
+        var context = new AvoidableContext(
+            await _dismissalRepository.GetKeysAsync(request.UserId),
+            (await _decisionRepository.GetByUserIdAsync(request.UserId)).ToDictionary(d => d.MerchantKey),
+            await _rateProvider.GetInflation12MonthsPercentAsync(cancellationToken));
+        var result = AvoidableSpendingAnalyzer.Analyze(transactions, request.MonthStart, request.Now, rules, cdi, context);
         var plan = await _planRepository.GetByUserIdAsync(request.UserId);
         result.HourValueCents = WorkValue.HourCents(transactions, request.MonthStart, WorkValue.Hours(plan), rules);
         return result;

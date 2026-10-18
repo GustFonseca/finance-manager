@@ -3,13 +3,12 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { AccountsScreen } from '../AccountsScreen';
 import { accountsApi } from '../api';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 
 const api = jest.mocked(accountsApi);
 const nubank = { id: 'a1', name: 'Nubank', balanceCents: 150000, createdAt: '2026-01-01T00:00:00Z' };
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
-
 function inputOf(label: string) {
   return screen.getByText(label).parentElement!.querySelector('input')!;
 }

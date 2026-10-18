@@ -6,6 +6,7 @@ export type Program = {
   icon: IconName;
   color: string;
   description: string;
+  adminOnly?: boolean;
 };
 
 export const PROGRAMS: Program[] = [
@@ -86,7 +87,54 @@ export const PROGRAMS: Program[] = [
     color: '#455A64',
     description: 'Histórico das suas ações',
   },
+  {
+    route: '/wishlist',
+    title: 'Lista de espera',
+    icon: 'hourglass-half',
+    color: '#8E24AA',
+    description: 'Espere antes de comprar por impulso',
+  },
+  {
+    route: '/debts',
+    title: 'Dívidas',
+    icon: 'credit-card',
+    color: '#B71C1C',
+    description: 'Planeje como quitar suas dívidas',
+  },
+  {
+    route: '/planning',
+    title: 'Planejamento',
+    icon: 'compass',
+    color: '#00695C',
+    description: 'Reserva, contas sazonais e patrimônio',
+  },
+  {
+    route: '/tax',
+    title: 'Imposto de Renda',
+    icon: 'file-text-o',
+    color: '#283593',
+    description: 'Resumo do ano para a declaração',
+  },
+  {
+    route: '/calendar',
+    title: 'Calendário',
+    icon: 'calendar',
+    color: '#E65100',
+    description: 'O que entra e sai em cada dia',
+  },
+  {
+    route: '/rules',
+    title: 'Regras de classificação',
+    icon: 'sliders',
+    color: '#455A64',
+    description: 'Como o sistema classifica seus gastos',
+    adminOnly: true,
+  },
 ];
+
+export function visiblePrograms(isAdmin: boolean): Program[] {
+  return PROGRAMS.filter((program) => !program.adminOnly || isAdmin);
+}
 
 export function findProgram(route: string): Program | undefined {
   return PROGRAMS.find((program) => program.route === route);

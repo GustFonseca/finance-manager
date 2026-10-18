@@ -4,6 +4,7 @@ import { renderWithProviders } from '@/test/render';
 import { GoalsScreen } from '../GoalsScreen';
 import { goalsApi } from '../api';
 import { GoalDto } from '../types';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 
@@ -26,8 +27,6 @@ const car: GoalDto = {
   status: 'COMPLETED',
   progressPercent: 100,
 };
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
-
 function inputOf(label: string) {
   return screen.getByText(label).parentElement!.querySelector('input')!;
 }

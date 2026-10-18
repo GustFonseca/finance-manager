@@ -841,7 +841,135 @@ namespace FinanceManager.Infrastructure.Migrations
                             Priority = 620,
                             Type = "FEE",
                             Value = "Multas"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000063"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\bipva\\b|licenciamento|dpvat",
+                            Priority = 630,
+                            Type = "SEASONAL",
+                            Value = "IPVA e licenciamento"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000064"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\biptu\\b",
+                            Priority = 640,
+                            Type = "SEASONAL",
+                            Value = "IPTU"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000065"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "matricula|material escolar|rematricula",
+                            Priority = 650,
+                            Type = "SEASONAL",
+                            Value = "Matrícula e material escolar"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000066"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "seguro auto|seguro do carro|seguro residencial|seguro anual",
+                            Priority = 660,
+                            Type = "SEASONAL",
+                            Value = "Seguros anuais"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000067"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "\\banuidade\\b",
+                            Priority = 670,
+                            Type = "SEASONAL",
+                            Value = "Anuidades"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000068"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Despesas médicas dedutíveis no IR",
+                            Pattern = "\\bsaude\\b|medic|odontolog|dentista|hospital|clinica|laborator|psicolog|fisioterap|fonoaudiolog|terapia ocupacional|plano de saude|unimed|amil|bradesco saude|sulamerica saude|hapvida",
+                            Priority = 680,
+                            Type = "TAX_DEDUCTIBLE",
+                            Value = "Saúde"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000069"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Educação dedutível no IR, com limite anual por pessoa",
+                            Pattern = "\\bensino\\b|educacao|escola|colegio|faculdade|universidade|pos graduacao|creche",
+                            Priority = 690,
+                            Type = "TAX_DEDUCTIBLE",
+                            Value = "Educação"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000070"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "PGBL é dedutível até 12% da renda tributável",
+                            Pattern = "previdencia privada|\\bpgbl\\b",
+                            Priority = 700,
+                            Type = "TAX_DEDUCTIBLE",
+                            Value = "Previdência privada (PGBL)"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000071"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Pensão judicial é dedutível",
+                            Pattern = "pensao alimenticia",
+                            Priority = 710,
+                            Type = "TAX_DEDUCTIBLE",
+                            Value = "Pensão alimentícia"
                         });
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Debt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("BalanceCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("MinimumPaymentCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("MonthlyRatePercent")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("numeric(7,4)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Debts");
                 });
 
             modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
@@ -910,6 +1038,31 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Goals");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.InsightDismissal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("InsightDismissals");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.Merchant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -974,6 +1127,12 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EmergencyGoalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("EmergencyMonths")
+                        .HasColumnType("integer");
 
                     b.Property<long>("MonthlyGoalCents")
                         .HasColumnType("bigint");
@@ -1040,6 +1199,41 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Files", (string)null);
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.SubscriptionDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Choice")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MerchantKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MerchantKey")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionDecisions");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1068,6 +1262,9 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Property<Guid?>("MerchantId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ReceiptFileId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Recurrence")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1086,6 +1283,8 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("MerchantId");
+
+                    b.HasIndex("ReceiptFileId");
 
                     b.HasIndex("UserId", "Date");
 
@@ -1122,6 +1321,48 @@ namespace FinanceManager.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.WishlistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DecideAfter")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<long>("PriceCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WishlistItems");
                 });
 
             modelBuilder.Entity("FinanceManager.Domain.Entities.Account", b =>
@@ -1187,6 +1428,17 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Debt", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
                 {
                     b.HasOne("FinanceManager.Domain.Entities.User", "User")
@@ -1202,6 +1454,17 @@ namespace FinanceManager.Infrastructure.Migrations
                 {
                     b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Goals")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.InsightDismissal", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1257,6 +1520,17 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.SubscriptionDecision", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.Transaction", b =>
                 {
                     b.HasOne("FinanceManager.Domain.Entities.Account", "Account")
@@ -1276,6 +1550,11 @@ namespace FinanceManager.Infrastructure.Migrations
                         .HasForeignKey("MerchantId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("FinanceManager.Domain.Entities.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ReceiptFileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Transactions")
                         .HasForeignKey("UserId")
@@ -1287,6 +1566,17 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Merchant");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.WishlistItem", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

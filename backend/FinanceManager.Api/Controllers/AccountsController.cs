@@ -6,13 +6,16 @@ using FinanceManager.Aplication.UseCases.Accounts.Commands.DeleteAccount;
 using FinanceManager.Aplication.UseCases.Accounts.Commands.UpdateAccount;
 using FinanceManager.Aplication.UseCases.Accounts.Queries.GetAllAccounts;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/accounts")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class AccountsController : ControllerBase
 {
     private readonly IMediator _mediator;

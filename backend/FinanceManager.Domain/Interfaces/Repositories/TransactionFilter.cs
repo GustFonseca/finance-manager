@@ -10,4 +10,5 @@ public record TransactionFilter(
     Guid? CategoryId = null,
     TransactionType? Type = null,
     string? Search = null,
-    string? SearchKey = null);
+    string? SearchKey = null,
+    int? Limit = null);

@@ -13,6 +13,7 @@ export type TransactionDto = {
   recurrence: string;
   merchantId: string | null;
   merchantName: string;
+  receiptFileId: string | null;
 };
 
 export type CreateTransactionRequest = {
@@ -34,4 +35,4 @@ export type DateRange = { start?: string; end?: string };
 
 export type PeriodFilter = DateRange & { accountId?: string; merchantId?: string };
 
-export type TransactionFilter = PeriodFilter & { categoryId?: string; type?: TransactionType; search?: string };
+export type TransactionFilter = PeriodFilter & { categoryId?: string; type?: TransactionType; search?: string; limit?: number };

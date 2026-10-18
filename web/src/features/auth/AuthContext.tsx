@@ -1,4 +1,5 @@
 import { reportError } from '@/lib/logger';
+import { clearOfflineCache } from '@/lib/offlineCache';
 import { queryClient } from '@/lib/queryClient';
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { getItem, setItem, deleteItem } from '@/lib/storage';
@@ -129,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await deleteItem(TOKEN_KEY);
     await deleteItem(USER_KEY);
     queryClient.clear();
+    clearOfflineCache();
     setState({ token: null, user: null, isLoading: false, error: null });
   }
 

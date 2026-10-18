@@ -6,6 +6,7 @@ import { renderWithProviders } from '@/test/render';
 import { merchantsApi } from '../api';
 import { OrganizeMerchants } from '../components/OrganizeMerchants';
 import { MerchantSpendingDto } from '../types';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 jest.mock('@/features/categories/api');
@@ -26,8 +27,6 @@ const row = (overrides: Partial<MerchantSpendingDto>): MerchantSpendingDto => ({
   class: 'VARIABLE',
   ...overrides,
 });
-
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function rowSelect(name: string) {
   return screen.getByText(name).parentElement!.parentElement!.querySelector('select') as HTMLSelectElement;

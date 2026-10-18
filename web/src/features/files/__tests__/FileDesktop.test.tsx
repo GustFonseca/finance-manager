@@ -1,5 +1,7 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { setViewport } from '@/components/xp/__tests__/helpers';
+import { profileApi } from '@/features/profile/api';
 import { renderWithProviders } from '@/test/render';
 import { useDesktop, useWindowManager } from '@/components/xp';
 import { DesktopProvider } from '@/components/xp/DesktopContext';
@@ -8,6 +10,7 @@ import { filesApi, foldersApi, trashApi } from '../api';
 import { folder, storedFile } from './helpers';
 
 jest.mock('../api');
+jest.mock('@/features/profile/api');
 
 type Captured = { desktop?: ReturnType<typeof useDesktop>; wm?: ReturnType<typeof useWindowManager> };
 const captured: Captured = {};
@@ -43,9 +46,31 @@ beforeEach(() => {
   jest.mocked(foldersApi.trash).mockResolvedValue(undefined);
   jest.mocked(trashApi.empty).mockResolvedValue(undefined);
   jest.mocked(filesApi.downloadUrl).mockResolvedValue('');
+  jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: false });
 });
 
 describe('FileDesktop', () => {
+  async function folderPosition() {
+    const el = await icon('Extratos');
+    return { left: el.style.left, top: el.style.top };
+  }
+
+  it('places the folders right after the programs the user can see', async () => {
+    setViewport(1200, 800);
+    renderDesktop();
+
+    await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
+    expect(await folderPosition()).toEqual({ left: '92px', top: '568px' });
+  });
+
+  it('leaves room for the admin only programs for admins', async () => {
+    setViewport(1200, 800);
+    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: true });
+    renderDesktop();
+
+    await waitFor(async () => expect(await folderPosition()).toEqual({ left: '92px', top: '648px' }));
+  });
+
   it('shows an icon per folder and an empty trash', async () => {
     renderDesktop();
     expect(await icon('Documentos')).toBeTruthy();

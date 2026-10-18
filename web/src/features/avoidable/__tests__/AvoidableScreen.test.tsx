@@ -12,6 +12,7 @@ import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/per
 import { AvoidableScreen, formatRate } from '../AvoidableScreen';
 import { avoidableApi } from '../api';
 import { emptyReport, fullReport } from './fixtures';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -48,7 +49,6 @@ const history: MerchantHistoryDto = {
   averageTicketCents: 5990,
 };
 
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function renderScreen() {
   return renderWithProviders(<AvoidableScreen />, { windowId: '/avoidable' });
@@ -67,6 +67,8 @@ beforeEach(() => {
   merchants.history.mockResolvedValue(history);
   merchants.setClass.mockResolvedValue({ ...netflix, class: 'ESSENTIAL' });
   merchants.update.mockResolvedValue({ merchant: netflix, updatedTransactions: 0 });
+  api.dismiss.mockResolvedValue(undefined);
+  api.setSubscriptionChoice.mockResolvedValue(undefined);
   jest.mocked(transactionsApi.getAll).mockResolvedValue([]);
   jest.mocked(accountsApi.getAll).mockResolvedValue([{ id: 'a1', name: 'Nubank', balanceCents: 0, createdAt: '' }]);
   jest.mocked(categoriesApi.getAll).mockResolvedValue([{ id: 'c1', name: 'Lazer', type: 'EXPENSE', color: '#000' }]);
@@ -120,6 +122,9 @@ describe('AvoidableScreen', () => {
     expect(within(netflixRow).getByText(`${money(5990)}/mês`)).toBeTruthy();
     expect(within(netflixRow).getByText('Ver detalhes')).toBeTruthy();
     expect(within(netflixRow).getByText('Não é desnecessário')).toBeTruthy();
+    expect(within(netflixRow).getByText('Mantenho')).toBeTruthy();
+    expect(within(netflixRow).getByText('Cancelei')).toBeTruthy();
+    expect(within(netflixRow).queryByText('Desfazer')).toBeNull();
 
     const disneyRow = rowOf('Disney+');
     expect(
@@ -136,7 +141,124 @@ describe('AvoidableScreen', () => {
       )
     ).toBeTruthy();
     expect(within(gymRow).queryByText(/Preço subiu|Voltou a cobrar/)).toBeNull();
-    expect(within(gymRow).queryByRole('button')).toBeNull();
+    expect(within(gymRow).getByText('Marcada para manter')).toBeTruthy();
+    expect(within(gymRow).getAllByRole('button').map((b) => b.textContent)).toEqual(['Desfazer']);
+
+    expect(
+      within(rowOf('Spotify')).getByText(
+        `Cobrou depois de você marcar como cancelada (em ${day('2026-10-09T12:00:00Z')}). Confira com o serviço.`
+      )
+    ).toBeTruthy();
+    expect(within(rowOf('Spotify')).queryByText('Marcada como cancelada')).toBeNull();
+    expect(within(rowOf('Globoplay')).getByText('Marcada como cancelada')).toBeTruthy();
+    expect(within(rowOf('Globoplay')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Desfazer']);
+  });
+
+  it('records what the user decided about each subscription', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Assinaturas')).toBeTruthy());
+
+    fireEvent.click(within(rowOf('Netflix')).getByText('Mantenho'));
+    await waitFor(() => expect(screen.getByText('Netflix foi marcada para manter.')).toBeTruthy());
+    expect(api.setSubscriptionChoice).toHaveBeenCalledWith({ key: 'sub:netflix', name: 'Netflix', choice: 'KEEP' });
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByText('OK'));
+
+    fireEvent.click(within(rowOf('Disney+')).getByText('Cancelei'));
+    await waitFor(() =>
+      expect(screen.getByText('Disney+ foi marcada como cancelada. Se voltar a cobrar, o aviso aparece aqui.')).toBeTruthy()
+    );
+    expect(api.setSubscriptionChoice).toHaveBeenCalledWith({ key: 'sub:disney', name: 'Disney+', choice: 'CANCEL' });
+    fireEvent.click(screen.getByText('OK'));
+
+    fireEvent.click(within(rowOf('Academia')).getByText('Desfazer'));
+    await waitFor(() => expect(screen.getByText('A marcação de Academia foi desfeita.')).toBeTruthy());
+    expect(api.setSubscriptionChoice).toHaveBeenCalledWith({ key: 'sub:academia', name: 'Academia', choice: null });
+  });
+
+  it('alerts when saving the subscription choice fails', async () => {
+    api.setSubscriptionChoice.mockRejectedValue(apiError('Assinatura não encontrada'));
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Assinaturas')).toBeTruthy());
+
+    fireEvent.click(within(rowOf('Netflix')).getByText('Cancelei'));
+
+    await waitFor(() => expect(screen.getByText('Assinatura não encontrada')).toBeTruthy());
+  });
+
+  it('falls back to a generic message when saving the subscription choice fails', async () => {
+    api.setSubscriptionChoice.mockRejectedValue(new Error('x'));
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Assinaturas')).toBeTruthy());
+
+    fireEvent.click(within(rowOf('Netflix')).getByText('Mantenho'));
+
+    await waitFor(() => expect(screen.getByText('Não foi possível salvar a escolha da assinatura')).toBeTruthy());
+  });
+
+  it('lists the charges to check and dismisses the ones that are right', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Cobranças para conferir')).toBeTruthy());
+
+    const gas = rowOf('Posto Shell');
+    expect(
+      within(gas).getByText(`Cobrado em ${day('2026-10-10T12:00:00Z')} e de novo em ${day('2026-10-11T12:00:00Z')}`)
+    ).toBeTruthy();
+    expect(within(gas).getByText(money(20000))).toBeTruthy();
+    expect(within(gas).getAllByRole('button').map((b) => b.textContent)).toEqual(['Está certo', 'Ver detalhes']);
+    expect(within(rowOf('Cobrança avulsa')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Está certo']);
+
+    fireEvent.click(within(gas).getByText('Está certo'));
+
+    await waitFor(() => expect(screen.getByText('O alerta de Posto Shell foi dispensado.')).toBeTruthy());
+    expect(api.dismiss).toHaveBeenCalledWith('dup:t9');
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+  });
+
+  it('opens the merchant of a charge to check', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Cobranças para conferir')).toBeTruthy());
+
+    fireEvent.click(within(rowOf('Posto Shell')).getByText('Ver detalhes'));
+
+    await waitFor(() => expect(merchants.history).toHaveBeenCalledWith('m9', twelveMonthsUntil(currentKey)));
+  });
+
+  it('lists the bills that went up more than inflation and acknowledges them', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Contas que subiram')).toBeTruthy());
+
+    expect(screen.getByText((text) => text.startsWith('A inflação dos últimos 12 meses foi de 4,68%.'))).toBeTruthy();
+    const power = rowOf('Conta de luz');
+    expect(within(power).getByText(`De ${money(20000)} para ${money(25000)} (+25%)`)).toBeTruthy();
+    expect(within(power).getByText(`+${money(60000)} por ano`)).toBeTruthy();
+    expect(within(power).getByText(`${money(25000)}/mês`)).toBeTruthy();
+
+    fireEvent.click(within(power).getByText('Ciente'));
+
+    await waitFor(() => expect(screen.getByText('O alerta de Conta de luz foi dispensado.')).toBeTruthy());
+    expect(api.dismiss).toHaveBeenCalledWith('bill:luz');
+  });
+
+  it('alerts when dismissing an alert fails', async () => {
+    api.dismiss.mockRejectedValue(new Error('x'));
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Contas que subiram')).toBeTruthy());
+
+    fireEvent.click(within(rowOf('Conta de luz')).getByText('Ciente'));
+
+    await waitFor(() => expect(screen.getByText('Não foi possível dispensar o alerta')).toBeTruthy());
+  });
+
+  it.each([
+    ['duplicates', 'Cobranças para conferir'],
+    ['billIncreases', 'Contas que subiram'],
+  ] as const)('does not show the empty state while there are %s', async (field, title) => {
+    api.get.mockResolvedValue({ ...emptyReport, [field]: fullReport[field] });
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText(title)).toBeTruthy());
+    expect(screen.queryByText('Nenhum gasto evitável encontrado neste mês.')).toBeNull();
   });
 
   it('lists the small purchases, the spikes, the first time purchases and the superfluous merchants', async () => {
@@ -228,6 +350,8 @@ describe('AvoidableScreen', () => {
     expect(screen.queryByText('Compras grandes pela primeira vez')).toBeNull();
     expect(screen.queryByText('Supérfluos por estabelecimento')).toBeNull();
     expect(screen.queryByText('Tarifas e juros')).toBeNull();
+    expect(screen.queryByText('Cobranças para conferir')).toBeNull();
+    expect(screen.queryByText('Contas que subiram')).toBeNull();
   });
 
   it('does not show the empty state while a single section has items', async () => {

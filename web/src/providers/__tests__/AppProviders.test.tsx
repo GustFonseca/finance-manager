@@ -6,12 +6,15 @@ import { Text } from 'react-native';
 import { useDialog } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import { installGlobalErrorReporting } from '@/lib/logger';
+import { OFFLINE_CACHE_KEY } from '@/lib/offlineCache';
+import { registerServiceWorker } from '@/lib/serviceWorker';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/theme';
 import { AppProviders } from '../AppProviders';
 
 const mockUninstall = jest.fn();
 
+jest.mock('@/lib/serviceWorker', () => ({ registerServiceWorker: jest.fn() }));
 jest.mock('@/lib/logger', () => ({
   reportError: jest.fn(),
   installGlobalErrorReporting: jest.fn(() => mockUninstall),
@@ -48,6 +51,22 @@ describe('AppProviders', () => {
       fireEvent.click(screen.getByText('abrir aviso'));
     });
     expect(screen.getByText('Olá')).toBeTruthy();
+  });
+
+  it('restores the last summary on startup, keeps saving it and registers the service worker', async () => {
+    localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify([{ key: ['summary', 'saved'], data: { netCents: 7 }, updatedAt: 5 }]));
+    render(
+      <AppProviders>
+        <Probe />
+      </AppProviders>
+    );
+    await waitFor(() => expect(screen.getByText('sessão pronta')).toBeTruthy());
+
+    expect(queryClient.getQueryData(['summary', 'saved'])).toEqual({ netCents: 7 });
+    expect(registerServiceWorker).toHaveBeenCalled();
+    await act(() => queryClient.fetchQuery({ queryKey: ['summary', 'fresh'], queryFn: async () => 1 }));
+    expect(localStorage.getItem(OFFLINE_CACHE_KEY)).toContain('fresh');
+    queryClient.clear();
   });
 
   it('reports uncaught errors while mounted', async () => {

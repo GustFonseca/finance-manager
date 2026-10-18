@@ -7,14 +7,13 @@ import { CategoriesScreen } from '../CategoriesScreen';
 import { categoriesApi } from '../api';
 import { useCategories } from '../queries';
 import { CategoryDto } from '../types';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 
 const api = jest.mocked(categoriesApi);
 const food: CategoryDto = { id: 'c1', name: 'Alimentação', type: 'EXPENSE', color: '#4CAF50' };
 const salary: CategoryDto = { id: 'c2', name: 'Salário', type: 'INCOME', color: '#2196F3' };
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
-
 function inputOf(label: string) {
   return screen.getByText(label).parentElement!.querySelector('input')!;
 }

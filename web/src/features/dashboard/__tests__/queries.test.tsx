@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
 import { todayStartIso } from '@/lib/periods';
-import { useDailyBudget, useForecast, useRecurringExpenses, useSummary } from '../queries';
+import { useDailyBudget, useDigest, useForecast, useRecurringExpenses, useSummary } from '../queries';
 import { summaryApi } from '../api';
 
 jest.mock('../api');
@@ -73,5 +73,23 @@ describe('dashboard queries', () => {
     const { result } = renderHook(() => useDailyBudget(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(summaryApi.daily).toHaveBeenCalledWith({ start: undefined, end: undefined }, todayStartIso());
+  });
+
+  it('loads the digest for the month and today, without the account', async () => {
+    jest.mocked(summaryApi.digest).mockResolvedValue({ goals: [] } as never);
+    const { client, Wrapper } = wrapper();
+    const { result } = renderHook(() => useDigest({ start: 's', end: 'e', accountId: 'a1' }), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.data).toEqual({ goals: [] }));
+    const dayStart = todayStartIso();
+    expect(summaryApi.digest).toHaveBeenCalledWith({ start: 's', end: 'e' }, dayStart);
+    expect(client.getQueryData(['summary', 'digest', { start: 's', end: 'e' }, dayStart])).toEqual({ goals: [] });
+  });
+
+  it('loads the digest with an empty filter by default', async () => {
+    jest.mocked(summaryApi.digest).mockResolvedValue({} as never);
+    const { Wrapper } = wrapper();
+    const { result } = renderHook(() => useDigest(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(summaryApi.digest).toHaveBeenCalledWith({ start: undefined, end: undefined }, todayStartIso());
   });
 });

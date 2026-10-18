@@ -93,3 +93,34 @@ export type DailyBudgetDto = {
   workHoursPerMonth: number;
   budgets: BudgetStatusDto[];
 };
+
+export type DigestHighlightDto = {
+  name: string;
+  cents: number;
+  previousCents: number;
+};
+
+export type DigestPeriodDto = {
+  start: string;
+  end: string;
+  spentCents: number;
+  previousSpentCents: number;
+  changePercent: number | null;
+  incomeCents: number;
+  savedCents: number;
+  superfluousCents: number;
+  topMerchant: DigestHighlightDto | null;
+  topIncrease: DigestHighlightDto | null;
+};
+
+export type DigestGoalDto = {
+  name: string;
+  percent: number;
+  missingCents: number;
+};
+
+export type DigestDto = {
+  week: DigestPeriodDto;
+  month: DigestPeriodDto;
+  goals: DigestGoalDto[];
+};

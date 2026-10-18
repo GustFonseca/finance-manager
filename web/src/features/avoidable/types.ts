@@ -11,7 +11,10 @@ export type AvoidableMerchantDto = {
   cutInvestedIn12MonthsCents: number;
 };
 
+export type SubscriptionChoice = 'KEEP' | 'CANCEL';
+
 export type SubscriptionAuditDto = {
+  key: string;
   merchantId: string | null;
   name: string;
   group: string | null;
@@ -22,6 +25,9 @@ export type SubscriptionAuditDto = {
   lastDate: string;
   resumedAfter: string | null;
   investedIn12MonthsCents: number;
+  choice: SubscriptionChoice | null;
+  decidedAt: string | null;
+  chargedAfterCancel: boolean;
 };
 
 export type SimilarSubscriptionsDto = {
@@ -79,6 +85,35 @@ export type AvoidableSpendingDto = {
   firstTimePurchases: FirstTimePurchaseDto[];
   fees: FeesDto;
   hourValueCents: number;
+  duplicates: DuplicateChargeDto[];
+  billIncreases: BillIncreaseDto[];
+  inflationPercent: number;
+};
+
+export type DuplicateChargeDto = {
+  key: string;
+  transactionId: string;
+  merchantId: string | null;
+  name: string;
+  amountCents: number;
+  firstDate: string;
+  secondDate: string;
+};
+
+export type BillIncreaseDto = {
+  key: string;
+  merchantId: string | null;
+  name: string;
+  previousCents: number;
+  currentCents: number;
+  increasePercent: number;
+  yearlyImpactCents: number;
+};
+
+export type SubscriptionChoiceInput = {
+  key: string;
+  name: string;
+  choice: SubscriptionChoice | null;
 };
 
 export type FeeItemDto = {

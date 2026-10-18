@@ -16,6 +16,7 @@ public sealed class MerchantEnrichmentService : BackgroundService
     private readonly IServiceScopeFactory _scopes;
     private readonly ILogger<MerchantEnrichmentService> _logger;
     private readonly TimeSpan _interval;
+    private readonly TimeSpan _idleInterval;
     private readonly TimeSpan _pause;
 
     public MerchantEnrichmentService(IServiceScopeFactory scopes, IConfiguration config, ILogger<MerchantEnrichmentService> logger)
@@ -23,6 +24,7 @@ public sealed class MerchantEnrichmentService : BackgroundService
         _scopes = scopes;
         _logger = logger;
         _interval = TimeSpan.FromSeconds(config.GetValue("Enrichment:IntervalSeconds", 120));
+        _idleInterval = TimeSpan.FromSeconds(config.GetValue("Enrichment:IdleIntervalSeconds", 3600));
         _pause = TimeSpan.FromMilliseconds(config.GetValue("Enrichment:PauseMilliseconds", 1500));
     }
 
@@ -30,19 +32,23 @@ public sealed class MerchantEnrichmentService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            var idle = false;
             try
             {
-                await RunOnceAsync(stoppingToken);
+                idle = (await RunBatchAsync(stoppingToken)).Pending == 0;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogWarning(ex, "Merchant enrichment failed; will retry");
             }
-            await Task.Delay(_interval, stoppingToken);
+            await Task.Delay(idle ? _idleInterval : _interval, stoppingToken);
         }
     }
 
-    public async Task<int> RunOnceAsync(CancellationToken cancellationToken = default)
+    public async Task<int> RunOnceAsync(CancellationToken cancellationToken = default) =>
+        (await RunBatchAsync(cancellationToken)).Enriched;
+
+    private async Task<(int Pending, int Enriched)> RunBatchAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopes.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -67,6 +73,6 @@ public sealed class MerchantEnrichmentService : BackgroundService
             await Task.Delay(_pause, cancellationToken);
         }
         if (enriched > 0) _logger.LogInformation("Enriched {Count} merchants with their economic activity", enriched);
-        return enriched;
+        return (pending.Count, enriched);
     }
 }

@@ -15,6 +15,7 @@ const base: TransactionDto = {
   recurrence: 'NONE',
   merchantId: 'm1',
   merchantName: 'iFood',
+  receiptFileId: null,
 };
 
 describe('buildTransactionsCsv', () => {
@@ -53,7 +54,7 @@ describe('buildTransactionsCsv formula safety', () => {
       {
         id: 'x', accountId: 'a', accountName: '@conta', categoryId: 'c', categoryName: '+Categoria',
         type: 'EXPENSE', amountCents: 1000, description: '=HYPERLINK("http://evil","x")',
-        date: '2026-10-03T15:00:00Z', recurrence: 'NONE', merchantId: null, merchantName: '-Loja',
+        date: '2026-10-03T15:00:00Z', recurrence: 'NONE', merchantId: null, merchantName: '-Loja', receiptFileId: null,
       },
     ]);
 

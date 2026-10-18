@@ -1,6 +1,7 @@
 import React from 'react';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { useAuth } from '@/features/auth/AuthContext';
+import { profileApi } from '@/features/profile/api';
 import { queryClient } from '@/lib/queryClient';
 import { SLOW_REQUEST_MS, trackRequest } from '@/lib/serverWake';
 import { renderWithProviders } from '@/test/render';
@@ -14,6 +15,7 @@ import { hover, setViewport, unhover } from './helpers';
 jest.mock('@/features/auth/AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('@/lib/queryClient', () => ({ queryClient: { invalidateQueries: jest.fn() } }));
 jest.mock('../sound/clickSound', () => ({ playClick: jest.fn() }));
+jest.mock('@/features/profile/api');
 
 const signOut = jest.fn();
 
@@ -70,6 +72,21 @@ describe('XpShell', () => {
   beforeEach(() => {
     setViewport(1200, 800);
     jest.mocked(useAuth).mockReturnValue({ user: { name: 'gustavo' }, signOut } as unknown as ReturnType<typeof useAuth>);
+    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'gustavo', isAdmin: false });
+  });
+
+  it('lists the admin only programs in the start menu for admins only', async () => {
+    await renderShell();
+    fireEvent.click(startButton());
+    await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
+    expect(screen.queryByText('Como o sistema classifica seus gastos')).toBeNull();
+    fireEvent.click(startButton());
+    cleanup();
+
+    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'gustavo', isAdmin: true });
+    await renderShell();
+    fireEvent.click(startButton());
+    expect(await screen.findByText('Como o sistema classifica seus gastos')).toBeTruthy();
   });
 
   it('renders the desktop, extras and the taskbar', async () => {
@@ -77,6 +94,13 @@ describe('XpShell', () => {
     expect(screen.getByText('extras')).toBeTruthy();
     expect(screen.getByText('iniciar')).toBeTruthy();
     expect(taskButtons()).toEqual([]);
+  });
+
+  it('warns when the connection is lost', async () => {
+    const onLine = jest.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    await renderShell();
+    expect(screen.getByText('Sem conexão — mostrando os últimos dados salvos')).toBeTruthy();
+    onLine.mockRestore();
   });
 
   it('opens and closes the start menu', async () => {

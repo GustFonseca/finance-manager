@@ -1,6 +1,6 @@
 import { http } from '@/lib/http';
 import { PeriodFilter } from '@/features/transactions/types';
-import { CashFlowForecastDto, DailyBudgetDto, FinancialSummaryDto, RecurringExpenseDto } from './types';
+import { CashFlowForecastDto, DailyBudgetDto, DigestDto, FinancialSummaryDto, RecurringExpenseDto } from './types';
 
 export const summaryApi = {
   get: ({ start, end, accountId }: PeriodFilter = {}) =>
@@ -18,5 +18,9 @@ export const summaryApi = {
   forecast: ({ start, end, accountId }: PeriodFilter = {}) =>
     http
       .get<CashFlowForecastDto>('/summary/forecast', { params: { start, end, accountId } })
+      .then((r) => r.data),
+  digest: ({ start, end }: PeriodFilter, dayStart: string) =>
+    http
+      .get<DigestDto>('/summary/digest', { params: { start, end, dayStart } })
       .then((r) => r.data),
 };

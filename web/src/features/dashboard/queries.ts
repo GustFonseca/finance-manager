@@ -33,3 +33,12 @@ export function useDailyBudget(filter: PeriodFilter = {}) {
     queryFn: () => summaryApi.daily(month, dayStart),
   });
 }
+
+export function useDigest(filter: PeriodFilter = {}) {
+  const dayStart = todayStartIso();
+  const month = { start: filter.start, end: filter.end };
+  return useQuery({
+    queryKey: [...queryKeys.summary, 'digest', month, dayStart],
+    queryFn: () => summaryApi.digest(month, dayStart),
+  });
+}

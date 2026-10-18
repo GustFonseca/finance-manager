@@ -6,7 +6,7 @@ services:
     region: virginia # same AWS region as the Neon database (us-east-1)
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
-    healthCheckPath: /swagger/index.html
+    healthCheckPath: /health
     autoDeployTrigger: checksPass
     buildFilter:
       paths:
@@ -28,3 +28,5 @@ services:
         sync: false # Supabase secret (service role) key, set in the Render dashboard
       - key: Supabase__Bucket
         value: files
+      - key: Admin__Emails
+        sync: false # e-mails that can edit the classification rules, set in the Render dashboard

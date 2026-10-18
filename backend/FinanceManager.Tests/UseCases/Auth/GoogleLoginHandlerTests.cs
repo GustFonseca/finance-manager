@@ -24,11 +24,13 @@ public class GoogleLoginHandlerTests
             ["Jwt:Secret"] = "uma-chave-de-teste-com-mais-de-32-bytes!!",
             ["Jwt:Issuer"] = "finance-manager",
             ["Jwt:Audience"] = "finance-manager-web",
+            ["Admin:Emails"] = "Ana@Gmail.com; chefe@x.com",
         })
         .Build();
 
     private GoogleLoginHandler Handler => new(
-        new UserRepository(_db), new AccountRepository(_db), new CategoryRepository(_db), new ActivityLogRepository(_db), _google, _config);
+        new UserRepository(_db), new AccountRepository(_db), new CategoryRepository(_db), new ActivityLogRepository(_db), _google, _config,
+        new FinanceManager.Infrastructure.Auth.ConfigAdminDirectory(_config));
 
     private ClaimsPrincipal Validate(string token) => new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
     {
@@ -52,7 +54,7 @@ public class GoogleLoginHandlerTests
         Assert.Equal(7, _db.Categories.Count(c => c.UserId == user.Id && c.Type == CategoryType.EXPENSE));
         Assert.Contains(_db.Categories, c => c.Name == "Outros");
         Assert.Contains(_db.ActivityLogs, a => a.UserId == user.Id && a.Source == "Sessão" && a.Description == "Entrou no sistema com a conta Google");
-        Assert.Equal(("ana@gmail.com", "Ana"), (response.Email, response.Name));
+        Assert.Equal(("ana@gmail.com", "Ana", true), (response.Email, response.Name, response.IsAdmin));
 
         var principal = Validate(response.Token);
         Assert.Equal(user.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));

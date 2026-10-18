@@ -21,7 +21,8 @@ public class GetTransactionsByDateRangeHandler : IRequestHandler<GetTransactions
     {
         var transactions = await _transactionRepository.SearchAsync(request.UserId, new TransactionFilter(
             request.Start, request.End, request.AccountId, request.MerchantId, request.CategoryId, request.Type, request.Search,
-            string.IsNullOrWhiteSpace(request.Search) ? null : MerchantParser.KeyOf(request.Search)));
+            string.IsNullOrWhiteSpace(request.Search) ? null : MerchantParser.KeyOf(request.Search),
+            request.Limit));
         return _mapper.Map<List<TransactionDto>>(transactions);
     }
 }

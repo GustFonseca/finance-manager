@@ -24,6 +24,7 @@ const freela: TransactionDto = {
   recurrence: 'MONTHLY',
   merchantId: null,
   merchantName: '',
+  receiptFileId: null,
 };
 
 function fieldOf(label: string, tag: 'input' | 'select') {

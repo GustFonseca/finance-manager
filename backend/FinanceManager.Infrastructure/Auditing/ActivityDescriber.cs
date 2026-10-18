@@ -23,6 +23,9 @@ public static class ActivityDescriber
         CategoryBudget budget => DescribeBudget(entry, budget, context),
         Merchant merchant => DescribeMerchant(entry, merchant),
         Challenge challenge => DescribeChallenge(entry, challenge),
+        SubscriptionDecision decision => DescribeSubscriptionDecision(entry, decision),
+        WishlistItem wish => DescribeWish(entry, wish),
+        Debt debt => DescribeDebt(entry, debt),
         _ => [],
     };
 
@@ -70,6 +73,7 @@ public static class ActivityDescriber
     [
         nameof(Transaction.AccountId), nameof(Transaction.CategoryId), nameof(Transaction.Type),
         nameof(Transaction.AmountCents), nameof(Transaction.Description), nameof(Transaction.Date), nameof(Transaction.Recurrence),
+        nameof(Transaction.ReceiptFileId),
     ];
 
     public static bool EditedByUser(EntityEntry entry) => EditableTransactionFields.Any(field => Changed(entry, field));
@@ -188,8 +192,44 @@ public static class ActivityDescriber
             || (entry.State == EntityState.Modified && Changed(entry, nameof(SavingsPlan.MonthlyGoalCents)));
         if (changed)
             yield return Log(plan.UserId, "Economia", $"Meta de economia definida: {Money(plan.MonthlyGoalCents)} por mês");
+        if (entry.State == EntityState.Modified && (Changed(entry, nameof(SavingsPlan.EmergencyMonths)) || Changed(entry, nameof(SavingsPlan.EmergencyGoalId))))
+            yield return Log(plan.UserId, "Economia", $"Reserva de emergência definida: {plan.EmergencyMonths} meses de gastos essenciais");
         if (entry.State == EntityState.Modified && Changed(entry, nameof(SavingsPlan.WorkHoursPerMonth)))
             yield return Log(plan.UserId, "Economia", $"Horas de trabalho por mês definidas: {plan.WorkHoursPerMonth}h");
+    }
+
+    private static IEnumerable<ActivityLog> DescribeWish(EntityEntry entry, WishlistItem w)
+    {
+        if (entry.State == EntityState.Added)
+            yield return Log(w.UserId, "Lista de espera", $"Desejo anotado: {w.Name} ({Money(w.PriceCents)})");
+        else if (entry.State == EntityState.Modified && Changed(entry, nameof(WishlistItem.Status)))
+            yield return Log(w.UserId, "Lista de espera", w.Status switch
+            {
+                WishStatus.GAVE_UP => $"Desistiu de {w.Name}: {Money(w.PriceCents)} economizados",
+                WishStatus.BOUGHT => $"Comprou {w.Name} depois de esperar",
+                _ => $"{w.Name} voltou para a lista de espera",
+            });
+        else if (entry.State == EntityState.Deleted)
+            yield return Log(w.UserId, "Lista de espera", $"Desejo removido: {w.Name}", ActivityType.WARNING);
+    }
+
+    private static IEnumerable<ActivityLog> DescribeDebt(EntityEntry entry, Debt d)
+    {
+        if (entry.State == EntityState.Added)
+            yield return Log(d.UserId, "Dívidas", $"Dívida cadastrada: {d.Name} ({Money(d.BalanceCents)})");
+        else if (entry.State == EntityState.Modified)
+            yield return Log(d.UserId, "Dívidas", $"Dívida atualizada: {d.Name} ({Money(d.BalanceCents)})");
+        else if (entry.State == EntityState.Deleted)
+            yield return Log(d.UserId, "Dívidas", $"Dívida removida: {d.Name}", ActivityType.WARNING);
+    }
+
+    private static IEnumerable<ActivityLog> DescribeSubscriptionDecision(EntityEntry entry, SubscriptionDecision d)
+    {
+        var label = d.Choice == SubscriptionChoice.CANCEL ? "cancelada" : "mantida";
+        if (entry.State == EntityState.Added || (entry.State == EntityState.Modified && Changed(entry, nameof(SubscriptionDecision.Choice))))
+            yield return Log(d.UserId, "Assinaturas", $"Assinatura {d.Name} marcada como {label}");
+        else if (entry.State == EntityState.Deleted)
+            yield return Log(d.UserId, "Assinaturas", $"Decisão sobre a assinatura {d.Name} desfeita");
     }
 
     private static IEnumerable<ActivityLog> DescribeChallenge(EntityEntry entry, Challenge c)

@@ -12,4 +12,10 @@ export const queryKeys = {
   merchants: ['merchants'] as const,
   avoidable: ['summary', 'avoidable'] as const,
   challenges: ['challenges'] as const,
+  profile: ['profile'] as const,
+  rules: ['rules'] as const,
+  wishlist: ['wishlist'] as const,
+  debts: ['debts'] as const,
+  planning: ['summary', 'planning'] as const,
+  calendar: ['summary', 'calendar'] as const,
 };

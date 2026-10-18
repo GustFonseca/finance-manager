@@ -13,19 +13,73 @@ export function decodeStatement(buffer: ArrayBuffer): string {
 }
 
 export function parseStatement(text: string): ParsedStatement {
-  if (/<OFX>/i.test(text)) return { source: 'ofx', rows: parseOfx(text) };
+  if (/<OFX>|<STMTTRN>|OFXHEADER/i.test(text)) return { source: 'ofx', rows: parseOfx(text) };
 
-  const [header, ...lines] = parseCsv(text);
+  const table = parseCsv(text);
+  const [header, ...lines] = table;
   const columns = (header ?? []).map(normalizeText);
-  if (sameColumns(columns, ['date', 'title', 'amount'])) {
-    return { source: 'nubank-card', rows: lines.map(parseCardLine) };
-  }
   if (sameColumns(columns, ['data', 'valor', 'identificador', 'descricao'])) {
     return { source: 'nubank-account', rows: lines.map(parseAccountLine) };
   }
+  const card = ['date', 'title', 'amount'].map((name) => columns.indexOf(name));
+  if (card.every((index) => index >= 0)) {
+    return { source: 'nubank-card', rows: lines.map((line, i) => parseCardLine(card.map((c) => line[c]), i)) };
+  }
+  const generic = findGenericHeader(table);
+  if (generic) return { source: 'generic-csv', rows: parseGenericLines(table, generic) };
   throw new StatementError(
-    'Formato não reconhecido. Use o CSV da fatura ou do extrato exportado pelo app do Nubank, ou um arquivo OFX.'
+    'Formato não reconhecido. Use o CSV da fatura ou do extrato do Nubank, um arquivo OFX ou uma planilha CSV com colunas de data, descrição e valor.'
   );
+}
+
+const HEADER_SEARCH_ROWS = 10;
+const DATE_HEADER = /^(data|date|dt)\b/;
+const DESCRIPTION_HEADER = /descri|historico|title|titulo|lancamento|estabelecimento|memo|detalhe/;
+const AMOUNT_HEADER = /^(valor|amount|value|quantia)\b/;
+
+type GenericHeader = { row: number; date: number; description: number; amount: number };
+
+function findGenericHeader(table: string[][]): GenericHeader | null {
+  for (let row = 0; row < Math.min(table.length, HEADER_SEARCH_ROWS); row++) {
+    const columns = table[row].map(normalizeText);
+    const date = columns.findIndex((c) => DATE_HEADER.test(c));
+    const description = columns.findIndex((c, i) => i !== date && DESCRIPTION_HEADER.test(c));
+    const amount = columns.findIndex((c, i) => i !== date && i !== description && AMOUNT_HEADER.test(c));
+    if (date >= 0 && description >= 0 && amount >= 0) return { row, date, description, amount };
+  }
+  return null;
+}
+
+function parseFlexibleDate(raw: string): string | null {
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(raw);
+  if (iso) return toDay(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  const local = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/.exec(raw.split(/\s/)[0]);
+  if (!local) return null;
+  const year = local[3].length === 2 ? 2000 + Number(local[3]) : Number(local[3]);
+  return toDay(year, Number(local[2]), Number(local[1]));
+}
+
+function parseGenericLines(table: string[][], header: GenericHeader): ImportRow[] {
+  const rows: ImportRow[] = [];
+  table.slice(header.row + 1).forEach((line, index) => {
+    const lineNumber = header.row + index + 2;
+    const rawAmount = line[header.amount] ?? '';
+    const rawDate = line[header.date] ?? '';
+    if (!rawAmount && !rawDate) return;
+    const isoDay = parseFlexibleDate(rawDate);
+    if (!isoDay) throw new StatementError(`Linha ${lineNumber} inválida: data "${rawDate}"`);
+    const cents = parseSignedAmountToCents(rawAmount);
+    if (cents === null) throw new StatementError(`Linha ${lineNumber} inválida: valor "${rawAmount}"`);
+    if (cents === 0) return;
+    rows.push({
+      key: `csv-${index}`,
+      date: isoDay,
+      description: line[header.description] ?? '',
+      amountCents: Math.abs(cents),
+      type: cents < 0 ? 'EXPENSE' : 'INCOME',
+    });
+  });
+  return rows;
 }
 
 function sameColumns(actual: string[], expected: string[]) {
@@ -33,8 +87,8 @@ function sameColumns(actual: string[], expected: string[]) {
 }
 
 export function parseCsv(text: string): string[][] {
-  const firstLine = text.slice(0, text.search(/\r?\n|$/));
-  const separator = firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
+  const head = text.split(/\r?\n/, HEADER_SEARCH_ROWS).join('\n');
+  const separator = head.split(';').length > head.split(',').length ? ';' : ',';
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -99,7 +153,7 @@ function parseCardLine([date, title, amount]: string[], index: number): ImportRo
 }
 
 function parseAccountLine([date, amount, id, description]: string[], index: number): ImportRow {
-  const [day, month, year] = (date ?? '').split('/').map(Number);
+  const [day, month, year] = date.split('/').map(Number);
   const isoDay = toDay(year, month, day);
   if (!isoDay) throw lineError(index, `data "${date}"`);
   const cents = amountOf(amount, index);
@@ -113,7 +167,7 @@ function parseAccountLine([date, amount, id, description]: string[], index: numb
 }
 
 function parseOfx(text: string): ImportRow[] {
-  const blocks = text.match(/<STMTTRN>[\s\S]*?(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>)/gi) ?? [];
+  const blocks = text.match(/<STMTTRN>[\s\S]*?(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>|$)/gi) ?? [];
   if (blocks.length === 0) throw new StatementError('O arquivo OFX não tem transações.');
 
   return blocks.map((block, index) => {

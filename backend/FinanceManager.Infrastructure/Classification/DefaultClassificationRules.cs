@@ -81,6 +81,17 @@ public static class DefaultClassificationRules
         Rule(RuleType.FEE, @"\biof\b", "IOF"),
         Rule(RuleType.FEE, @"\bjuros|encargos|rotativo|\bmora\b|financiamento de fatura|parcelamento de fatura", "Juros e encargos"),
         Rule(RuleType.FEE, @"\bmulta", "Multas"),
+
+        Rule(RuleType.SEASONAL, @"\bipva\b|licenciamento|dpvat", "IPVA e licenciamento"),
+        Rule(RuleType.SEASONAL, @"\biptu\b", "IPTU"),
+        Rule(RuleType.SEASONAL, @"matricula|material escolar|rematricula", "Matrícula e material escolar"),
+        Rule(RuleType.SEASONAL, @"seguro auto|seguro do carro|seguro residencial|seguro anual", "Seguros anuais"),
+        Rule(RuleType.SEASONAL, @"\banuidade\b", "Anuidades"),
+
+        Rule(RuleType.TAX_DEDUCTIBLE, @"\bsaude\b|medic|odontolog|dentista|hospital|clinica|laborator|psicolog|fisioterap|fonoaudiolog|terapia ocupacional|plano de saude|unimed|amil|bradesco saude|sulamerica saude|hapvida", "Saúde", "Despesas médicas dedutíveis no IR"),
+        Rule(RuleType.TAX_DEDUCTIBLE, @"\bensino\b|educacao|escola|colegio|faculdade|universidade|pos graduacao|creche", "Educação", "Educação dedutível no IR, com limite anual por pessoa"),
+        Rule(RuleType.TAX_DEDUCTIBLE, @"previdencia privada|\bpgbl\b", "Previdência privada (PGBL)", "PGBL é dedutível até 12% da renda tributável"),
+        Rule(RuleType.TAX_DEDUCTIBLE, @"pensao alimenticia", "Pensão alimentícia", "Pensão judicial é dedutível"),
     ];
 
     private static ClassificationRule Rule(RuleType type, string pattern, string? value = null, string? note = null)

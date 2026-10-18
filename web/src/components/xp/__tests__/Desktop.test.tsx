@@ -1,5 +1,6 @@
 import React from 'react';
-import { act, fireEvent, renderHook, screen } from '@testing-library/react';
+import { act, fireEvent, renderHook, screen, waitFor } from '@testing-library/react';
+import { profileApi } from '@/features/profile/api';
 import { queryClient } from '@/lib/queryClient';
 import { renderWithProviders } from '@/test/render';
 import { useContextMenu } from '../ContextMenu';
@@ -11,6 +12,7 @@ import { useWindowManager } from '../WindowManager';
 import { pointerDown, pointerMove, pointerUp, setViewport } from './helpers';
 
 jest.mock('@/lib/queryClient', () => ({ queryClient: { invalidateQueries: jest.fn() } }));
+jest.mock('@/features/profile/api');
 
 const STORAGE_KEY = 'xp_desktop_icons';
 
@@ -86,6 +88,7 @@ describe('Desktop', () => {
     setViewport(1200, 800);
     now = 1_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
+    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: false });
   });
 
   afterEach(() => {
@@ -100,8 +103,29 @@ describe('Desktop', () => {
     expect(iconStyle('Plano de economia')).toEqual({ left: '8px', top: '648px' });
     expect(iconStyle('Desafios')).toEqual({ left: '92px', top: '8px' });
     expect(iconStyle('Visualizar eventos')).toEqual({ left: '92px', top: '88px' });
+    expect(iconStyle('Lista de espera')).toEqual({ left: '92px', top: '168px' });
+    expect(iconStyle('Dívidas')).toEqual({ left: '92px', top: '248px' });
+    expect(iconStyle('Planejamento')).toEqual({ left: '92px', top: '328px' });
+    expect(iconStyle('Imposto de Renda')).toEqual({ left: '92px', top: '408px' });
+    expect(iconStyle('Calendário')).toEqual({ left: '92px', top: '488px' });
     expect(iconStyle('Extrato')).toEqual({ left: '1108px', top: '682px' });
     expect(screen.getByText('extra')).toBeTruthy();
+    await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Abrir Regras de classificação' })).toBeNull();
+  });
+
+  it('shows the admin only programs to admins', async () => {
+    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: true });
+    await renderDesktop();
+    expect(await screen.findByRole('button', { name: 'Abrir Regras de classificação' })).toBeTruthy();
+    expect(iconStyle('Regras de classificação')).toEqual({ left: '92px', top: '568px' });
+  });
+
+  it('hides the admin only programs while the profile is unknown', async () => {
+    jest.mocked(profileApi.get).mockRejectedValue(new Error('offline'));
+    await renderDesktop();
+    await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Abrir Regras de classificação' })).toBeNull();
   });
 
   it('wraps icons into a new column when the screen is short', async () => {

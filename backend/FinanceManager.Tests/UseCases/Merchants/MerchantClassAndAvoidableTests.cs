@@ -76,17 +76,21 @@ public class MerchantClassAndAvoidableTests
         var lazer = _db.AddCategory(_me.Id, "Lazer");
         _db.AddTransaction(account, lazer, 5000, new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc), "Cinema");
         _db.AddTransaction(account, lazer, 7000, new DateTime(2025, 9, 10, 12, 0, 0, DateTimeKind.Utc), "Cinema antigo");
-        var handler = new GetAvoidableSpendingHandler(new TransactionRepository(_db), TestRules.Provider, new FixedRate(10m), new SavingsPlanRepository(_db));
+        var handler = new GetAvoidableSpendingHandler(new TransactionRepository(_db), TestRules.Provider, new FixedRate(10m), new SavingsPlanRepository(_db),
+            new InsightDismissalRepository(_db), new SubscriptionDecisionRepository(_db));
 
         var result = await handler.Handle(new GetAvoidableSpendingQuery(_me.Id, MonthStart, Now, null));
 
         Assert.Equal(5000, result.MonthCents);
         Assert.Equal(10m, result.CdiAnnualPercent);
+        Assert.Equal(4m, result.InflationPercent);
         Assert.Equal("Cinema", Assert.Single(result.Superfluous).Name);
     }
 
     private sealed class FixedRate(decimal rate) : IInterestRateProvider
     {
         public Task<decimal> GetCdiAnnualPercentAsync(CancellationToken cancellationToken = default) => Task.FromResult(rate);
+
+        public Task<decimal> GetInflation12MonthsPercentAsync(CancellationToken cancellationToken = default) => Task.FromResult(4m);
     }
 }

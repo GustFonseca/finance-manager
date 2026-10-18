@@ -10,13 +10,16 @@ using FinanceManager.Aplication.UseCases.Merchants.Queries.GetUnsortedMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.ResolveMerchants;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/merchants")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class MerchantsController : ControllerBase
 {
     private const int MaxDescriptions = 2000;

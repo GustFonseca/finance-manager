@@ -1,16 +1,17 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ListItem, MoneyText } from '@/components/ui';
-import { colors, fontSize } from '@/theme';
+import { colors, fontSize, spacing, webStyle } from '@/theme';
 import { TransactionDto } from '../types';
 
 type Props = {
   transaction: TransactionDto;
   onPress: (transaction: TransactionDto) => void;
+  onOpenReceipt: (transaction: TransactionDto) => void;
 };
 
-export function TransactionListItem({ transaction, onPress }: Props) {
+export function TransactionListItem({ transaction, onPress, onOpenReceipt }: Props) {
   const isExpense = transaction.type === 'EXPENSE';
   const signedCents = isExpense ? -transaction.amountCents : transaction.amountCents;
 
@@ -35,6 +36,15 @@ export function TransactionListItem({ transaction, onPress }: Props) {
           </Text>
         ) : null}
       </View>
+      {transaction.receiptFileId ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir comprovante"
+          onPress={() => onOpenReceipt(transaction)}
+          style={styles.receipt}>
+          <FontAwesome name="paperclip" size={16} color={colors.textSecondary} />
+        </Pressable>
+      ) : null}
       <MoneyText cents={signedCents} tone={isExpense ? 'expense' : 'income'} style={styles.amount} />
     </ListItem>
   );
@@ -45,4 +55,5 @@ const styles = StyleSheet.create({
   desc: { fontSize: fontSize.md, color: colors.textPrimary },
   meta: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
   amount: { fontSize: fontSize.md, fontWeight: '700' },
+  receipt: { padding: spacing.xs, ...webStyle({ cursor: 'pointer' }) },
 });

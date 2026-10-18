@@ -20,6 +20,9 @@ describe('+html', () => {
     expect(html).toContain('<meta charSet="utf-8"/>');
     expect(html).toContain('background-color: #3A6EA5');
     expect(html).toContain('font-family: Tahoma');
+    expect(html).toContain('<meta name="theme-color" content="#0831D9"/>');
+    expect(html).toContain('<link rel="manifest" href="/manifest.json"/>');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/icon.png"/>');
     expect(html).toContain('<body><div id="app">conteúdo</div></body>');
   });
 });

@@ -16,6 +16,12 @@ public class TransactionDto
     public Recurrence Recurrence { get; set; }
     public Guid? MerchantId { get; set; }
     public string MerchantName { get; set; } = string.Empty;
+    public Guid? ReceiptFileId { get; set; }
+}
+
+public class ReceiptRequest
+{
+    public Guid? FileId { get; set; }
 }
 
 public class ImportTransactionsRequest

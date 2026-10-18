@@ -22,11 +22,11 @@ describe('queryClient', () => {
     expect(invalidate).not.toHaveBeenCalled();
   });
 
-  it('keeps data fresh for 30 seconds and retries once', () => {
+  it('keeps data fresh for two minutes, retries once and ignores window focus', () => {
     expect(queryClient.getDefaultOptions().queries).toMatchObject({
-      staleTime: 30_000,
+      staleTime: 120_000,
       retry: 1,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
     });
   });
 });

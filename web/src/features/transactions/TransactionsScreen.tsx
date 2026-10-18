@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { EmptyState, ErrorState, MoneyText, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
+import { filesApi } from '@/features/files/api';
 import { ImportWizard } from '@/features/import/ImportWizard';
 import { getErrorMessage } from '@/lib/http';
 import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
@@ -10,10 +11,12 @@ import { ALL, FilterValues, TransactionFilters } from './components/TransactionF
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
 import { buildTransactionsCsv, downloadCsv } from './exportCsv';
+import { RECEIPTS_FOLDER } from './receipts';
 import {
   useCreateTransaction,
   useDeleteAllTransactions,
   useDeleteTransaction,
+  useSetReceipt,
   useTransactions,
   useUpdateTransaction,
 } from './queries';
@@ -61,6 +64,9 @@ export function TransactionsScreen() {
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const deleteAll = useDeleteAllTransactions();
+  const setReceipt = useSetReceipt();
+  const receiptInput = useRef<HTMLInputElement>(null);
+  const receiptTarget = useRef<TransactionDto | null>(null);
 
   const [editing, setEditing] = useState<TransactionDto | null>(null);
   const [formVisible, setFormVisible] = useState(false);
@@ -135,11 +141,65 @@ export function TransactionsScreen() {
     downloadCsv(`transacoes-${name}.csv`, buildTransactionsCsv(transactions));
   }
 
+  async function openReceipt(transaction: TransactionDto) {
+    const tab = window.open('', '_blank');
+    try {
+      const url = await filesApi.downloadUrl(transaction.receiptFileId!);
+      if (tab) tab.location.href = url;
+      else window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      tab?.close();
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível abrir o comprovante') });
+    }
+  }
+
+  function chooseReceipt(transaction: TransactionDto) {
+    receiptTarget.current = transaction;
+    receiptInput.current?.click();
+  }
+
+  async function attachReceipt(file: File | undefined) {
+    const transaction = receiptTarget.current;
+    receiptTarget.current = null;
+    if (!file || !transaction) return;
+    try {
+      await setReceipt.mutateAsync({ id: transaction.id, file });
+      alert({
+        title: 'Comprovante anexado',
+        message: `O arquivo "${file.name}" foi salvo na pasta "${RECEIPTS_FOLDER}" e anexado à transação.`,
+      });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível anexar o comprovante') });
+    }
+  }
+
+  async function removeReceipt(transaction: TransactionDto) {
+    const ok = await confirm({
+      title: 'Remover comprovante',
+      message: `Deseja desanexar o comprovante desta transação? O arquivo continua na pasta "${RECEIPTS_FOLDER}".`,
+      confirmLabel: 'Remover',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await setReceipt.mutateAsync({ id: transaction.id, file: null });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível remover o comprovante') });
+    }
+  }
+
   function openOptions(transaction: TransactionDto) {
+    const receiptActions = transaction.receiptFileId
+      ? [
+          { label: 'Ver comprovante', onPress: () => openReceipt(transaction) },
+          { label: 'Remover comprovante', onPress: () => removeReceipt(transaction) },
+        ]
+      : [{ label: 'Anexar comprovante', onPress: () => chooseReceipt(transaction) }];
     menu({
       title: transaction.merchantName || transaction.description || transaction.categoryName,
       actions: [
         { label: 'Editar', onPress: () => openEdit(transaction) },
+        ...receiptActions,
         { label: 'Remover', destructive: true, onPress: () => handleDelete(transaction) },
       ],
     });
@@ -161,7 +221,9 @@ export function TransactionsScreen() {
         <FlatList
           data={error ? [] : transactions}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TransactionListItem transaction={item} onPress={openOptions} />}
+          renderItem={({ item }) => (
+            <TransactionListItem transaction={item} onPress={openOptions} onOpenReceipt={openReceipt} />
+          )}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
           ListHeaderComponent={
             <>
@@ -195,9 +257,23 @@ export function TransactionsScreen() {
       />
 
       <ImportWizard visible={importVisible} onClose={() => setImportVisible(false)} />
+
+      <input
+        ref={receiptInput}
+        type="file"
+        accept="image/*,application/pdf"
+        aria-label="Arquivo do comprovante"
+        style={hiddenInput}
+        onChange={(event) => {
+          attachReceipt(event.target.files?.[0]);
+          event.target.value = '';
+        }}
+      />
     </>
   );
 }
+
+const hiddenInput: React.CSSProperties = { display: 'none' };
 
 const styles = StyleSheet.create({
   totals: {

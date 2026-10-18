@@ -6,10 +6,10 @@ import { onContextMenu, useContextMenu } from './ContextMenu';
 import { DesktopProvider, useDesktop } from './DesktopContext';
 import { DesktopIcon } from './DesktopIcon';
 import type { MenuEntry } from './MenuBar';
-import { PROGRAMS } from './programs';
+import { useVisiblePrograms } from './useVisiblePrograms';
 import { useWindowManager, WindowIdProvider } from './WindowManager';
 
-const WALLPAPER = require('../../../assets/images/bliss.jpg');
+const WALLPAPER = require('../../../assets/images/bliss.webp');
 
 export type ProgramScreens = Record<string, React.ComponentType>;
 
@@ -31,6 +31,7 @@ function DesktopSurface({ screens, extras, children }: Props) {
   const { open, openWindows } = useWindowManager();
   const desktop = useDesktop();
   const contextMenu = useContextMenu();
+  const programs = useVisiblePrograms();
 
   const showDesktopMenu = (point: { x: number; y: number }) => {
     desktop.selectIcon(null);
@@ -49,7 +50,7 @@ function DesktopSurface({ screens, extras, children }: Props) {
       onPointerDown={() => desktop.selectIcon(null)}
       {...onContextMenu(showDesktopMenu)}>
       <Image source={WALLPAPER} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      {PROGRAMS.map((program, index) => (
+      {programs.map((program, index) => (
         <DesktopIcon
           key={program.route}
           id={`program:${program.route}`}
@@ -64,7 +65,9 @@ function DesktopSurface({ screens, extras, children }: Props) {
         const Screen = screens[id];
         return Screen ? (
           <WindowIdProvider key={id} value={id}>
-            <Screen />
+            <React.Suspense fallback={null}>
+              <Screen />
+            </React.Suspense>
           </WindowIdProvider>
         ) : null;
       })}

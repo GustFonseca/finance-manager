@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using FinanceManager.Aplication.Analysis;
 using FinanceManager.Domain.Entities;
@@ -9,10 +10,12 @@ public sealed class ClassificationRules
 {
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(200);
     private const RegexOptions Options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+    public const int MaxCachedLookups = 50_000;
 
     private readonly Dictionary<RuleType, List<(Regex Pattern, string? Value)>> _rules = [];
     private readonly Regex? _gatewayPrefix;
     private readonly List<string> _problems = [];
+    private readonly ConcurrentDictionary<(RuleType Type, string Text), (bool Found, string? Value)> _lookups = new();
 
     public static readonly ClassificationRules Empty = new([]);
 
@@ -67,18 +70,32 @@ public sealed class ClassificationRules
 
     public string? Fee(string text) => FirstValue(RuleType.FEE, text);
 
-    private bool Any(RuleType type, string text)
-    {
-        if (!_rules.TryGetValue(type, out var list)) return false;
-        var plain = MoneyText.Plain(text);
-        return list.Any(r => Matches(r.Pattern, plain));
-    }
+    public string? Seasonal(string text) => FirstValue(RuleType.SEASONAL, text);
 
-    private string? FirstValue(RuleType type, string text)
+    public string? TaxDeductible(string text) => FirstValue(RuleType.TAX_DEDUCTIBLE, text);
+
+    public int CachedLookups => _lookups.Count;
+
+    private bool Any(RuleType type, string text) => Lookup(type, text).Found;
+
+    private string? FirstValue(RuleType type, string text) => Lookup(type, text).Value;
+
+    private (bool Found, string? Value) Lookup(RuleType type, string text)
     {
-        if (!_rules.TryGetValue(type, out var list)) return null;
+        if (!_rules.TryGetValue(type, out var list)) return (false, null);
+        if (_lookups.TryGetValue((type, text), out var cached)) return cached;
+
         var plain = MoneyText.Plain(text);
-        return list.FirstOrDefault(r => Matches(r.Pattern, plain)).Value;
+        var result = (Found: false, Value: (string?)null);
+        foreach (var rule in list)
+        {
+            if (!Matches(rule.Pattern, plain)) continue;
+            result = (true, rule.Value);
+            break;
+        }
+        if (_lookups.Count >= MaxCachedLookups) _lookups.Clear();
+        _lookups[(type, text)] = result;
+        return result;
     }
 
     private static bool Matches(Regex pattern, string text)

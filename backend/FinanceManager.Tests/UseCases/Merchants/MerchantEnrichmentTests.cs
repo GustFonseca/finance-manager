@@ -221,7 +221,7 @@ public class MerchantEnrichmentServiceTests
     private readonly FakeRegistry _registry = new();
     private readonly ListLogger<MerchantEnrichmentService> _logger = new();
 
-    private MerchantEnrichmentService Service()
+    private MerchantEnrichmentService Service(int idleSeconds = 0)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IMediator>(_mediator);
@@ -230,6 +230,7 @@ public class MerchantEnrichmentServiceTests
         {
             ["Enrichment:IntervalSeconds"] = "0",
             ["Enrichment:PauseMilliseconds"] = "0",
+            ["Enrichment:IdleIntervalSeconds"] = idleSeconds.ToString(),
         }).Build();
         return new MerchantEnrichmentService(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(), config, _logger);
     }
@@ -275,6 +276,20 @@ public class MerchantEnrichmentServiceTests
         await service.StopAsync(CancellationToken.None);
 
         Assert.True(_logger.Entries.Count(e => e.Level == LogLevel.Warning) >= 2);
+    }
+
+    [Fact]
+    public async Task With_nothing_pending_the_loop_waits_the_idle_interval()
+    {
+        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment>());
+        var service = Service(idleSeconds: 3600);
+
+        await service.StartAsync(CancellationToken.None);
+        for (var i = 0; i < 50 && _mediator.Sent.Count == 0; i++) await Task.Delay(20);
+        await Task.Delay(200);
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.Single(_mediator.Sent);
     }
 
     private sealed class FakeRegistry : ICompanyRegistry

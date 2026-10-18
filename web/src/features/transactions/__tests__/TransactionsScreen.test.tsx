@@ -3,12 +3,14 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { accountsApi } from '@/features/accounts/api';
 import { categoriesApi } from '@/features/categories/api';
+import { filesApi, foldersApi } from '@/features/files/api';
 import { merchantsApi } from '@/features/merchants/api';
 import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
 import { SEARCH_DELAY_MS, TransactionsScreen } from '../TransactionsScreen';
 import { transactionsApi } from '../api';
 import { buildTransactionsCsv, downloadCsv } from '../exportCsv';
 import { TransactionDto } from '../types';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 jest.mock('../exportCsv', () => ({ ...jest.requireActual('../exportCsv'), downloadCsv: jest.fn() }));
@@ -36,6 +38,7 @@ const ifood: TransactionDto = {
   recurrence: 'NONE',
   merchantId: 'm1',
   merchantName: 'iFood',
+  receiptFileId: null,
 };
 const salary: TransactionDto = {
   ...ifood,
@@ -49,8 +52,6 @@ const salary: TransactionDto = {
   merchantName: '',
 };
 const bare: TransactionDto = { ...salary, id: 't3', description: '', categoryName: 'Outros' };
-
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 function fieldOf(label: string, tag: 'input' | 'select') {
   const labels = screen.getAllByText(label);
@@ -432,5 +433,162 @@ describe('TransactionsScreen', () => {
     fireEvent.click(screen.getByText('Cancelar'));
 
     await waitFor(() => expect(screen.queryByText('Assistente para importação de extrato')).toBeNull());
+  });
+  describe('receipts', () => {
+    const withReceipt: TransactionDto = { ...ifood, receiptFileId: 'f1' };
+    const receiptsFolder = { id: 'fo1', name: 'Comprovantes', isSystem: false, fileCount: 0, createdAt: '' };
+
+    function fakeTab() {
+      return { location: { href: '' }, close: jest.fn() };
+    }
+
+    function receiptInput() {
+      return screen.getByLabelText('Arquivo do comprovante') as HTMLInputElement;
+    }
+
+    function chooseReceipt(files: File[]) {
+      fireEvent.change(receiptInput(), { target: { files } });
+    }
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it('shows a paperclip that opens the receipt in a new tab', async () => {
+      const tab = fakeTab();
+      const open = jest.spyOn(window, 'open').mockReturnValue(tab as never);
+      jest.mocked(filesApi.downloadUrl).mockResolvedValue('https://files/nota.pdf');
+      api.getAll.mockResolvedValue([withReceipt, salary]);
+      renderScreen();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
+      expect(screen.getAllByTestId('icon-paperclip')).toHaveLength(1);
+      expect(open).toHaveBeenCalledWith('', '_blank');
+      await waitFor(() => expect(tab.location.href).toBe('https://files/nota.pdf'));
+      expect(filesApi.downloadUrl).toHaveBeenCalledWith('f1');
+    });
+
+    it('falls back to opening the link directly when the tab was blocked', async () => {
+      const open = jest.spyOn(window, 'open').mockReturnValue(null);
+      jest.mocked(filesApi.downloadUrl).mockResolvedValue('https://files/nota.pdf');
+      api.getAll.mockResolvedValue([withReceipt]);
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Ver comprovante'));
+      await waitFor(() => expect(open).toHaveBeenLastCalledWith('https://files/nota.pdf', '_blank', 'noopener,noreferrer'));
+    });
+
+    it('closes the tab and alerts when the receipt cannot be opened', async () => {
+      const tab = fakeTab();
+      jest.spyOn(window, 'open').mockReturnValue(tab as never);
+      jest.mocked(filesApi.downloadUrl).mockRejectedValue(new Error('x'));
+      api.getAll.mockResolvedValue([withReceipt]);
+      renderScreen();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
+      expect(await screen.findByText('Não foi possível abrir o comprovante')).toBeTruthy();
+      expect(tab.close).toHaveBeenCalled();
+    });
+
+    it('alerts when opening fails and the tab was blocked', async () => {
+      jest.spyOn(window, 'open').mockReturnValue(null);
+      jest.mocked(filesApi.downloadUrl).mockRejectedValue(new Error('x'));
+      api.getAll.mockResolvedValue([withReceipt]);
+      renderScreen();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
+      expect(await screen.findByText('Não foi possível abrir o comprovante')).toBeTruthy();
+    });
+
+    it('attaches a receipt saved in the Comprovantes folder', async () => {
+      const click = jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      jest.mocked(foldersApi.getAll).mockResolvedValue([]);
+      jest.mocked(foldersApi.create).mockResolvedValue(receiptsFolder);
+      jest.mocked(foldersApi.upload).mockResolvedValue([{ id: 'f7' }] as never);
+      api.setReceipt.mockResolvedValue({ ...ifood, receiptFileId: 'f7' });
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      expect(screen.queryByText('Ver comprovante')).toBeNull();
+      fireEvent.click(screen.getByText('Anexar comprovante'));
+      expect(click).toHaveBeenCalled();
+      const file = new File(['x'], 'nota.pdf', { type: 'application/pdf' });
+      chooseReceipt([file]);
+
+      expect(await screen.findByText('O arquivo "nota.pdf" foi salvo na pasta "Comprovantes" e anexado à transação.')).toBeTruthy();
+      expect(foldersApi.create).toHaveBeenCalledWith('Comprovantes');
+      expect(foldersApi.upload).toHaveBeenCalledWith('fo1', [file]);
+      expect(api.setReceipt).toHaveBeenCalledWith('t1', 'f7');
+    });
+
+    it('alerts when attaching fails', async () => {
+      jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      jest.mocked(foldersApi.getAll).mockRejectedValue(apiError('Arquivo muito grande'));
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Anexar comprovante'));
+      chooseReceipt([new File(['x'], 'nota.pdf')]);
+
+      expect(await screen.findByText('Arquivo muito grande')).toBeTruthy();
+      expect(api.setReceipt).not.toHaveBeenCalled();
+    });
+
+    it('falls back to a generic message when attaching fails', async () => {
+      jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      jest.mocked(foldersApi.getAll).mockResolvedValue([receiptsFolder]);
+      jest.mocked(foldersApi.upload).mockResolvedValue([{ id: 'f7' }] as never);
+      api.setReceipt.mockRejectedValue(new Error('x'));
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Anexar comprovante'));
+      chooseReceipt([new File(['x'], 'nota.pdf')]);
+
+      expect(await screen.findByText('Não foi possível anexar o comprovante')).toBeTruthy();
+    });
+
+    it('ignores an empty choice and a file chosen without a transaction', async () => {
+      jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Anexar comprovante'));
+      chooseReceipt([]);
+      chooseReceipt([new File(['x'], 'nota.pdf')]);
+
+      await act(async () => {});
+      expect(foldersApi.getAll).not.toHaveBeenCalled();
+      expect(api.setReceipt).not.toHaveBeenCalled();
+    });
+
+    it('removes the receipt after confirmation', async () => {
+      api.getAll.mockResolvedValue([withReceipt]);
+      api.setReceipt.mockResolvedValue(ifood);
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Remover comprovante'));
+      expect(screen.getByText(/O arquivo continua na pasta "Comprovantes"/)).toBeTruthy();
+      fireEvent.click(screen.getByText('Remover'));
+
+      await waitFor(() => expect(api.setReceipt).toHaveBeenCalledWith('t1', null));
+    });
+
+    it('keeps the receipt when cancelled and alerts when removing fails', async () => {
+      api.getAll.mockResolvedValue([withReceipt]);
+      api.setReceipt.mockRejectedValue(new Error('x'));
+      renderScreen();
+
+      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Remover comprovante'));
+      fireEvent.click(screen.getByText('Cancelar'));
+      await waitFor(() => expect(screen.queryByText(/O arquivo continua/)).toBeNull());
+      expect(api.setReceipt).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Remover comprovante'));
+      fireEvent.click(screen.getByText('Remover'));
+      expect(await screen.findByText('Não foi possível remover o comprovante')).toBeTruthy();
+    });
   });
 });

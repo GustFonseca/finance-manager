@@ -12,5 +12,7 @@ public static class TestRules
     private sealed class Fixed(ClassificationRules rules) : IClassificationRulesProvider
     {
         public Task<ClassificationRules> GetAsync(CancellationToken cancellationToken = default) => Task.FromResult(rules);
+
+        public void Invalidate() { }
     }
 }

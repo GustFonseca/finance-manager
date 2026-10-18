@@ -14,7 +14,8 @@ import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/per
 import { workHoursOf } from '@/lib/workHours';
 import { colors, fontSize, spacing } from '@/theme';
 import { AvoidableRow, RowAction } from './components/AvoidableRow';
-import { useAvoidableSpending } from './queries';
+import { useAvoidableSpending, useDismissInsight, useSetSubscriptionChoice } from './queries';
+import { SubscriptionAuditDto, SubscriptionChoice } from './types';
 
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
@@ -33,6 +34,8 @@ export function AvoidableScreen() {
   const { data, error, isFetching, refetch } = useAvoidableSpending({ ...month, accountId: accountId || undefined });
   const setClass = useSetMerchantClass();
   const updateMerchant = useUpdateMerchant();
+  const dismissInsight = useDismissInsight();
+  const setChoice = useSetSubscriptionChoice();
 
   async function classify(merchantId: string, name: string, spendingClass: SpendingClass) {
     try {
@@ -47,6 +50,50 @@ export function AvoidableScreen() {
     } catch (e) {
       alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível classificar o estabelecimento') });
     }
+  }
+
+  async function dismiss(key: string, name: string) {
+    try {
+      await dismissInsight.mutateAsync(key);
+      alert({ title: 'Gastos evitáveis', message: `O alerta de ${name} foi dispensado.` });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível dispensar o alerta') });
+    }
+  }
+
+  async function choose(subscription: SubscriptionAuditDto, choice: SubscriptionChoice | null) {
+    const { key, name } = subscription;
+    try {
+      await setChoice.mutateAsync({ key, name, choice });
+      alert({
+        title: 'Gastos evitáveis',
+        message:
+          choice === 'KEEP'
+            ? `${name} foi marcada para manter.`
+            : choice === 'CANCEL'
+              ? `${name} foi marcada como cancelada. Se voltar a cobrar, o aviso aparece aqui.`
+              : `A marcação de ${name} foi desfeita.`,
+      });
+    } catch (e) {
+      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível salvar a escolha da assinatura') });
+    }
+  }
+
+  function choiceActions(subscription: SubscriptionAuditDto): RowAction[] {
+    if (subscription.choice) return [{ label: 'Desfazer', onPress: () => choose(subscription, null) }];
+    return [
+      { label: 'Mantenho', onPress: () => choose(subscription, 'KEEP') },
+      { label: 'Cancelei', onPress: () => choose(subscription, 'CANCEL') },
+    ];
+  }
+
+  function choiceNote(subscription: SubscriptionAuditDto): string | null {
+    if (subscription.chargedAfterCancel) {
+      return `Cobrou depois de você marcar como cancelada (em ${day(subscription.lastDate)}). Confira com o serviço.`;
+    }
+    if (subscription.choice === 'CANCEL') return 'Marcada como cancelada';
+    if (subscription.choice === 'KEEP') return 'Marcada para manter';
+    return null;
   }
 
   async function handleSave(input: UpdateMerchantInput) {
@@ -74,7 +121,9 @@ export function AvoidableScreen() {
     data.smallPurchases.merchants.length === 0 &&
     data.spikes.length === 0 &&
     data.firstTimePurchases.length === 0 &&
-    data.fees.items.length === 0;
+    data.fees.items.length === 0 &&
+    data.duplicates.length === 0 &&
+    data.billIncreases.length === 0;
 
   return (
     <>
@@ -115,6 +164,42 @@ export function AvoidableScreen() {
 
               {nothing ? <EmptyState message="Nenhum gasto evitável encontrado neste mês." /> : null}
 
+              {data.duplicates.length > 0 ? (
+                <Card title="Cobranças para conferir">
+                  <Text style={styles.lead}>
+                    O mesmo valor foi cobrado duas vezes no mesmo lugar em poucos dias. Confira se não houve cobrança em dobro.
+                  </Text>
+                  {data.duplicates.map((d) => (
+                    <AvoidableRow
+                      key={d.key}
+                      title={d.name}
+                      detail={`Cobrado em ${day(d.firstDate)} e de novo em ${day(d.secondDate)}`}
+                      value={formatCents(d.amountCents)}
+                      actions={[{ label: 'Está certo', onPress: () => dismiss(d.key, d.name) }, ...actions(d.merchantId, d.name)]}
+                    />
+                  ))}
+                </Card>
+              ) : null}
+
+              {data.billIncreases.length > 0 ? (
+                <Card title="Contas que subiram">
+                  <Text style={styles.lead}>
+                    A inflação dos últimos 12 meses foi de {formatRate(data.inflationPercent)}. Estas contas subiram mais do que
+                    isso: vale renegociar ou trocar de plano.
+                  </Text>
+                  {data.billIncreases.map((b) => (
+                    <AvoidableRow
+                      key={b.key}
+                      title={b.name}
+                      detail={`De ${formatCents(b.previousCents)} para ${formatCents(b.currentCents)} (+${formatRate(b.increasePercent)})`}
+                      highlight={`+${formatCents(b.yearlyImpactCents)} por ano`}
+                      value={`${formatCents(b.currentCents)}/mês`}
+                      actions={[{ label: 'Ciente', onPress: () => dismiss(b.key, b.name) }]}
+                    />
+                  ))}
+                </Card>
+              ) : null}
+
               {data.fees.items.length > 0 ? (
                 <Card title="Tarifas e juros">
                   <Text style={styles.lead}>
@@ -143,7 +228,7 @@ export function AvoidableScreen() {
                   ))}
                   {data.subscriptions.map((s) => (
                     <AvoidableRow
-                      key={s.merchantId ?? s.name}
+                      key={s.key}
                       title={s.name}
                       detail={`${s.group ?? 'Assinatura'} · ${formatCents(s.yearlyCents)} por ano · última cobrança em ${day(s.lastDate)} · investido: ${formatCents(s.investedIn12MonthsCents)} em 12 meses`}
                       highlight={[
@@ -151,11 +236,12 @@ export function AvoidableScreen() {
                           ? `Preço subiu de ${formatCents(s.previousCents)} para ${formatCents(s.monthlyCents)}`
                           : null,
                         s.resumedAfter ? `Voltou a cobrar depois de uma pausa (cobrança anterior em ${day(s.resumedAfter)})` : null,
+                        choiceNote(s),
                       ]
                         .filter(Boolean)
                         .join(' · ')}
                       value={`${formatCents(s.monthlyCents)}/mês`}
-                      actions={actions(s.merchantId, s.name, 'ESSENTIAL')}
+                      actions={[...actions(s.merchantId, s.name, 'ESSENTIAL'), ...choiceActions(s)]}
                     />
                   ))}
                 </Card>

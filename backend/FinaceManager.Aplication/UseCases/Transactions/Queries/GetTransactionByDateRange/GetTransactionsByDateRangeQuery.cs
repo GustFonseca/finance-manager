@@ -12,4 +12,5 @@ public record GetTransactionsByDateRangeQuery(
     Guid? MerchantId = null,
     Guid? CategoryId = null,
     TransactionType? Type = null,
-    string? Search = null) : IQuery<List<TransactionDto>>;
+    string? Search = null,
+    int? Limit = null) : IQuery<List<TransactionDto>>;

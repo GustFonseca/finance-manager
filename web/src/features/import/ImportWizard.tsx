@@ -34,7 +34,7 @@ type Result = {
 const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
   file: {
     title: 'Selecione o arquivo',
-    subtitle: 'Exporte a fatura ou o extrato no app do Nubank e escolha o arquivo CSV ou OFX.',
+    subtitle: 'Escolha o extrato em OFX, a fatura ou o extrato do Nubank em CSV, ou uma planilha CSV do seu banco.',
   },
   review: {
     title: 'Revise as transações',
@@ -202,7 +202,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
             <Text style={styles.label}>Arquivo:</Text>
             <input
               type="file"
-              accept=".csv,.ofx,text/csv"
+              accept=".csv,.ofx,.txt,text/csv,application/x-ofx"
               onChange={(event) => chooseFile(event.target.files?.[0])}
               style={fileInputStyle}
             />

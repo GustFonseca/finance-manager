@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ContextMenuProvider } from './ContextMenu';
 import { Desktop, ProgramScreens } from './Desktop';
+import { OfflineNotice } from './OfflineNotice';
 import { StartMenu } from './StartMenu';
 import { Taskbar } from './Taskbar';
 import { WakeBalloon } from './WakeBalloon';
@@ -28,6 +29,7 @@ export function XpShell({ screens, desktopExtras, children }: Props) {
             <StartMenu visible={startOpen} onClose={() => setStartOpen(false)} />
             <Taskbar startOpen={startOpen} onToggleStart={() => setStartOpen((open) => !open)} />
             <WakeBalloon />
+            <OfflineNotice />
           </View>
         </ContextMenuProvider>
       </SoundProvider>

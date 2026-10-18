@@ -2,7 +2,6 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
 import { ErrorBoundaryProps, Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
 
 import { CrashDialog } from '@/components/xp/CrashDialog';
 import { AppProviders } from '@/providers/AppProviders';

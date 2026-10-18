@@ -1,15 +1,16 @@
 import { http } from '@/lib/http';
 import { filesApi, foldersApi, trashApi } from '../api';
+import { httpResponse } from '@/test/http';
 
 jest.mock('@/lib/http', () => ({
   http: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() },
 }));
 
 beforeEach(() => {
-  jest.mocked(http.get).mockResolvedValue({ data: 'got' });
-  jest.mocked(http.post).mockResolvedValue({ data: 'posted' });
-  jest.mocked(http.put).mockResolvedValue({ data: 'put' });
-  jest.mocked(http.delete).mockResolvedValue({ data: 'deleted' });
+  jest.mocked(http.get).mockResolvedValue(httpResponse('got'));
+  jest.mocked(http.post).mockResolvedValue(httpResponse('posted'));
+  jest.mocked(http.put).mockResolvedValue(httpResponse('put'));
+  jest.mocked(http.delete).mockResolvedValue(httpResponse('deleted'));
 });
 
 describe('foldersApi', () => {
@@ -33,11 +34,11 @@ describe('foldersApi', () => {
     const a = new File(['a'], 'a.txt');
     const b = new File(['b'], 'b.txt');
     await expect(foldersApi.upload('d1', [a, b])).resolves.toBe('posted');
-    const [url, form, config] = jest.mocked(http.post).mock.calls[0] as [string, FormData, object];
+    const [url, form, config] = jest.mocked(http.post).mock.calls[0] as [string, FormData, object?];
     expect(url).toBe('/folders/d1/files');
     expect(form.getAll('files')).toHaveLength(2);
     expect((form.getAll('files')[1] as File).name).toBe('b.txt');
-    expect(config).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } });
+    expect(config).toBeUndefined();
   });
 });
 
@@ -47,7 +48,7 @@ describe('filesApi', () => {
     expect(http.put).toHaveBeenCalledWith('/files/f1', { name: 'x.pdf' });
     await expect(filesApi.trash('f1')).resolves.toBeUndefined();
     expect(http.delete).toHaveBeenCalledWith('/files/f1');
-    jest.mocked(http.get).mockResolvedValue({ data: { url: 'https://s3/x' } });
+    jest.mocked(http.get).mockResolvedValue(httpResponse({ url: 'https://s3/x' }));
     await expect(filesApi.downloadUrl('f1')).resolves.toBe('https://s3/x');
     expect(http.get).toHaveBeenCalledWith('/files/f1/download');
   });

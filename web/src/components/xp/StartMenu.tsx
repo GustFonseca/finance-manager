@@ -5,8 +5,8 @@ import { useDialog } from '@/components/ui/DialogProvider';
 import { useAuth } from '@/features/auth/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import { bevels, colors, fonts, fontSize, gradients, PressState, spacing, webStyle } from '@/theme';
-import { PROGRAMS } from './programs';
 import type { IconName } from './TitleBar';
+import { useVisiblePrograms } from './useVisiblePrograms';
 import { useWindowManager } from './WindowManager';
 
 export const TASKBAR_HEIGHT = 30;
@@ -22,6 +22,7 @@ export function StartMenu({ visible, onClose }: Props) {
   const { open } = useWindowManager();
   const { alert, confirm } = useDialog();
   const { width } = useWindowDimensions();
+  const programs = useVisiblePrograms();
 
   if (!visible) return null;
 
@@ -55,7 +56,7 @@ export function StartMenu({ visible, onClose }: Props) {
 
         <View style={styles.body}>
           <View style={styles.left}>
-            {PROGRAMS.map((program) => (
+            {programs.map((program) => (
               <StartItem
                 key={program.route}
                 icon={program.icon}

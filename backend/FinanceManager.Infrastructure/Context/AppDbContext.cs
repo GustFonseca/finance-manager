@@ -21,6 +21,10 @@ public class AppDbContext : DbContext
     public DbSet<Merchant> Merchants => Set<Merchant>();
     public DbSet<ClassificationRule> ClassificationRules => Set<ClassificationRule>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
+    public DbSet<InsightDismissal> InsightDismissals => Set<InsightDismissal>();
+    public DbSet<SubscriptionDecision> SubscriptionDecisions => Set<SubscriptionDecision>();
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+    public DbSet<Debt> Debts => Set<Debt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +61,7 @@ public class AppDbContext : DbContext
             e.HasOne(t => t.Category).WithMany(c => c.Transactions).HasForeignKey(t => t.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(t => t.MerchantId);
             e.HasOne(t => t.Merchant).WithMany(m => m.Transactions).HasForeignKey(t => t.MerchantId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<StoredFile>().WithMany().HasForeignKey(t => t.ReceiptFileId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ClassificationRule>(e =>
@@ -138,6 +143,43 @@ public class AppDbContext : DbContext
             e.Property(c => c.Name).HasMaxLength(100);
             e.Property(c => c.Scope).HasConversion<string>().HasMaxLength(20);
             e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId);
+        });
+
+        modelBuilder.Entity<InsightDismissal>(e =>
+        {
+            e.HasKey(d => d.Id);
+            e.HasIndex(d => new { d.UserId, d.Key }).IsUnique();
+            e.Property(d => d.Key).HasMaxLength(200);
+            e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
+        });
+
+        modelBuilder.Entity<SubscriptionDecision>(e =>
+        {
+            e.HasKey(d => d.Id);
+            e.HasIndex(d => new { d.UserId, d.MerchantKey }).IsUnique();
+            e.Property(d => d.MerchantKey).HasMaxLength(200);
+            e.Property(d => d.Name).HasMaxLength(200);
+            e.Property(d => d.Choice).HasConversion<string>().HasMaxLength(10);
+            e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
+        });
+
+        modelBuilder.Entity<WishlistItem>(e =>
+        {
+            e.HasKey(w => w.Id);
+            e.HasIndex(w => w.UserId);
+            e.Property(w => w.Name).HasMaxLength(150);
+            e.Property(w => w.Link).HasMaxLength(500);
+            e.Property(w => w.Status).HasConversion<string>().HasMaxLength(10);
+            e.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId);
+        });
+
+        modelBuilder.Entity<Debt>(e =>
+        {
+            e.HasKey(d => d.Id);
+            e.HasIndex(d => d.UserId);
+            e.Property(d => d.Name).HasMaxLength(100);
+            e.Property(d => d.MonthlyRatePercent).HasPrecision(7, 4);
+            e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
         });
 
         modelBuilder.Entity<CategoryBudget>(e =>

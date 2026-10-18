@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { useDialog } from '@/components/ui';
 import {
   DesktopIcon,
-  PROGRAMS,
   useDesktop,
   useDesktopMenu,
+  useVisiblePrograms,
   useWindowManager,
   WindowIdProvider,
 } from '@/components/xp';
@@ -28,6 +28,7 @@ export function FileDesktop() {
   const renameFolder = useRenameFolder();
   const trashFolder = useTrashFolder();
   const emptyTrash = useEmptyTrash();
+  const programs = useVisiblePrograms();
 
   const trashCount = (trash?.folders.length ?? 0) + (trash?.files.length ?? 0);
 
@@ -89,7 +90,7 @@ export function FileDesktop() {
           <DesktopIcon
             key={id}
             id={id}
-            slot={PROGRAMS.length + index}
+            slot={programs.length + index}
             label={folder.name}
             icon="folder"
             color={FOLDER_COLOR}

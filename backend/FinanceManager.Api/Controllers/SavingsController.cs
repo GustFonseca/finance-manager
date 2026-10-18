@@ -8,13 +8,16 @@ using FinanceManager.Aplication.UseCases.Savings.Commands.SetSavingsGoal;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetWorkHours;
 using FinanceManager.Aplication.UseCases.Savings.Queries.GetSavingsPlan;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/savings")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class SavingsController : ControllerBase
 {
     private readonly IMediator _mediator;

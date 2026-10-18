@@ -7,6 +7,7 @@ import { renderWithProviders } from '@/test/render';
 import { ChallengesScreen } from '../ChallengesScreen';
 import { challengesApi } from '../api';
 import { challenge } from './fixtures';
+import { apiError } from '@/test/http';
 
 jest.mock('../api');
 jest.mock('@/features/categories/api');
@@ -14,7 +15,6 @@ jest.mock('@/features/merchants/api');
 
 const api = jest.mocked(challengesApi);
 const money = (cents: number) => formatCents(cents).replace(/\s+/g, ' ');
-const apiError = (message: string) => ({ isAxiosError: true, response: { status: 400, data: { message } } });
 
 const active = challenge();
 const won = challenge({ id: 'ch2', name: 'Semana sem bar', status: 'WON', savedCents: 5000 });

@@ -79,13 +79,24 @@ public class GoalsAndTransactionsControllerTests
         _mediator.Returns<GetTransactionsByDateRangeQuery>(_ => transactions);
 
         var category = Guid.NewGuid();
-        var result = await Transactions.GetAll(start, end, account, Known, category, TransactionType.EXPENSE, "ifood");
-        var unfiltered = await Transactions.GetAll(null, null, null, null, null, null, null);
+        var result = await Transactions.GetAll(start, end, account, Known, category, TransactionType.EXPENSE, "ifood", 5);
+        var unfiltered = await Transactions.GetAll(null, null, null, null, null, null, null, null);
 
         Assert.Same(transactions, Assert.IsType<OkObjectResult>(result.Result).Value);
-        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, start.ToUniversalTime(), end, account, Known, category, TransactionType.EXPENSE, "ifood"), _mediator.Sent[0]);
+        Assert.Equal(new GetTransactionsByDateRangeQuery(Me, start.ToUniversalTime(), end, account, Known, category, TransactionType.EXPENSE, "ifood", 5), _mediator.Sent[0]);
         Assert.Equal(new GetTransactionsByDateRangeQuery(Me, null, null, null, null, null, null, null), _mediator.Sent[1]);
         Assert.IsType<OkObjectResult>(unfiltered.Result);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(501)]
+    public async Task Transactions_GetAll_rejects_limits_out_of_range(int limit)
+    {
+        var result = await Transactions.GetAll(null, null, null, null, null, null, null, limit);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(_mediator.Sent);
     }
 
     [Fact]

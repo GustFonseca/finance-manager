@@ -12,11 +12,14 @@ import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
 import { BudgetAlerts } from './components/BudgetAlerts';
 import { DailyBudgetCard } from './components/DailyBudgetCard';
+import { DigestCard } from './components/DigestCard';
 import { ForecastCard } from './components/ForecastCard';
 import { Installments } from './components/Installments';
 import { RecurringExpenses } from './components/RecurringExpenses';
 import { SummaryCards } from './components/SummaryCards';
-import { useDailyBudget, useForecast, useRecurringExpenses, useSummary } from './queries';
+import { useDailyBudget, useDigest, useForecast, useRecurringExpenses, useSummary } from './queries';
+
+export const RECENT_TRANSACTIONS = 5;
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -28,10 +31,11 @@ export function DashboardScreen() {
   const accountName = accounts.find((a) => a.id === accountId)?.name;
 
   const summaryQuery = useSummary(filter);
-  const transactionsQuery = useTransactions(filter);
+  const transactionsQuery = useTransactions({ ...filter, limit: RECENT_TRANSACTIONS });
   const recurringQuery = useRecurringExpenses(filter);
   const forecastQuery = useForecast(filter);
   const dailyQuery = useDailyBudget(filter);
+  const digestQuery = useDigest(filter);
   const goalsQuery = useGoals();
 
   const isFetching =
@@ -40,6 +44,7 @@ export function DashboardScreen() {
     recurringQuery.isFetching ||
     forecastQuery.isFetching ||
     dailyQuery.isFetching ||
+    digestQuery.isFetching ||
     goalsQuery.isFetching;
 
   function refetchAll() {
@@ -48,10 +53,11 @@ export function DashboardScreen() {
     recurringQuery.refetch();
     forecastQuery.refetch();
     dailyQuery.refetch();
+    digestQuery.refetch();
     goalsQuery.refetch();
   }
 
-  const recentTransactions = (transactionsQuery.data ?? []).slice(0, 5);
+  const recentTransactions = (transactionsQuery.data ?? []).slice(0, RECENT_TRANSACTIONS);
   const activeGoals = (goalsQuery.data ?? []).filter((g) => g.status === 'ACTIVE');
   const monthName = monthLabel(monthKey);
 
@@ -76,6 +82,8 @@ export function DashboardScreen() {
           <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
         ) : null}
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+
+        {digestQuery.data && <DigestCard digest={digestQuery.data} />}
 
         {dailyQuery.data && <DailyBudgetCard daily={dailyQuery.data} />}
 

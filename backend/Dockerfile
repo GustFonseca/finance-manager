@@ -8,10 +8,10 @@ COPY FinanceManager.Domain/FinanceManager.Domain.csproj FinanceManager.Domain/
 COPY FinaceManager.Aplication/FinanceManager.Aplication.csproj FinaceManager.Aplication/
 COPY FinanceManager.Infrastructure/FinanceManager.Infrastructure.csproj FinanceManager.Infrastructure/
 COPY FinanceManager.Api/FinanceManager.Api.csproj FinanceManager.Api/
-RUN dotnet restore FinanceManager.Api/FinanceManager.Api.csproj
+RUN dotnet restore FinanceManager.Api/FinanceManager.Api.csproj -r linux-x64
 
 COPY . .
-RUN dotnet publish FinanceManager.Api/FinanceManager.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish FinanceManager.Api/FinanceManager.Api.csproj -c Release -r linux-x64 --self-contained false -p:PublishReadyToRun=true -o /app --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

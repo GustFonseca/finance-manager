@@ -42,6 +42,11 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<ISavingsPlanRepository, SavingsPlanRepository>();
         services.AddScoped<IChallengeRepository, ChallengeRepository>();
+        services.AddScoped<IInsightDismissalRepository, InsightDismissalRepository>();
+        services.AddScoped<ISubscriptionDecisionRepository, SubscriptionDecisionRepository>();
+        services.AddSingleton<IAdminDirectory, ConfigAdminDirectory>();
+        services.AddScoped<IWishlistRepository, WishlistRepository>();
+        services.AddScoped<IDebtRepository, DebtRepository>();
         services.AddScoped<ICategoryBudgetRepository, CategoryBudgetRepository>();
         services.AddScoped<IMerchantRepository, MerchantRepository>();
         services.AddScoped<IClassificationRuleRepository, ClassificationRuleRepository>();

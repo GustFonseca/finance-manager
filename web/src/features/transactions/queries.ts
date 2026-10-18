@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { invalidateFiles } from '@/features/files/queries';
 import { transactionsApi } from './api';
+import { uploadReceipt } from './receipts';
 import { CreateTransactionRequest, TransactionFilter } from './types';
 
 export function useTransactions(range: TransactionFilter = {}, enabled = true) {
@@ -41,6 +43,16 @@ export function useDeleteAllTransactions() {
   return useMutation({
     mutationFn: () => transactionsApi.removeAll(),
     onSuccess: () => invalidateMoney(qc),
+  });
+}
+
+export function useSetReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File | null }) =>
+      transactionsApi.setReceipt(id, file ? await uploadReceipt(file) : null),
+    onSuccess: () => invalidateMoney(qc),
+    onSettled: () => invalidateFiles(qc),
   });
 }
 

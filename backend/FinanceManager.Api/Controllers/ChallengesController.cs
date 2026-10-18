@@ -5,13 +5,16 @@ using FinanceManager.Aplication.UseCases.Challenges.Commands.CreateChallenge;
 using FinanceManager.Aplication.UseCases.Challenges.Commands.DeleteChallenge;
 using FinanceManager.Aplication.UseCases.Challenges.Queries.GetChallenges;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/challenges")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class ChallengesController : ControllerBase
 {
     private readonly IMediator _mediator;

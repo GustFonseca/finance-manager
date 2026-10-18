@@ -7,13 +7,16 @@ using FinanceManager.Aplication.UseCases.Categories.Commands.UpdateCategory;
 using FinanceManager.Aplication.UseCases.Categories.Queries.GetAllCategories;
 using FinanceManager.Domain.Enuns;
 using Microsoft.AspNetCore.Authorization;
+using FinanceManager.Api.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
 [ApiController]
 [Route("api/categories")]
 [Authorize]
+[OutputCache(PolicyName = UserDataCachePolicy.Name)]
 public class CategoriesController : ControllerBase
 {
     private readonly IMediator _mediator;

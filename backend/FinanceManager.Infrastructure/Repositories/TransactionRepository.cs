@@ -15,6 +15,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
     public async Task<List<Transaction>> SearchAsync(Guid userId, TransactionFilter filter)
     {
         var query = _dbSet
+            .AsNoTracking()
             .Include(t => t.Account)
             .Include(t => t.Category)
             .Include(t => t.Merchant)
@@ -35,7 +36,8 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
                                      || (key != string.Empty && t.Merchant != null && t.Merchant.Key.Contains(key)));
         }
 
-        return await query.OrderByDescending(t => t.Date).ToListAsync();
+        var ordered = query.OrderByDescending(t => t.Date).ThenByDescending(t => t.CreatedAt);
+        return await (filter.Limit is > 0 ? ordered.Take(filter.Limit.Value) : ordered).ToListAsync();
     }
 
     public async Task<List<Transaction>> GetUncataloguedAsync()

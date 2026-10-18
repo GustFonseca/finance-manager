@@ -22,6 +22,8 @@ public sealed class ClassificationRulesProvider : IClassificationRulesProvider
         _logger = logger;
     }
 
+    public void Invalidate() => _cache.Remove(CacheKey);
+
     public async Task<ClassificationRules> GetAsync(CancellationToken cancellationToken = default)
     {
         return (await _cache.GetOrCreateAsync(CacheKey, async entry =>
