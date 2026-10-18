@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { router } from 'expo-router';
 import { renderWithProviders } from '@/test/render';
+import { HELP_SEEN_KEY, HelpProvider, HelpRegistry, HelpTopic, hasSeenHelp, markHelpSeen } from '../help';
 import { Window } from '../Window';
 import { useWindowManager, WindowIdProvider } from '../WindowManager';
 import { pointerDown, pointerMove, pointerUp, setViewport } from './helpers';
@@ -260,6 +261,99 @@ describe('Window', () => {
     pointerDown(frameOf('Transações'));
     expect(wm.activeWindow).toBe('/transactions');
     expect(frameOf('Transações').style.zIndex).toBe('2');
+  });
+
+  describe('help', () => {
+    const topic: HelpTopic = {
+      title: 'Transações',
+      icon: 'exchange',
+      summary: 'resumo',
+      howItWorks: ['funciona'],
+      steps: [{ title: 'passo', text: 'texto' }],
+    };
+
+    function present(shown: HelpTopic, onClose: () => void) {
+      return (
+        <div>
+          <span>tutorial {shown.title}</span>
+          <button onClick={onClose}>fechar tutorial</button>
+        </div>
+      );
+    }
+
+    function renderHelpWindow(topics: HelpRegistry = { '/transactions': topic }) {
+      return renderWithProviders(
+        <HelpProvider topics={topics} present={present}>
+          <Probe />
+          <Window title="Transações" icon="exchange">
+            <span>conteúdo</span>
+          </Window>
+        </HelpProvider>,
+        { windowId: '/transactions' }
+      );
+    }
+
+    it('opens the tutorial the first time and marks it seen when closed', async () => {
+      renderHelpWindow();
+      await flush();
+      expect(screen.getByText('tutorial Transações')).toBeTruthy();
+      expect(hasSeenHelp('/transactions')).toBe(false);
+
+      fireEvent.click(screen.getByText('fechar tutorial'));
+      expect(screen.queryByText('tutorial Transações')).toBeNull();
+      expect(hasSeenHelp('/transactions')).toBe(true);
+    });
+
+    it('does not open the tutorial again once seen', async () => {
+      localStorage.setItem(HELP_SEEN_KEY, JSON.stringify(['/transactions']));
+      renderHelpWindow();
+      await flush();
+      expect(screen.queryByText('tutorial Transações')).toBeNull();
+    });
+
+    it('reopens the tutorial from the toolbar, the Ajuda menu and the caption button', async () => {
+      markHelpSeen('/transactions');
+      renderHelpWindow();
+      await flush();
+
+      expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Como funciona',
+        'Minimizar',
+        'Maximizar',
+        'Fechar',
+        null,
+      ]);
+      expect(screen.getByTestId('icon-question-circle')).toBeTruthy();
+
+      fireEvent.click(screen.getByText('Como funciona'));
+      expect(screen.getByText('tutorial Transações')).toBeTruthy();
+      fireEvent.click(screen.getByText('fechar tutorial'));
+      expect(screen.queryByText('tutorial Transações')).toBeNull();
+
+      fireEvent.click(screen.getByText('Ajuda'));
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+        'Como funciona esta janela',
+        'Sobre o Finance Manager',
+      ]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Como funciona esta janela' }));
+      expect(screen.getByText('tutorial Transações')).toBeTruthy();
+      fireEvent.click(screen.getByText('fechar tutorial'));
+
+      fireEvent.click(screen.getByText('?'));
+      expect(screen.getByText('tutorial Transações')).toBeTruthy();
+      fireEvent.click(screen.getByText('fechar tutorial'));
+      expect(JSON.parse(localStorage.getItem(HELP_SEEN_KEY) as string)).toEqual(['/transactions']);
+    });
+
+    it('shows no help controls when the window has no topic', async () => {
+      renderHelpWindow({ '/accounts': topic });
+      await flush();
+      expect(screen.queryByText('tutorial Transações')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Como funciona' })).toBeNull();
+      expect(screen.queryByText('Como funciona')).toBeNull();
+      fireEvent.click(screen.getByText('Ajuda'));
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Sobre o Finance Manager']);
+    });
   });
 
   it('is always maximized on a compact screen', async () => {

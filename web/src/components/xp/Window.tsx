@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
 import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
 import { isolateContextMenu } from './ContextMenu';
+import { hasSeenHelp, markHelpSeen, useHelp } from './help';
 import { MenuBar, MenuDef, MenuEntry } from './MenuBar';
 import { TASKBAR_HEIGHT } from './StartMenu';
 import { IconName, TitleBar } from './TitleBar';
@@ -39,8 +40,16 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   const id = useWindowId();
   const active = wm.activeWindow === id;
   const { setMeta } = wm;
+  const help = useHelp(id);
+  const [helpOpen, setHelpOpen] = useState(() => !!help && !hasSeenHelp(id));
 
   useEffect(() => setMeta(id, { title, icon }), [setMeta, id, title, icon]);
+
+  const openHelp = () => setHelpOpen(true);
+  const closeHelp = () => {
+    markHelpSeen(id);
+    setHelpOpen(false);
+  };
 
   const compact = width < COMPACT_WIDTH;
   const maximized = compact || wm.isMaximized(id);
@@ -90,6 +99,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     {
       label: 'Ajuda',
       entries: [
+        ...(help ? [{ label: 'Como funciona esta janela', onPress: openHelp }, 'separator' as const] : []),
         {
           label: 'Sobre o Finance Manager',
           onPress: () =>
@@ -107,6 +117,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     ...(onRefresh
       ? [{ label: 'Atualizar', icon: 'refresh' as const, color: '#2E7D32', onPress: onRefresh }]
       : []),
+    ...(help ? [{ label: 'Como funciona', icon: 'question-circle' as const, color: '#1565C0', onPress: openHelp }] : []),
   ];
 
   return (
@@ -131,6 +142,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
         onMinimize={() => wm.minimize(id)}
         onMaximize={compact ? undefined : () => wm.toggleMaximize(id)}
         onClose={close}
+        onHelp={help ? openHelp : undefined}
       />
       <View style={styles.inner}>
         <MenuBar menus={menus} />
@@ -144,6 +156,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
           </View>
         ) : null}
       </View>
+      {help && helpOpen ? help.present(help.topic, closeHelp) : null}
     </View>
   );
 }

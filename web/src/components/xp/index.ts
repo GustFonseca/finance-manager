@@ -15,3 +15,5 @@ export { useSound } from './sound/SoundProvider';
 export { PROGRAMS } from './programs';
 export type { Program } from './programs';
 export { useVisiblePrograms } from './useVisiblePrograms';
+export { HelpProvider, useHelp, hasSeenHelp, markHelpSeen, HELP_SEEN_KEY } from './help';
+export type { HelpTopic, HelpStep, HelpRegistry, HelpPresenter } from './help';

@@ -186,6 +186,22 @@ describe('XpShell', () => {
     expect(screen.getByText('metas')).toBeTruthy();
   });
 
+  it('presents the help topic of a window through the shell', async () => {
+    renderWithProviders(
+      <XpShell
+        screens={{ '/goals': GoalsScreen }}
+        help={{
+          '/goals': { title: 'Metas', icon: 'bullseye', summary: 'resumo', howItWorks: ['a'], steps: [{ title: 'p', text: 't' }] },
+        }}
+        presentHelp={(topic) => <span>{`ajuda ${topic.title}`}</span>}>
+        <Probe />
+      </XpShell>,
+      { windowId: '/goals' }
+    );
+    expect(await screen.findByText('ajuda Metas')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Como funciona' })).toHaveLength(2);
+  });
+
   it('uses the program title for windows without a screen and skips unknown windows', async () => {
     await renderShell('/savings');
     act(() => wm.open('dialog:unknown'));

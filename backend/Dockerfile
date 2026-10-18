@@ -8,7 +8,7 @@ COPY FinanceManager.Domain/FinanceManager.Domain.csproj FinanceManager.Domain/
 COPY FinaceManager.Aplication/FinanceManager.Aplication.csproj FinaceManager.Aplication/
 COPY FinanceManager.Infrastructure/FinanceManager.Infrastructure.csproj FinanceManager.Infrastructure/
 COPY FinanceManager.Api/FinanceManager.Api.csproj FinanceManager.Api/
-RUN dotnet restore FinanceManager.Api/FinanceManager.Api.csproj -r linux-x64
+RUN dotnet restore FinanceManager.Api/FinanceManager.Api.csproj -r linux-x64 -p:PublishReadyToRun=true
 
 COPY . .
 RUN dotnet publish FinanceManager.Api/FinanceManager.Api.csproj -c Release -r linux-x64 --self-contained false -p:PublishReadyToRun=true -o /app --no-restore

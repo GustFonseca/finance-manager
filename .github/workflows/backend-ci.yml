@@ -48,3 +48,6 @@ jobs:
           print(f'Line coverage: {rate:.2f}% (minimum 90%)')
           sys.exit(0 if rate >= 90 else 1)
           EOF
+
+      - name: Build the production Docker image
+        run: docker build --tag finance-manager-api:ci .

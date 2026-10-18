@@ -101,6 +101,16 @@ describe('TitleBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
     expect(onMaximize).toHaveBeenCalledTimes(2);
   });
+
+  it('renders the help caption button before the others', () => {
+    const onHelp = jest.fn();
+    render(<TitleBar title="Janela" onHelp={onHelp} onClose={jest.fn()} />);
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Como funciona', 'Fechar']);
+    const help = screen.getByRole('button', { name: 'Como funciona' });
+    expect(help.textContent).toBe('?');
+    fireEvent.click(help);
+    expect(onHelp).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('Toolbar', () => {

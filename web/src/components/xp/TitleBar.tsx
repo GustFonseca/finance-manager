@@ -13,6 +13,7 @@ type Props = {
   onMinimize?: () => void;
   onMaximize?: () => void;
   onClose?: () => void;
+  onHelp?: () => void;
   onPointerDown?: ViewProps['onPointerDown'];
   draggable?: boolean;
 };
@@ -25,6 +26,7 @@ export function TitleBar({
   onMinimize,
   onMaximize,
   onClose,
+  onHelp,
   onPointerDown,
   draggable,
 }: Props) {
@@ -41,6 +43,7 @@ export function TitleBar({
         {title}
       </Text>
       <View style={styles.buttons}>
+        {onHelp ? <CaptionButton kind="help" onPress={onHelp} /> : null}
         {onMinimize ? <CaptionButton kind="minimize" onPress={onMinimize} /> : null}
         {onMaximize ? (
           <CaptionButton kind={maximized ? 'restore' : 'maximize'} onPress={onMaximize} />
@@ -51,9 +54,10 @@ export function TitleBar({
   );
 }
 
-type CaptionKind = 'minimize' | 'maximize' | 'restore' | 'close';
+type CaptionKind = 'help' | 'minimize' | 'maximize' | 'restore' | 'close';
 
 const CAPTION_LABELS: Record<CaptionKind, string> = {
+  help: 'Como funciona',
   minimize: 'Minimizar',
   maximize: 'Maximizar',
   restore: 'Restaurar',
@@ -95,6 +99,8 @@ function CaptionGlyph({ kind }: { kind: CaptionKind }) {
       );
     case 'close':
       return <Text style={styles.closeGlyph}>✕</Text>;
+    case 'help':
+      return <Text style={styles.closeGlyph}>?</Text>;
   }
 }
 

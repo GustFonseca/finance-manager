@@ -4,6 +4,8 @@ import { ProgramScreens, XpShell } from '@/components/xp';
 import { useAuth } from '@/features/auth/AuthContext';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
+import { HELP } from '@/features/help/content';
+import { presentHelp } from '@/features/help/HelpWizard';
 
 function lazyScreen(load: () => Promise<React.ComponentType>) {
   return React.lazy(() => load().then((Screen) => ({ default: Screen })));
@@ -35,7 +37,7 @@ export default function DesktopLayout() {
   if (!token) return <Slot />;
 
   return (
-    <XpShell screens={SCREENS} desktopExtras={<FileDesktop />}>
+    <XpShell screens={SCREENS} help={HELP} presentHelp={presentHelp} desktopExtras={<FileDesktop />}>
       <Slot />
     </XpShell>
   );

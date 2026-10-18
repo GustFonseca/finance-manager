@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ContextMenuProvider } from './ContextMenu';
+import { HelpPresenter, HelpProvider, HelpRegistry } from './help';
 import { Desktop, ProgramScreens } from './Desktop';
 import { OfflineNotice } from './OfflineNotice';
 import { StartMenu } from './StartMenu';
@@ -12,13 +13,16 @@ import { WindowManagerProvider } from './WindowManager';
 type Props = {
   screens: ProgramScreens;
   desktopExtras?: React.ReactNode;
+  help?: HelpRegistry;
+  presentHelp?: HelpPresenter;
   children: React.ReactNode;
 };
 
-export function XpShell({ screens, desktopExtras, children }: Props) {
+export function XpShell({ screens, desktopExtras, help = {}, presentHelp, children }: Props) {
   const [startOpen, setStartOpen] = useState(false);
 
   return (
+    <HelpProvider topics={help} present={presentHelp ?? null}>
     <WindowManagerProvider>
       <SoundProvider>
         <ContextMenuProvider>
@@ -34,6 +38,7 @@ export function XpShell({ screens, desktopExtras, children }: Props) {
         </ContextMenuProvider>
       </SoundProvider>
     </WindowManagerProvider>
+    </HelpProvider>
   );
 }
 
