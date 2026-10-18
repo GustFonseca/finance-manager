@@ -3,7 +3,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card, ProgressBar } from '@/components/ui';
 import { formatCents } from '@/lib/money';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { BudgetStatusDto } from '../types';
 
 export function BudgetAlerts({ budgets }: { budgets: BudgetStatusDto[] }) {
@@ -17,7 +17,7 @@ export function BudgetAlerts({ budgets }: { budgets: BudgetStatusDto[] }) {
         const percent = Math.round(b.percent * 100);
         return (
           <View key={b.categoryId} style={styles.row}>
-            <FontAwesome name={exceeded ? 'times-circle' : 'exclamation-circle'} size={16} color={exceeded ? colors.expense : '#EF6C00'} />
+            <FontAwesome name={exceeded ? 'times-circle' : 'exclamation-circle'} size={16} color={exceeded ? colors.expense : palette.amber} />
             <View style={styles.info}>
               <Text style={styles.name}>
                 {b.categoryName}: {formatCents(b.spentCents)} de {formatCents(b.limitCents)} ({percent}%)

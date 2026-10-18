@@ -3,7 +3,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Modal } from '@/components/ui';
 import type { HelpTopic } from '@/components/xp';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 
 type Props = {
   topic: HelpTopic;
@@ -48,7 +48,7 @@ export function HelpWizard({ topic, onClose }: Props) {
             <Text style={styles.section}>Dicas</Text>
             {topic.tips.map((tip) => (
               <View key={tip} style={styles.bullet}>
-                <FontAwesome name="lightbulb-o" size={14} color="#F9A825" style={styles.tipIcon} />
+                <FontAwesome name="lightbulb-o" size={14} color={palette.amber} style={styles.tipIcon} />
                 <Text style={styles.bulletText}>{tip}</Text>
               </View>
             ))}
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.divider,
   },
   headerText: { flex: 1 },
-  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.heading },
   headerSubtitle: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
   body: { paddingVertical: spacing.md, gap: spacing.xs, minHeight: 160 },
   text: { fontSize: fontSize.md, color: colors.textPrimary, lineHeight: 20 },

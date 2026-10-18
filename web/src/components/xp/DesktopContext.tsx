@@ -7,7 +7,13 @@ import type { Point } from './useWindowDrag';
 
 const STORAGE_KEY = 'xp_desktop_icons';
 export const ICON_CELL = { width: 84, height: 80 };
+export const COMPACT_WIDTH = 720;
+export const HOME_CELL = { width: 92, height: 96 };
 const MARGIN = 8;
+const HOME_TOP = 20;
+const HOME_COLUMNS = 4;
+const HOME_COLUMNS_NARROW = 3;
+const NARROW_WIDTH = 360;
 
 export type IconSlot = number | 'bottom-right';
 
@@ -15,6 +21,8 @@ export type DesktopMenuBuilder = (point: Point) => MenuEntry[];
 
 type DesktopApi = {
   ready: boolean;
+  compact: boolean;
+  cellWidth: number;
   iconPosition: (id: string, slot: IconSlot) => Point;
   moveIcon: (id: string, point: Point) => void;
   clampIcon: (point: Point) => Point;
@@ -33,6 +41,11 @@ const DesktopContext = createContext<DesktopApi | null>(null);
 export function DesktopProvider({ children }: { children: React.ReactNode }) {
   const { width, height } = useWindowDimensions();
   const desktopHeight = height - TASKBAR_HEIGHT;
+  const compact = width < COMPACT_WIDTH;
+  const columns = width < NARROW_WIDTH ? HOME_COLUMNS_NARROW : HOME_COLUMNS;
+  const homeCell = Math.min(HOME_CELL.width, Math.floor((width - MARGIN * 2) / columns));
+  const homeLeft = (width - homeCell * columns) / 2;
+  const cellWidth = compact ? homeCell : ICON_CELL.width;
 
   const [positions, setPositions] = useState<Record<string, Point>>({});
   const [loaded, setLoaded] = useState(false);
@@ -64,6 +77,18 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
 
   const iconPosition = useCallback(
     (id: string, slot: IconSlot): Point => {
+      if (compact) {
+        if (slot === 'bottom-right') {
+          return {
+            x: homeLeft + homeCell * (columns - 1),
+            y: desktopHeight - HOME_CELL.height - MARGIN,
+          };
+        }
+        return {
+          x: homeLeft + (slot % columns) * homeCell,
+          y: HOME_TOP + Math.floor(slot / columns) * HOME_CELL.height,
+        };
+      }
       const saved = positions[id];
       if (saved) return clampIcon(saved);
       if (slot === 'bottom-right') {
@@ -78,7 +103,7 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
         y: MARGIN + (slot % rows) * ICON_CELL.height,
       };
     },
-    [positions, clampIcon, width, desktopHeight]
+    [compact, columns, homeCell, homeLeft, positions, clampIcon, width, desktopHeight]
   );
 
   const moveIcon = useCallback((id: string, point: Point) => {
@@ -93,6 +118,8 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
   const api = useMemo<DesktopApi>(
     () => ({
       ready: loaded,
+      compact,
+      cellWidth,
       iconPosition,
       moveIcon,
       clampIcon,
@@ -108,7 +135,7 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
       backgroundMenu,
       setBackgroundMenu,
     }),
-    [loaded, iconPosition, moveIcon, clampIcon, selectedIcon, renamingIcon, backgroundMenu, setBackgroundMenu]
+    [loaded, compact, cellWidth, iconPosition, moveIcon, clampIcon, selectedIcon, renamingIcon, backgroundMenu, setBackgroundMenu]
   );
 
   return <DesktopContext.Provider value={api}>{children}</DesktopContext.Provider>;

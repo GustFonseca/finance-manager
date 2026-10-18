@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { fontSize } from '@/theme';
+import { colors, fontSize } from '@/theme';
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -23,5 +23,5 @@ export function Clock() {
 }
 
 const styles = StyleSheet.create({
-  text: { color: '#FFFFFF', fontSize: fontSize.xs },
+  text: { color: colors.textPrimary, fontSize: fontSize.xs },
 });

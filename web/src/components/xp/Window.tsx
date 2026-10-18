@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
-import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 import { isolateContextMenu } from './ContextMenu';
+import { COMPACT_WIDTH } from './DesktopContext';
 import { hasSeenHelp, markHelpSeen, useHelp } from './help';
 import { MenuBar, MenuDef, MenuEntry } from './MenuBar';
 import { TASKBAR_HEIGHT } from './StartMenu';
@@ -11,7 +12,6 @@ import { Toolbar, ToolbarButton } from './Toolbar';
 import { Point, useWindowDrag } from './useWindowDrag';
 import { useWindowId, useWindowManager } from './WindowManager';
 
-const COMPACT_WIDTH = 720;
 const RESTORED_MAX_WIDTH = 860;
 const RESTORED_MAX_HEIGHT = 560;
 const CASCADE_STEP = 28;
@@ -115,9 +115,9 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   const toolbar: ToolbarButton[] = [
     ...actions.map((action) => ({ label: action.label, icon: action.icon, onPress: action.onPress })),
     ...(onRefresh
-      ? [{ label: 'Atualizar', icon: 'refresh' as const, color: '#2E7D32', onPress: onRefresh }]
+      ? [{ label: 'Atualizar', icon: 'refresh' as const, color: palette.green, onPress: onRefresh }]
       : []),
-    ...(help ? [{ label: 'Como funciona', icon: 'question-circle' as const, color: '#1565C0', onPress: openHelp }] : []),
+    ...(help ? [{ label: 'Como funciona', icon: 'question-circle' as const, color: palette.teal, onPress: openHelp }] : []),
   ];
 
   return (
@@ -164,17 +164,14 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
 const styles = StyleSheet.create({
   frame: {
     position: 'absolute',
-    backgroundColor: colors.windowFrame,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    backgroundColor: palette.sand,
+    padding: 2,
     ...webStyle({ boxShadow: bevels.window }),
   },
-  inactiveFrame: { backgroundColor: '#7B9CF0' },
+  inactiveFrame: { backgroundColor: palette.stone },
   maximized: { top: 0, left: 0, right: 0, bottom: 0 },
   inner: {
     flex: 1,
-    marginHorizontal: 3,
-    marginBottom: 3,
     backgroundColor: colors.background,
   },
   content: {
@@ -188,6 +185,9 @@ const styles = StyleSheet.create({
   statusBar: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
+    marginHorizontal: 2,
+    marginBottom: 2,
+    backgroundColor: palette.sand,
     ...webStyle({ boxShadow: bevels.sunken }),
   },
   statusText: { fontSize: fontSize.xs, color: colors.textPrimary },

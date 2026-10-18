@@ -1,4 +1,4 @@
-import { bevels, chart, colors, fonts, fontSize, gradients, radius, spacing, webStyle } from '..';
+import { bevels, chart, colors, fonts, fontSize, gradients, palette, radius, spacing, webStyle } from '..';
 
 describe('theme', () => {
   it('passes web-only styles through untouched', () => {
@@ -7,10 +7,12 @@ describe('theme', () => {
     expect(webStyle(style)).toBe(style);
   });
 
-  it('uses the XP palette and Tahoma', () => {
-    expect(colors.background).toBe('#ECE9D8');
-    expect(colors.desktop).toBe('#3A6EA5');
+  it('uses the retro teal and sand palette with Tahoma and a pixel display font', () => {
+    expect(colors.background).toBe(palette.sandLight);
+    expect(colors.desktop).toBe(palette.tealScreen);
+    expect(colors.primary).toBe(palette.teal);
     expect(fonts.body).toContain('Tahoma');
+    expect(fonts.pixel).toContain('Pixelify Sans');
   });
 
   it('keeps the spacing and type scales ordered', () => {
@@ -25,7 +27,8 @@ describe('theme', () => {
     expect(new Set([chart.essential, chart.variable, chart.superfluous]).size).toBe(3);
   });
 
-  it('layers the wallpaper from several gradients', () => {
-    expect(gradients.wallpaper.split('gradient(').length - 1).toBe(7);
+  it('layers the wallpaper from scanlines over a teal glow', () => {
+    expect(gradients.wallpaper.split('gradient(').length - 1).toBe(2);
+    expect(gradients.wallpaper).toContain(palette.tealScreen);
   });
 });

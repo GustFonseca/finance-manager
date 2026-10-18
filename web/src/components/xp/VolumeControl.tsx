@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 import { useSound } from './sound/SoundProvider';
 import { TASKBAR_HEIGHT } from './StartMenu';
 
@@ -18,7 +18,7 @@ export function VolumeControl() {
         accessibilityRole="button"
         accessibilityLabel={`Volume: ${muted ? 'sem áudio' : `${volume}%`}`}
         style={styles.icon}>
-        <FontAwesome name={icon} size={14} color="#FFFFFF" />
+        <FontAwesome name={icon} size={14} color={colors.textPrimary} />
       </Pressable>
 
       {open ? (
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#716F64',
+    borderColor: palette.tealDark,
     ...webStyle({ boxShadow: bevels.menu }),
   },
   title: { fontSize: fontSize.sm, color: colors.textPrimary },

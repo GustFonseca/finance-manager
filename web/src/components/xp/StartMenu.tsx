@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { useDialog } from '@/components/ui/DialogProvider';
 import { useAuth } from '@/features/auth/AuthContext';
 import { queryClient } from '@/lib/queryClient';
-import { bevels, colors, fonts, fontSize, gradients, PressState, spacing, webStyle } from '@/theme';
+import { bevels, colors, fonts, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 import type { IconName } from './TitleBar';
 import { useVisiblePrograms } from './useVisiblePrograms';
 import { useWindowManager } from './WindowManager';
@@ -49,7 +49,7 @@ export function StartMenu({ visible, onClose }: Props) {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() ?? '?'}</Text>
           </View>
-          <Text style={[styles.userName, { fontFamily: fonts.title }]} numberOfLines={1}>
+          <Text style={[styles.userName, { fontFamily: fonts.pixel }]} numberOfLines={1}>
             {user?.name ?? 'Usuário'}
           </Text>
         </View>
@@ -71,14 +71,14 @@ export function StartMenu({ visible, onClose }: Props) {
             <StartItem
               compact
               icon="refresh"
-              color="#2E7D32"
+              color={palette.green}
               title="Atualizar dados"
               onPress={run(() => queryClient.invalidateQueries())}
             />
             <StartItem
               compact
               icon="question-circle"
-              color="#1565C0"
+              color={palette.teal}
               title="Ajuda e suporte"
               onPress={run(() =>
                 alert({
@@ -93,8 +93,8 @@ export function StartMenu({ visible, onClose }: Props) {
         </View>
 
         <View style={styles.footer}>
-          <FooterButton icon="key" color="#E8A317" label="Fazer logoff" onPress={run(signOut)} />
-          <FooterButton icon="power-off" color="#D9381E" label="Desligar" onPress={run(shutDown)} />
+          <FooterButton icon="key" color={palette.amber} label="Fazer logoff" onPress={run(signOut)} />
+          <FooterButton icon="power-off" color={palette.coral} label="Desligar" onPress={run(shutDown)} />
         </View>
       </View>
     </>
@@ -149,7 +149,7 @@ function FooterButton({ icon, color, label, onPress }: FooterButtonProps) {
       onPress={onPress}
       style={(state) => [styles.footerButton, (state as PressState).hovered && styles.footerHover]}>
       <View style={[styles.footerIcon, { backgroundColor: color }]}>
-        <FontAwesome name={icon} size={13} color="#FFFFFF" />
+        <FontAwesome name={icon} size={13} color={colors.textOnAccent} />
       </View>
       <Text style={styles.footerLabel}>{label}</Text>
     </Pressable>
@@ -163,9 +163,8 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: TASKBAR_HEIGHT,
     zIndex: 1000,
-    backgroundColor: '#4282D6',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    backgroundColor: palette.sand,
+    padding: 2,
     overflow: 'hidden',
     ...webStyle({ boxShadow: bevels.window }),
   },
@@ -177,36 +176,32 @@ const styles = StyleSheet.create({
     ...webStyle({ backgroundImage: gradients.startMenuHeader }),
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 4,
+    width: 40,
+    height: 40,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
-    backgroundColor: '#E8A317',
+    borderColor: palette.sandLight,
+    backgroundColor: palette.amber,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: '#FFFFFF', fontWeight: '700', fontSize: 20 },
+  avatarText: { color: palette.tealDark, fontWeight: '700', fontSize: 20 },
   userName: {
     flex: 1,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: fontSize.lg,
-    textShadowColor: '#0F1089',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    color: colors.textOnAccent,
+    fontWeight: '600',
+    fontSize: fontSize.xl,
   },
   body: {
     flexDirection: 'row',
     borderTopWidth: 2,
-    borderTopColor: '#E1802E',
+    borderTopColor: palette.amber,
   },
   left: { flex: 1.2, backgroundColor: colors.surface, paddingVertical: spacing.xs },
   right: {
     flex: 1,
-    backgroundColor: '#D3E5FA',
+    backgroundColor: palette.sandLight,
     borderLeftWidth: 1,
-    borderLeftColor: '#95BDEE',
+    borderLeftColor: palette.stone,
     paddingVertical: spacing.xs,
   },
   item: {
@@ -216,11 +211,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     ...webStyle({ cursor: 'pointer' }),
   },
-  itemHover: { backgroundColor: colors.selection },
+  itemHover: { backgroundColor: colors.primary },
   itemIcon: { width: 28, textAlign: 'center', marginRight: spacing.sm },
   itemText: { flex: 1 },
   itemTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textPrimary },
-  itemTitleCompact: { fontSize: fontSize.sm, fontWeight: '700', color: '#00136B' },
+  itemTitleCompact: { fontSize: fontSize.sm, fontWeight: '700', color: colors.heading },
   itemDescription: { fontSize: fontSize.xs, color: colors.textMuted },
   textHover: { color: colors.textOnAccent },
   footer: {
@@ -228,6 +223,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.sm,
     padding: spacing.xs + 2,
+    borderTopWidth: 1,
+    borderTopColor: palette.stoneDark,
     ...webStyle({ backgroundImage: gradients.startMenuFooter }),
   },
   footerButton: {
@@ -236,18 +233,16 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
     paddingVertical: 3,
     paddingHorizontal: spacing.sm,
-    borderRadius: 3,
     ...webStyle({ cursor: 'pointer' }),
   },
-  footerHover: { backgroundColor: 'rgba(255,255,255,0.15)' },
+  footerHover: webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button }),
   footerIcon: {
     width: 22,
     height: 22,
-    borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: palette.tealDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footerLabel: { color: '#FFFFFF', fontSize: fontSize.sm },
+  footerLabel: { color: colors.textPrimary, fontSize: fontSize.sm },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, radius, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 
 export const OFFLINE_MESSAGE = 'Sem conexão — mostrando os últimos dados salvos';
 
@@ -27,7 +27,7 @@ export function OfflineNotice() {
 
   return (
     <View style={styles.notice} accessibilityRole="alert">
-      <FontAwesome name="plug" size={14} color={colors.textPrimary} />
+      <FontAwesome name="plug" size={14} color={palette.amber} />
       <Text style={styles.text}>{OFFLINE_MESSAGE}</Text>
     </View>
   );
@@ -44,11 +44,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.md,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
     borderWidth: 1,
-    borderColor: colors.textPrimary,
-    borderRadius: radius.md,
-    ...webStyle({ boxShadow: '2px 2px 3px rgba(0,0,0,0.25)' }),
+    borderColor: palette.tealDark,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.amber,
+    ...webStyle({ boxShadow: bevels.menu }),
   },
   text: { fontSize: fontSize.sm, color: colors.textPrimary },
 });

@@ -8,6 +8,7 @@ import { FileListItem } from './components/FileListItem';
 import { fileIcon, formatBytes, formatDate } from './format';
 import { useListSelection } from './hooks';
 import { useDeleteForever, useEmptyTrash, useRestoreFromTrash, useTrash } from './queries';
+import { palette } from '@/theme';
 
 type TrashItem = {
   kind: 'folder' | 'file';
@@ -35,7 +36,7 @@ export function TrashWindow() {
       id: folder.id,
       name: folder.name,
       icon: 'folder' as const,
-      iconColor: '#E8B24A',
+      iconColor: palette.amber,
       origin: 'Área de trabalho',
       size: `${folder.fileCount} arquivo(s)`,
       deletedAt: folder.deletedAt,

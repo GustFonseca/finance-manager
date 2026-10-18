@@ -3,15 +3,15 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { EmptyState, ListItem, Select, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { useActivity } from './queries';
 import { ActivityLogDto, ActivityType } from './types';
 
 const ALL_SOURCES = '';
 
 const TYPES: Record<ActivityType, { label: string; icon: 'info-circle' | 'exclamation-triangle'; color: string }> = {
-  INFO: { label: 'Informações', icon: 'info-circle', color: '#1565C0' },
-  WARNING: { label: 'Aviso', icon: 'exclamation-triangle', color: '#E8A317' },
+  INFO: { label: 'Informações', icon: 'info-circle', color: palette.navy },
+  WARNING: { label: 'Aviso', icon: 'exclamation-triangle', color: palette.amber },
 };
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');

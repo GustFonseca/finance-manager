@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, ErrorState, MoneyText, StatTile, useDialog, YearSelect } from '@/components/ui';
 import { Window } from '@/components/xp';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { PartyRow } from './components/PartyRow';
 import { useTaxReport } from './queries';
 import { buildTaxSummary } from './summary';
@@ -103,7 +103,9 @@ const styles = StyleSheet.create({
   note: {
     fontSize: fontSize.sm,
     color: colors.textPrimary,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.teal,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,

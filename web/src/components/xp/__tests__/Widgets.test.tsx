@@ -7,7 +7,7 @@ import { MenuBar } from '../MenuBar';
 import { findProgram, PROGRAMS, visiblePrograms } from '../programs';
 import { TitleBar } from '../TitleBar';
 import { Toolbar } from '../Toolbar';
-import { WindowsLogo } from '../WindowsLogo';
+import { RetroMark } from '../RetroMark';
 import * as xp from '../index';
 import { hover, unhover } from './helpers';
 
@@ -54,17 +54,17 @@ describe('programs', () => {
   });
 });
 
-describe('WindowsLogo', () => {
-  it('draws four panes sized to the logo', () => {
-    const { container } = render(<WindowsLogo size={30} />);
-    const flag = container.firstElementChild as HTMLElement;
-    expect(flag.style.width).toBe('30px');
-    expect(flag.children).toHaveLength(4);
-    expect((flag.children[0] as HTMLElement).style.width).toBe('14px');
+describe('RetroMark', () => {
+  it('draws a computer on a tile sized to the mark', () => {
+    const { container } = render(<RetroMark size={30} />);
+    const tile = container.firstElementChild as HTMLElement;
+    expect(tile.style.width).toBe('30px');
+    expect(tile.style.height).toBe('30px');
+    expect(screen.getByTestId('icon-desktop')).toBeTruthy();
   });
 
   it('defaults to 18 pixels', () => {
-    const { container } = render(<WindowsLogo />);
+    const { container } = render(<RetroMark />);
     expect((container.firstElementChild as HTMLElement).style.width).toBe('18px');
   });
 });

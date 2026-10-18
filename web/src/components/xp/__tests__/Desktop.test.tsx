@@ -418,4 +418,42 @@ describe('Desktop', () => {
     expect(() => renderHook(() => useDesktop())).toThrow('useDesktop must be used within a DesktopProvider');
     expect(() => renderHook(() => useContextMenu())).toThrow('useContextMenu must be used within a ContextMenuProvider');
   });
+
+  describe('on a phone', () => {
+    it('lays the icons out as a centered home screen grid of four columns', async () => {
+      setViewport(390, 844);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ 'program:/': { x: 300, y: 300 } }));
+      await renderDesktop(<FileIcon />);
+
+      expect(desktop.compact).toBe(true);
+      expect(iconStyle('Painel')).toEqual({ left: '11px', top: '20px' });
+      expect(iconStyle('Transações')).toEqual({ left: '103px', top: '20px' });
+      expect(iconStyle('Metas')).toEqual({ left: '287px', top: '20px' });
+      expect(iconStyle('Categorias')).toEqual({ left: '11px', top: '116px' });
+      expect(iconStyle('Extrato')).toEqual({ left: '287px', top: '710px' });
+      expect(screen.getByRole('button', { name: 'Abrir Painel' }).style.width).toBe('84px');
+    });
+
+    it('uses three columns on narrow phones', async () => {
+      setViewport(340, 700);
+      await renderDesktop();
+
+      expect(iconStyle('Contas')).toEqual({ left: '216px', top: '20px' });
+      expect(iconStyle('Metas')).toEqual({ left: '32px', top: '116px' });
+    });
+
+    it('opens a program with a single tap and does not drag icons', async () => {
+      setViewport(390, 844);
+      await renderDesktop();
+      const icon = screen.getByRole('button', { name: 'Abrir Transações' });
+
+      pointerDown(icon, { clientX: 120, clientY: 40 });
+      pointerMove({ clientX: 200, clientY: 200 });
+      expect(iconStyle('Transações')).toEqual({ left: '103px', top: '20px' });
+      pointerUp();
+
+      expect(screen.getByText('lista de transações')).toBeTruthy();
+      expect(storedPositions()).toEqual({});
+    });
+  });
 });

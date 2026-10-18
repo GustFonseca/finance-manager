@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewProps } from 'react-native';
-import { colors, fontSize, radius, spacing } from '@/theme';
+import { colors, fonts, fontSize, palette, spacing } from '@/theme';
 
 type Props = ViewProps & {
   title?: string;
@@ -9,7 +9,11 @@ type Props = ViewProps & {
 export function Card({ title, style, children, ...rest }: Props) {
   return (
     <View style={[styles.card, title ? styles.group : null, style]} {...rest}>
-      {title ? <Text style={styles.caption}>{title}</Text> : null}
+      {title ? (
+        <View style={styles.header}>
+          <Text style={[styles.caption, { fontFamily: fonts.pixel }]}>{title}</Text>
+        </View>
+      ) : null}
       {children}
     </View>
   );
@@ -19,22 +23,23 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#D0D0BF',
-    borderRadius: radius.sm,
+    borderColor: palette.stoneDark,
     padding: spacing.md,
   },
-  group: {
-    backgroundColor: 'transparent',
-    marginTop: spacing.sm,
-    paddingTop: spacing.lg,
+  group: { paddingTop: 0 },
+  header: {
+    marginHorizontal: -spacing.md,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    backgroundColor: palette.teal,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.tealDark,
   },
   caption: {
-    position: 'absolute',
-    top: -8,
-    left: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    backgroundColor: colors.surface,
-    color: '#0046D5',
-    fontSize: fontSize.sm,
+    color: palette.sandLight,
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

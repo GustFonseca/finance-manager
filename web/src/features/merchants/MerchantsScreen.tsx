@@ -8,7 +8,7 @@ import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil, yearRange } from
 import { normalizeText } from '@/lib/text';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { MerchantDetail } from './components/MerchantDetail';
 import { MerchantForm } from './components/MerchantForm';
 import { MerchantTable } from './components/MerchantTable';
@@ -169,7 +169,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.sm,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.teal,
     borderWidth: 1,
     borderColor: colors.border,
   },

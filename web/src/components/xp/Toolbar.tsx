@@ -1,7 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, PressState, radius, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 import type { IconName } from './TitleBar';
 
 export type ToolbarButton = {
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#D8D2BD',
+    borderBottomColor: palette.stone,
   },
   button: {
     flexDirection: 'row',
@@ -48,15 +48,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: 'transparent',
     ...webStyle({ cursor: 'pointer' }),
   },
-  hovered: {
-    borderColor: '#CECEC3',
-    backgroundColor: '#F7F6F1',
-  },
-  pressed: { backgroundColor: '#E3E1D6' },
+  hovered: webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button }),
+  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
   label: { fontSize: fontSize.sm, color: colors.textPrimary },
 });

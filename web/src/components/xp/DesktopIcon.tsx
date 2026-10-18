@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { PointerEvent as RNPointerEvent, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, fontSize, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, webStyle } from '@/theme';
 import { onContextMenu, useContextMenu } from './ContextMenu';
 import { ICON_CELL, IconSlot, useDesktop } from './DesktopContext';
 import type { MenuEntry } from './MenuBar';
@@ -22,6 +22,9 @@ type Props = {
   onRename?: (name: string) => void;
 };
 
+const LONG_LABEL = 13;
+const HOME_LABEL_WIDTH = 100;
+
 export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRename }: Props) {
   const desktop = useDesktop();
   const contextMenu = useContextMenu();
@@ -33,6 +36,7 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
   const position = dragPosition ?? desktop.iconPosition(id, slot);
   const selected = desktop.selectedIcon === id;
   const renaming = desktop.renamingIcon === id && !!onRename;
+  const { compact } = desktop;
 
   function onPointerDown(event: RNPointerEvent) {
     const dom = event.nativeEvent as unknown as PointerEvent;
@@ -49,7 +53,7 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
     const move = (e: PointerEvent) => {
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
-      if (!current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      if (compact || (!current && Math.hypot(dx, dy) < DRAG_THRESHOLD)) return;
       current = desktop.clampIcon({ x: origin.x + dx, y: origin.y + dy });
       setDragPosition(current);
     };
@@ -64,7 +68,7 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
         return;
       }
       const now = Date.now();
-      if (now - lastClick.current < DOUBLE_CLICK_MS) {
+      if (compact || now - lastClick.current < DOUBLE_CLICK_MS) {
         lastClick.current = 0;
         onOpen();
       } else {
@@ -90,11 +94,11 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
       accessibilityLabel={`Abrir ${label}`}
       style={[
         styles.icon,
-        { left: position.x, top: position.y },
+        { left: position.x, top: position.y, width: desktop.cellWidth - 8 },
         dragPosition && styles.dragging,
       ]}>
-      <View style={[styles.tile, selected && styles.tileSelected]}>
-        <FontAwesome name={icon} size={26} color={color} />
+      <View style={[styles.tile, compact && styles.homeTile, selected && styles.tileSelected]}>
+        <FontAwesome name={icon} size={compact ? 30 : 24} color={color} />
       </View>
       {renaming ? (
         <RenameInput
@@ -106,7 +110,14 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
           onCancel={desktop.stopRename}
         />
       ) : (
-        <Text style={[styles.label, selected && styles.labelSelected]} numberOfLines={2}>
+        <Text
+          style={[
+            styles.label,
+            compact && styles.homeLabel,
+            compact && label.length > LONG_LABEL && styles.homeLabelLong,
+            selected && styles.labelSelected,
+          ]}
+          numberOfLines={compact ? undefined : 2}>
           {label}
         </Text>
       )}
@@ -148,7 +159,6 @@ function RenameInput({ initial, onCommit, onCancel }: RenameInputProps) {
 const styles = StyleSheet.create({
   icon: {
     position: 'absolute',
-    width: ICON_CELL.width - 8,
     alignItems: 'center',
     gap: 3,
     ...webStyle({ cursor: 'default', userSelect: 'none', touchAction: 'none' }),
@@ -157,23 +167,29 @@ const styles = StyleSheet.create({
   tile: {
     width: 40,
     height: 40,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 4,
+    backgroundColor: palette.sandLight,
     alignItems: 'center',
     justifyContent: 'center',
-    ...webStyle({ boxShadow: '1px 1px 3px rgba(0,0,0,0.4)' }),
+    ...webStyle({ boxShadow: `${bevels.button}, ${bevels.menu}` }),
   },
-  tileSelected: { backgroundColor: '#C1D2EE' },
+  homeTile: { width: 56, height: 56, borderRadius: 12 },
+  tileSelected: { backgroundColor: palette.greenLight },
   label: {
-    color: '#FFFFFF',
+    color: palette.paper,
     fontSize: fontSize.xs,
     textAlign: 'center',
     paddingHorizontal: 2,
-    textShadowColor: '#000000',
+    textShadowColor: palette.tealDark,
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    textShadowRadius: 0,
+    width: '130%',
+    alignSelf: 'center',
+    ...webStyle({ overflowWrap: 'normal', wordBreak: 'normal', hyphens: 'none' }),
   },
-  labelSelected: { backgroundColor: '#0B61FF', textShadowColor: 'transparent' },
+  homeLabel: { fontSize: fontSize.sm, marginTop: 2, width: HOME_LABEL_WIDTH },
+  homeLabelLong: { fontSize: fontSize.xs, letterSpacing: -0.2 },
+  labelSelected: { backgroundColor: palette.teal, textShadowColor: 'transparent' },
   renameInput: {
     width: ICON_CELL.width - 8,
     fontSize: fontSize.xs,

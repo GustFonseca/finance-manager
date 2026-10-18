@@ -12,7 +12,7 @@ import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
 import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/periods';
 import { workHoursOf } from '@/lib/workHours';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { AvoidableRow, RowAction } from './components/AvoidableRow';
 import { useAvoidableSpending, useDismissInsight, useSetSubscriptionChoice } from './queries';
 import { SubscriptionAuditDto, SubscriptionChoice } from './types';
@@ -338,7 +338,9 @@ const styles = StyleSheet.create({
   alert: {
     fontSize: fontSize.sm,
     color: colors.textPrimary,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.amber,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,

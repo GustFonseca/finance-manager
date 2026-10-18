@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, gradients, webStyle } from '@/theme';
+import { bevels, colors, gradients, palette, webStyle } from '@/theme';
 
 type Props = {
   percent: number;
@@ -20,10 +20,10 @@ const styles = StyleSheet.create({
   track: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#686868',
-    borderRadius: 3,
+    borderColor: palette.stoneDark,
     padding: 1,
     overflow: 'hidden',
+    ...webStyle({ boxShadow: bevels.sunken }),
   },
   fill: { height: '100%', ...webStyle({ backgroundImage: gradients.progress }) },
 });

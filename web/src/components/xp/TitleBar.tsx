@@ -1,7 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View, ViewProps } from 'react-native';
-import { fonts, gradients, PressState, radius, webStyle } from '@/theme';
+import { bevels, colors, fonts, gradients, palette, PressState, webStyle } from '@/theme';
 
 export type IconName = React.ComponentProps<typeof FontAwesome>['name'];
 
@@ -38,8 +38,8 @@ export function TitleBar({
         draggable && styles.draggable,
         webStyle({ backgroundImage: active ? gradients.titleBar : gradients.titleBarInactive }),
       ]}>
-      {icon ? <FontAwesome name={icon} size={14} color="#FFFFFF" style={styles.icon} /> : null}
-      <Text style={[styles.title, { fontFamily: fonts.title }]} numberOfLines={1}>
+      {icon ? <FontAwesome name={icon} size={14} color={colors.textOnAccent} style={styles.icon} /> : null}
+      <Text style={[styles.title, { fontFamily: fonts.body }]} numberOfLines={1}>
         {title}
       </Text>
       <View style={styles.buttons}>
@@ -72,12 +72,7 @@ function CaptionButton({ kind, onPress }: { kind: CaptionKind; onPress: () => vo
       accessibilityLabel={CAPTION_LABELS[kind]}
       style={(state) => {
         const { hovered, pressed } = state as PressState;
-        return [
-          styles.button,
-          kind === 'close' ? styles.close : styles.blue,
-          hovered && styles.buttonHover,
-          pressed && styles.buttonPressed,
-        ];
+        return [styles.button, hovered && styles.buttonHover, pressed && styles.buttonPressed];
       }}>
       <CaptionGlyph kind={kind} />
     </Pressable>
@@ -98,11 +93,13 @@ function CaptionGlyph({ kind }: { kind: CaptionKind }) {
         </View>
       );
     case 'close':
-      return <Text style={styles.closeGlyph}>✕</Text>;
+      return <Text style={styles.glyphText}>✕</Text>;
     case 'help':
-      return <Text style={styles.closeGlyph}>?</Text>;
+      return <Text style={styles.glyphText}>?</Text>;
   }
 }
+
+const GLYPH = colors.textPrimary;
 
 const styles = StyleSheet.create({
   bar: {
@@ -111,55 +108,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 6,
     paddingRight: 4,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
     ...webStyle({ userSelect: 'none' }),
   },
   draggable: webStyle({ cursor: 'move', touchAction: 'none' }),
   icon: { marginRight: 6 },
   title: {
     flex: 1,
-    color: '#FFFFFF',
+    color: colors.textOnAccent,
     fontWeight: '700',
     fontSize: 13,
-    textShadowColor: '#0F1089',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 0,
+    letterSpacing: 0.3,
   },
-  buttons: { flexDirection: 'row', gap: 2 },
+  buttons: { flexDirection: 'row', gap: 3 },
   button: {
-    width: 21,
-    height: 21,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
+    width: 20,
+    height: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    ...webStyle({ cursor: 'pointer' }),
+    backgroundColor: palette.sandLight,
+    ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button, cursor: 'pointer' }),
   },
-  blue: webStyle({
-    backgroundImage:
-      'radial-gradient(circle at 90% 90%, #0054E9 0%, #2263D5 55%, #4479E4 70%, #A3BBEC 90%, #FFFFFF 100%)',
-  }),
-  close: webStyle({
-    backgroundImage:
-      'radial-gradient(circle at 90% 90%, #CC4600 0%, #DC6527 55%, #CD7546 70%, #FFCCB2 90%, #FFFFFF 100%)',
-  }),
-  buttonHover: webStyle({ filter: 'brightness(1.15)' }),
-  buttonPressed: webStyle({ filter: 'brightness(0.85)' }),
+  buttonHover: webStyle({ boxShadow: bevels.buttonHover }),
+  buttonPressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
   minimizeGlyph: {
-    width: 7,
-    height: 3,
-    backgroundColor: '#FFFFFF',
+    width: 8,
+    height: 2,
+    backgroundColor: GLYPH,
     marginTop: 8,
-    marginRight: 4,
   },
   maximizeGlyph: {
     width: 10,
-    height: 10,
+    height: 9,
     borderWidth: 1,
-    borderTopWidth: 3,
-    borderColor: '#FFFFFF',
+    borderTopWidth: 2,
+    borderColor: GLYPH,
   },
   restoreGlyph: { width: 11, height: 11 },
   restoreBox: {
@@ -168,9 +150,9 @@ const styles = StyleSheet.create({
     height: 7,
     borderWidth: 1,
     borderTopWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: GLYPH,
   },
   restoreBack: { top: 0, right: 0 },
-  restoreFront: { bottom: 0, left: 0, backgroundColor: '#2263D5' },
-  closeGlyph: { color: '#FFFFFF', fontWeight: '700', fontSize: 13, lineHeight: 15 },
+  restoreFront: { bottom: 0, left: 0, backgroundColor: palette.sandLight },
+  glyphText: { color: GLYPH, fontWeight: '700', fontSize: 11, lineHeight: 13 },
 });

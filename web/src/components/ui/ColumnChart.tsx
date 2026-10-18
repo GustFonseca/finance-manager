@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { chart, colors, fontSize, PressState, radius, spacing, webStyle } from '@/theme';
+import { bevels, chart, colors, fontSize, palette, PressState, spacing, webStyle } from '@/theme';
 import type { BarSegment } from './StackedBar';
 
 export type ChartColumn = {
@@ -107,11 +107,10 @@ const styles = StyleSheet.create({
     zIndex: 10,
     minWidth: 170,
     padding: spacing.sm,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
     borderWidth: 1,
-    borderColor: colors.textPrimary,
-    borderRadius: radius.sm,
-    ...webStyle({ boxShadow: '2px 2px 3px rgba(0,0,0,0.25)' }),
+    borderColor: palette.tealDark,
+    ...webStyle({ boxShadow: bevels.menu }),
   },
   tooltipRight: { left: '55%' },
   tooltipLeft: { right: '55%' },

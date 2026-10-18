@@ -3,15 +3,15 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card, MoneyText } from '@/components/ui';
 import { formatCents } from '@/lib/money';
-import { colors, fontSize, radius, spacing } from '@/theme';
+import { colors, fontSize, palette, radius, spacing } from '@/theme';
 import { CashFlowForecastDto, ForecastItemKind } from '../types';
 
 const MAX_UPCOMING = 6;
 
 const KINDS: Record<ForecastItemKind, { label: string; color: string }> = {
   INCOME: { label: 'Entrada', color: colors.income },
-  BILL: { label: 'Conta fixa', color: '#1565C0' },
-  INSTALLMENT: { label: 'Parcela', color: '#6A1B9A' },
+  BILL: { label: 'Conta fixa', color: palette.navy },
+  INSTALLMENT: { label: 'Parcela', color: palette.plum },
 };
 
 const shortDay = (iso: string) =>

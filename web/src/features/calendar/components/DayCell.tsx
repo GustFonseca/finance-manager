@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatCentsCompact } from '@/lib/money';
-import { colors, fontSize, PressState, spacing, webStyle } from '@/theme';
+import { colors, fontSize, palette, PressState, spacing, webStyle } from '@/theme';
 import { CalendarCell, kindsOf } from '../grid';
 import { CalendarDayDto, KIND_COLORS, KIND_LABELS } from '../types';
 
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   clickable: webStyle({ cursor: 'pointer' }),
   blank: { backgroundColor: colors.surfaceLight },
-  today: { backgroundColor: '#FFFFE1' },
+  today: { backgroundColor: palette.sand },
   hovered: { backgroundColor: colors.hover },
   number: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: 1 },
   todayNumber: { color: colors.heading, fontWeight: '700' },

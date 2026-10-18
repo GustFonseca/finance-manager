@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { bevels, colors, fontSize, PressState, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, PressState, spacing, webStyle } from '@/theme';
 
 export type MenuEntry =
   | {
@@ -115,14 +115,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#D8D2BD',
+    borderBottomColor: palette.stone,
     paddingHorizontal: 2,
     zIndex: 20,
   },
   dismiss: webStyle({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }),
   menu: { position: 'relative' },
   title: { paddingHorizontal: spacing.sm - 2, paddingVertical: 3, ...webStyle({ cursor: 'default' }) },
-  titleActive: { backgroundColor: colors.selection },
+  titleActive: { backgroundColor: colors.primary },
   titleText: { fontSize: fontSize.sm, color: colors.textPrimary },
   titleTextActive: { color: colors.textOnAccent },
   dropdown: { position: 'absolute', top: '100%', left: 0 },
@@ -130,15 +130,15 @@ const styles = StyleSheet.create({
     minWidth: 180,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#ACA899',
+    borderColor: palette.tealDark,
     paddingVertical: 2,
     ...webStyle({ boxShadow: bevels.menu }),
   },
-  separator: { height: 1, backgroundColor: '#ACA899', marginVertical: 3, marginHorizontal: 2 },
+  separator: { height: 1, backgroundColor: palette.stoneDark, marginVertical: 3, marginHorizontal: 2 },
   item: { paddingVertical: 3, paddingLeft: 20, paddingRight: spacing.lg, ...webStyle({ cursor: 'default' }) },
-  itemHover: { backgroundColor: colors.selection },
+  itemHover: { backgroundColor: colors.primary },
   itemText: { fontSize: fontSize.sm, color: colors.textPrimary },
   itemTextHover: { color: colors.textOnAccent },
   itemTextBold: { fontWeight: '700' },
-  itemTextDisabled: { color: '#ACA899' },
+  itemTextDisabled: { color: colors.textMuted },
 });

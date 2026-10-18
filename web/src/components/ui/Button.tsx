@@ -7,7 +7,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { bevels, colors, fontSize, gradients, PressState, radius, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'success' | 'danger';
 type Size = 'md' | 'sm';
@@ -74,18 +74,19 @@ const styles = StyleSheet.create({
     minHeight: 23,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: '#003C74',
     alignItems: 'center',
     justifyContent: 'center',
-    ...webStyle({ backgroundImage: gradients.button, cursor: 'pointer' }),
+    backgroundColor: palette.sandLight,
+    ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button, cursor: 'pointer' }),
   },
   sm: { minWidth: 0, paddingHorizontal: spacing.sm, minHeight: 21 },
   default: webStyle({ boxShadow: bevels.buttonDefault }),
   hovered: webStyle({ boxShadow: bevels.buttonHover }),
-  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: 'none' }),
-  disabled: webStyle({ borderColor: '#C9C7BA', backgroundImage: 'none', cursor: 'default' }),
+  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
+  disabled: {
+    backgroundColor: palette.stone,
+    ...webStyle({ backgroundImage: 'none', boxShadow: `inset 0 0 0 1px ${palette.stoneDark}`, cursor: 'default' }),
+  },
   label: { fontSize: fontSize.sm },
-  labelDisabled: { color: '#A19E8F' },
+  labelDisabled: { color: colors.textMuted },
 });

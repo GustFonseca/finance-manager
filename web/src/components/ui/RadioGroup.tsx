@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 
 export type RadioOption<T extends string> = {
   value: T;
@@ -47,16 +47,17 @@ const styles = StyleSheet.create({
     height: 13,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: '#1C5180',
+    borderColor: palette.tealDark,
     alignItems: 'center',
     justifyContent: 'center',
-    ...webStyle({ backgroundImage: 'linear-gradient(135deg, #DCDCD7 0%, #FFFFFF 100%)' }),
+    backgroundColor: palette.paper,
+    ...webStyle({ boxShadow: bevels.sunken }),
   },
   dot: {
     width: 5,
     height: 5,
     borderRadius: 3,
-    ...webStyle({ backgroundImage: 'linear-gradient(135deg, #55D551 0%, #009E00 100%)' }),
+    backgroundColor: palette.teal,
   },
   label: { fontSize: fontSize.sm, color: colors.textPrimary },
 });

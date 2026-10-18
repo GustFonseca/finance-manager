@@ -2,12 +2,12 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card, MoneyText } from '@/components/ui';
-import { colors, fontSize, radius, spacing } from '@/theme';
+import { colors, fontSize, palette, radius, spacing } from '@/theme';
 import { RecurringExpenseDto, RecurringKind } from '../types';
 
 const KINDS: Record<RecurringKind, { label: string; icon: 'play-circle' | 'repeat'; color: string }> = {
   SUBSCRIPTION: { label: 'Assinatura', icon: 'play-circle', color: '#C62828' },
-  FIXED: { label: 'Fixo', icon: 'repeat', color: '#1565C0' },
+  FIXED: { label: 'Fixo', icon: 'repeat', color: palette.navy },
 };
 
 type Props = {

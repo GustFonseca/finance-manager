@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { onContextMenu } from '@/components/xp/ContextMenu';
 import type { Point } from '@/components/xp/useWindowDrag';
-import { colors, PressState, spacing, webStyle } from '@/theme';
+import { colors, palette, PressState, spacing, webStyle } from '@/theme';
 
 type Props = {
   onPress: () => void;
@@ -40,9 +40,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFE7',
+    borderBottomColor: colors.divider,
     ...webStyle({ cursor: 'pointer' }),
   },
   hovered: { backgroundColor: colors.hover },
-  pressed: { backgroundColor: '#C1D2EE' },
+  pressed: { backgroundColor: palette.sand },
 });

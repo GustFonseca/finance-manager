@@ -1,8 +1,19 @@
 import React from 'react';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { WAKE_MESSAGE, WindowsLogo } from '@/components/xp';
+import { RetroMark, TitleBar, WAKE_MESSAGE } from '@/components/xp';
 import { useServerWaking } from '@/lib/serverWake';
-import { fonts, PressState, spacing, webStyle } from '@/theme';
+import {
+  bevels,
+  colors,
+  fonts,
+  fontSize,
+  gradients,
+  palette,
+  PressState,
+  spacing,
+  webStyle,
+} from '@/theme';
 import { useAuth } from './AuthContext';
 
 export function LoginScreen() {
@@ -11,34 +22,49 @@ export function LoginScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topBar} />
       <View style={styles.middle}>
-        <View style={styles.brand}>
-          <WindowsLogo size={56} />
-          <Text style={[styles.product, { fontFamily: fonts.title }]}>Finance Manager</Text>
-          <Text style={styles.hint}>Para começar, clique no seu nome de usuário</Text>
-        </View>
+        <View style={styles.window}>
+          <TitleBar title="Finance Manager" icon="key" />
+          <View style={styles.body}>
+            <View style={styles.brand}>
+              <RetroMark size={64} />
+              <Text style={[styles.product, { fontFamily: fonts.pixel }]}>Finance Manager</Text>
+              <Text style={styles.hint}>Para começar, clique no seu nome de usuário</Text>
+            </View>
 
-        <View style={styles.users}>
-          <Pressable
-            onPress={signInWithGoogle}
-            accessibilityRole="button"
-            accessibilityLabel="Entrar com Google"
-            style={(state) => [styles.tile, (state as PressState).hovered && styles.tileHover]}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>G</Text>
-            </View>
-            <View>
-              <Text style={[styles.userName, { fontFamily: fonts.title }]}>Entrar com Google</Text>
-              <Text style={styles.userHint}>Use sua conta Google</Text>
-            </View>
-          </Pressable>
-          {error ? (
-            <Text style={styles.error} accessibilityRole="alert">
-              {error}
-            </Text>
-          ) : null}
-          {waking ? <Text style={styles.waking}>{WAKE_MESSAGE}</Text> : null}
+            <Pressable
+              onPress={signInWithGoogle}
+              accessibilityRole="button"
+              accessibilityLabel="Entrar com Google"
+              style={(state) => {
+                const { hovered, pressed } = state as PressState;
+                return [styles.tile, hovered && styles.tileHover, pressed && styles.tilePressed];
+              }}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>G</Text>
+              </View>
+              <View style={styles.tileText}>
+                <Text style={styles.userName}>Entrar com Google</Text>
+                <Text style={styles.userHint}>Use sua conta Google</Text>
+              </View>
+              <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
+            </Pressable>
+
+            {error ? (
+              <View style={[styles.toast, styles.toastError]}>
+                <FontAwesome name="exclamation-triangle" size={16} color={palette.amber} />
+                <Text style={styles.toastText} accessibilityRole="alert">
+                  {error}
+                </Text>
+              </View>
+            ) : null}
+            {waking ? (
+              <View style={styles.toast}>
+                <FontAwesome name="info-circle" size={16} color={palette.teal} />
+                <Text style={styles.toastText}>{WAKE_MESSAGE}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
       <View style={styles.bottomBar}>
@@ -51,77 +77,80 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#5A7EDC' },
-  topBar: {
-    height: 64,
-    backgroundColor: '#00309C',
-    ...webStyle({ boxShadow: '0 2px 0 #E1802E, 0 3px 0 #FFFFFF' }),
+  screen: {
+    flex: 1,
+    backgroundColor: colors.desktop,
+    ...webStyle({ backgroundImage: gradients.wallpaper }),
   },
   middle: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
-    alignContent: 'center',
     justifyContent: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: spacing.xl,
-    ...webStyle({
-      backgroundImage: 'radial-gradient(circle at 20% 20%, #91B2F0 0%, #6C8FE3 30%, #5A7EDC 70%)',
-    }),
+    padding: spacing.lg,
   },
-  brand: { flexGrow: 1, flexBasis: 280, maxWidth: 360, alignItems: 'flex-end', gap: spacing.md },
+  window: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: palette.sand,
+    padding: 2,
+    ...webStyle({ boxShadow: bevels.window }),
+  },
+  body: {
+    backgroundColor: colors.background,
+    padding: spacing.xl,
+    gap: spacing.lg,
+  },
+  brand: { alignItems: 'center', gap: spacing.sm },
   product: {
-    color: '#FFFFFF',
+    color: colors.heading,
     fontSize: 30,
-    fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.35)',
-    textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 2,
+    fontWeight: '600',
+    marginTop: spacing.xs,
   },
-  hint: { color: '#FFFFFF', fontSize: 15, textAlign: 'right' },
-  error: { color: '#FFFFE1', fontSize: 14, fontWeight: '700', marginTop: spacing.md },
-  waking: { color: '#FFFFFF', fontSize: 14, marginTop: spacing.md },
-  users: {
-    flexGrow: 1,
-    flexBasis: 280,
-    maxWidth: 360,
-    paddingLeft: spacing.lg,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.6)',
-  },
+  hint: { color: colors.textSecondary, fontSize: fontSize.md, textAlign: 'center' },
   tile: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.sm,
-    borderRadius: 8,
-    ...webStyle({ cursor: 'pointer' }),
+    backgroundColor: palette.sandLight,
+    ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.buttonDefault, cursor: 'pointer' }),
   },
-  tileHover: {
-    ...webStyle({
-      backgroundImage: 'linear-gradient(to right, #00309C 0%, rgba(90,126,220,0) 100%)',
-    }),
-  },
+  tileHover: webStyle({ boxShadow: bevels.buttonHover }),
+  tilePressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    backgroundColor: '#FFFFFF',
+    width: 44,
+    height: 44,
+    backgroundColor: palette.paper,
     alignItems: 'center',
     justifyContent: 'center',
+    ...webStyle({ boxShadow: bevels.sunken }),
   },
-  avatarText: { fontSize: 30, fontWeight: '700', color: '#4285F4' },
-  userName: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-  userHint: { color: '#D6E2FF', fontSize: 12 },
+  avatarText: { fontSize: 24, fontWeight: '700', color: palette.teal },
+  tileText: { flex: 1 },
+  userName: { color: colors.textPrimary, fontSize: fontSize.xl, fontWeight: '700' },
+  userHint: { color: colors.textSecondary, fontSize: fontSize.sm },
+  toast: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: palette.paper,
+    borderWidth: 1,
+    borderColor: palette.tealDark,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.teal,
+    ...webStyle({ boxShadow: bevels.menu }),
+  },
+  toastError: { borderLeftColor: palette.amber },
+  toastText: { flex: 1, color: colors.textPrimary, fontSize: fontSize.sm },
   bottomBar: {
-    minHeight: 64,
-    backgroundColor: '#00309C',
+    minHeight: 40,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    ...webStyle({ boxShadow: '0 -2px 0 #5A7EDC, 0 -3px 0 #FFFFFF' }),
+    paddingVertical: spacing.sm,
+    backgroundColor: palette.stone,
+    ...webStyle({ backgroundImage: gradients.taskbar, boxShadow: bevels.taskbar }),
   },
-  footer: { color: '#FFFFFF', fontSize: 12 },
+  footer: { color: colors.textPrimary, fontSize: fontSize.sm, textAlign: 'center' },
 });

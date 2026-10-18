@@ -2,7 +2,7 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { useServerWaking } from '@/lib/serverWake';
-import { colors, fontSize, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 
 export const WAKE_TITLE = 'Conectando ao servidor';
 export const WAKE_MESSAGE = 'O servidor estava em repouso e está iniciando. Isso pode levar até um minuto.';
@@ -31,15 +31,16 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     padding: spacing.sm,
     gap: spacing.xs,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
     borderWidth: 1,
-    borderColor: colors.textPrimary,
-    borderRadius: 6,
+    borderColor: palette.tealDark,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.teal,
     zIndex: 1000,
-    ...webStyle({ boxShadow: '2px 2px 4px rgba(0,0,0,0.3)' }),
+    ...webStyle({ boxShadow: bevels.menu }),
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  title: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textPrimary },
+  title: { fontSize: fontSize.sm, fontWeight: '700', color: colors.heading },
   message: { fontSize: fontSize.sm, color: colors.textPrimary },
   tail: {
     position: 'absolute',
@@ -47,10 +48,10 @@ const styles = StyleSheet.create({
     bottom: -8,
     width: 14,
     height: 14,
-    backgroundColor: '#FFFFE1',
+    backgroundColor: palette.paper,
     borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderColor: colors.textPrimary,
+    borderColor: palette.tealDark,
     transform: [{ rotate: '45deg' }],
   },
 });

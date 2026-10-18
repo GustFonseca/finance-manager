@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TitleBar, IconName } from '@/components/xp/TitleBar';
-import { bevels, colors, spacing, webStyle } from '@/theme';
+import { bevels, colors, palette, spacing, webStyle } from '@/theme';
 
 type Props = {
   visible: boolean;
@@ -39,11 +39,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '90%',
     backgroundColor: colors.background,
-    borderWidth: 3,
-    borderTopWidth: 0,
-    borderColor: colors.windowFrame,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderWidth: 2,
+    borderColor: palette.sand,
     ...webStyle({ boxShadow: bevels.window, cursor: 'default' }),
   },
   scroll: { flexGrow: 0 },

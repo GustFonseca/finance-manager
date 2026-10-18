@@ -7,6 +7,7 @@ import { useAuth } from '../AuthContext';
 import { LoginScreen } from '../LoginScreen';
 import { authApi } from '../api';
 import { httpResponse } from '@/test/http';
+import { holdDown } from '@/components/ui/__tests__/pointer';
 
 jest.mock('../AuthContext', () => ({ useAuth: jest.fn() }));
 
@@ -16,7 +17,8 @@ describe('LoginScreen', () => {
     jest.mocked(useAuth).mockReturnValue({ signInWithGoogle } as never);
     render(<LoginScreen />);
 
-    expect(screen.getByText('Finance Manager')).toBeTruthy();
+    expect(screen.getAllByText('Finance Manager')).toHaveLength(2);
+    expect(screen.getByTestId('icon-desktop')).toBeTruthy();
     expect(screen.getByText('Para começar, clique no seu nome de usuário')).toBeTruthy();
     expect(screen.getByText('Use sua conta Google')).toBeTruthy();
     expect(screen.getByText(/Depois de fazer logon/)).toBeTruthy();
@@ -29,6 +31,17 @@ describe('LoginScreen', () => {
     expect(signInWithGoogle).toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText(WAKE_MESSAGE)).toBeNull();
+  });
+
+  it('sinks the sign-in tile while it is pressed', () => {
+    jest.mocked(useAuth).mockReturnValue({ signInWithGoogle: jest.fn() } as never);
+    render(<LoginScreen />);
+    const tile = screen.getByLabelText('Entrar com Google');
+    const idle = tile.className;
+
+    holdDown(tile);
+
+    expect(tile.className).not.toBe(idle);
   });
 
   it('shows the login error', () => {

@@ -3,7 +3,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { reportError } from '@/lib/logger';
-import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, gradients, palette, spacing, webStyle } from '@/theme';
 import { TitleBar } from './TitleBar';
 
 type Props = {
@@ -57,16 +57,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.lg,
     backgroundColor: colors.desktop,
+    ...webStyle({ backgroundImage: gradients.wallpaper }),
   },
   window: {
     width: '100%',
     maxWidth: 480,
     backgroundColor: colors.background,
-    borderWidth: 3,
-    borderTopWidth: 0,
-    borderColor: colors.windowFrame,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderWidth: 2,
+    borderColor: palette.sand,
     ...webStyle({ boxShadow: bevels.window }),
   },
   header: {

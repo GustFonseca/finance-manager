@@ -9,14 +9,15 @@ import {
   WindowIdProvider,
 } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
+import { palette } from '@/theme';
 import { FolderWindow } from './FolderWindow';
 import { folderWindowId, nextFolderName, TRASH_WINDOW_ID } from './format';
 import { useCreateFolder, useEmptyTrash, useFolders, useRenameFolder, useTrash, useTrashFolder } from './queries';
 import { TrashWindow } from './TrashWindow';
 import { FolderDto } from './types';
 
-const FOLDER_COLOR = '#E8B24A';
-const TRASH_COLOR = '#455A64';
+const FOLDER_COLOR = palette.amber;
+const TRASH_COLOR = palette.tealDeep;
 
 export function FileDesktop() {
   const wm = useWindowManager();

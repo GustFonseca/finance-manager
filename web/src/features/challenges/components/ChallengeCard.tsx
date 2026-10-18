@@ -2,11 +2,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Card, MoneyText, ProgressBar } from '@/components/ui';
 import { formatCents } from '@/lib/money';
-import { colors, fontSize, spacing } from '@/theme';
+import { colors, fontSize, palette, spacing } from '@/theme';
 import { ChallengeDto, ChallengeStatus } from '../types';
 
 const STATUS: Record<ChallengeStatus, { label: string; color: string }> = {
-  ACTIVE: { label: 'Em andamento', color: '#1565C0' },
+  ACTIVE: { label: 'Em andamento', color: palette.navy },
   WON: { label: 'Concluído', color: colors.income },
   LOST: { label: 'Limite estourado', color: colors.expense },
 };

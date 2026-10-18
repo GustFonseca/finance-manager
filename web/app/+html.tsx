@@ -11,6 +11,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="theme-color" content={colors.windowFrame} />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
 
         <ScrollViewStyleReset />
 

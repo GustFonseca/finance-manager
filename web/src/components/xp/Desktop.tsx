@@ -1,15 +1,13 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { queryClient } from '@/lib/queryClient';
-import { gradients, webStyle } from '@/theme';
+import { colors, gradients, webStyle } from '@/theme';
 import { onContextMenu, useContextMenu } from './ContextMenu';
 import { DesktopProvider, useDesktop } from './DesktopContext';
 import { DesktopIcon } from './DesktopIcon';
 import type { MenuEntry } from './MenuBar';
 import { useVisiblePrograms } from './useVisiblePrograms';
 import { useWindowManager, WindowIdProvider } from './WindowManager';
-
-const WALLPAPER = require('../../../assets/images/bliss.webp');
 
 export type ProgramScreens = Record<string, React.ComponentType>;
 
@@ -49,7 +47,6 @@ function DesktopSurface({ screens, extras, children }: Props) {
       style={styles.desktop}
       onPointerDown={() => desktop.selectIcon(null)}
       {...onContextMenu(showDesktopMenu)}>
-      <Image source={WALLPAPER} style={StyleSheet.absoluteFill} resizeMode="cover" />
       {programs.map((program, index) => (
         <DesktopIcon
           key={program.route}
@@ -82,6 +79,7 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-    ...webStyle({ backgroundImage: gradients.wallpaper, backgroundColor: '#5A9A2E' }),
+    backgroundColor: colors.desktop,
+    ...webStyle({ backgroundImage: gradients.wallpaper }),
   },
 });
