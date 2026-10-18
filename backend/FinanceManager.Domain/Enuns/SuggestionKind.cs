@@ -6,5 +6,9 @@ public enum SuggestionKind
     GOAL,
     BUDGET,
     SUBSCRIPTION,
-    CATEGORY
+    CATEGORY,
+    /// <summary>A habit at one merchant (delivery, a shop visited every week).</summary>
+    HABIT,
+    /// <summary>Too much spending without a real category for the analysis to be precise.</summary>
+    ORGANIZE
 }

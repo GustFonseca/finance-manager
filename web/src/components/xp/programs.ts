@@ -58,6 +58,13 @@ export const PROGRAMS: Program[] = [
     description: 'Onde você mais gasta e o que reduzir',
   },
   {
+    route: '/merchants',
+    title: 'Estabelecimentos',
+    icon: 'shopping-cart',
+    color: '#00838F',
+    description: 'Quanto você gasta em cada lugar',
+  },
+  {
     route: '/savings',
     title: 'Plano de economia',
     icon: 'money',

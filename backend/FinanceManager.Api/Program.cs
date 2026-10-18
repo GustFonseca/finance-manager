@@ -3,6 +3,8 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using FinanceManager.Aplication;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Merchants.Commands.CatalogTransactions;
 using FinanceManager.Infrastructure;
 using FinanceManager.Infrastructure.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -163,6 +165,10 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Files transactions created before merchants existed under their merchant.
+    var catalogued = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CatalogTransactionsCommand());
+    if (catalogued > 0) app.Logger.LogInformation("Catalogued {Count} transactions under their merchants", catalogued);
 }
 
 app.UseSwagger();

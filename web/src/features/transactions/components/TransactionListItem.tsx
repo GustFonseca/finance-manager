@@ -22,11 +22,19 @@ export function TransactionListItem({ transaction, onPress }: Props) {
         color={isExpense ? colors.expense : colors.income}
       />
       <View style={styles.info}>
-        <Text style={styles.desc}>{transaction.description || transaction.categoryName}</Text>
+        <Text style={styles.desc}>
+          {transaction.merchantName || transaction.description || transaction.categoryName}
+        </Text>
         <Text style={styles.meta}>
           {new Date(transaction.date).toLocaleDateString('pt-BR')} · {transaction.categoryName} ·{' '}
           {transaction.accountName}
         </Text>
+        {/* The bank's full wording stays visible under the merchant's name. */}
+        {transaction.merchantName ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {transaction.description}
+          </Text>
+        ) : null}
       </View>
       <MoneyText cents={signedCents} tone={isExpense ? 'expense' : 'income'} style={styles.amount} />
     </ListItem>

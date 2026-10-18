@@ -1,6 +1,7 @@
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Merchants;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -12,17 +13,23 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
     private readonly ITransactionRepository _transactionRepository;
     private readonly IAccountRepository _accountRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IMerchantRepository _merchantRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
 
     public CreateTransactionHandler(
         ITransactionRepository transactionRepository,
         IAccountRepository accountRepository,
         ICategoryRepository categoryRepository,
+        IMerchantRepository merchantRepository,
+        IUserRepository userRepository,
         IMapper mapper)
     {
         _transactionRepository = transactionRepository;
         _accountRepository = accountRepository;
         _categoryRepository = categoryRepository;
+        _merchantRepository = merchantRepository;
+        _userRepository = userRepository;
         _mapper = mapper;
     }
 
@@ -38,6 +45,15 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
         if (category.UserId != request.UserId)
             throw new InvalidOperationException("Category not found");
 
+        // Filed under its merchant, which remembers the category for the next import.
+        var owner = await _userRepository.GetByIdAsync(request.UserId);
+        var merchant = await MerchantCatalog.ResolveAsync(_merchantRepository, request.UserId, request.Description, owner?.Name);
+        if (merchant != null && MerchantCatalog.ShouldLearn(merchant, category))
+        {
+            merchant.CategoryId = category.Id;
+            await _merchantRepository.UpdateAsync(merchant);
+        }
+
         var transaction = new Transaction
         {
             UserId = request.UserId,
@@ -47,7 +63,9 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
             AmountCents = request.AmountCents,
             Description = request.Description,
             Date = request.Date,
-            Recurrence = request.Recurrence
+            Recurrence = request.Recurrence,
+            MerchantId = merchant?.Id,
+            Merchant = merchant,
         };
 
         // Update account balance

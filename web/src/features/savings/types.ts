@@ -1,4 +1,4 @@
-export type SuggestionKind = 'GOAL' | 'BUDGET' | 'SUBSCRIPTION' | 'CATEGORY';
+export type SuggestionKind = 'GOAL' | 'BUDGET' | 'SUBSCRIPTION' | 'CATEGORY' | 'HABIT' | 'ORGANIZE';
 
 export type CategoryBudgetDto = {
   categoryId: string;

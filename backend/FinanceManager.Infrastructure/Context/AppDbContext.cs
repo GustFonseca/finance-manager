@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<SavingsPlan> SavingsPlans => Set<SavingsPlan>();
     public DbSet<CategoryBudget> CategoryBudgets => Set<CategoryBudget>();
+    public DbSet<Merchant> Merchants => Set<Merchant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +57,22 @@ public class AppDbContext : DbContext
             e.HasOne(t => t.User).WithMany(u => u.Transactions).HasForeignKey(t => t.UserId);
             e.HasOne(t => t.Account).WithMany(a => a.Transactions).HasForeignKey(t => t.AccountId);
             e.HasOne(t => t.Category).WithMany(c => c.Transactions).HasForeignKey(t => t.CategoryId);
+            e.HasIndex(t => t.MerchantId);
+            e.HasOne(t => t.Merchant).WithMany(m => m.Transactions).HasForeignKey(t => t.MerchantId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Merchant
+        modelBuilder.Entity<Merchant>(e =>
+        {
+            e.HasKey(m => m.Id);
+            // Descriptions are matched to a merchant by its key, per user.
+            e.HasIndex(m => new { m.UserId, m.Key }).IsUnique();
+            e.Property(m => m.Name).HasMaxLength(100);
+            e.Property(m => m.Key).HasMaxLength(100);
+            e.Property(m => m.Document).HasMaxLength(30);
+            e.Property(m => m.Kind).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId);
+            e.HasOne(m => m.Category).WithMany().HasForeignKey(m => m.CategoryId).OnDelete(DeleteBehavior.SetNull);
         });
 
         // Goal

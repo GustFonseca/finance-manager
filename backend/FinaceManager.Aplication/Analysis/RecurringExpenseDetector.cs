@@ -21,14 +21,14 @@ public static class RecurringExpenseDetector
     {
         var since = now.AddMonths(-LookbackMonths);
         var expenses = transactions
-            .Where(t => t.Type == TransactionType.EXPENSE && t.Date >= since && t.Date <= now)
+            .Where(t => t.Type == TransactionType.EXPENSE && t.Date >= since && t.Date <= now && !t.IsOwnMoney())
             .ToList();
         var result = new List<RecurringExpenseDto>();
 
         // Marked by the user: trusted as is.
         var marked = expenses
             .Where(t => t.Recurrence != Recurrence.NONE)
-            .GroupBy(t => (Key: MoneyText.Key(t.Description), t.AccountId))
+            .GroupBy(t => (Key: t.MerchantKey(), t.AccountId))
             .ToList();
         foreach (var group in marked)
         {
@@ -40,14 +40,14 @@ public static class RecurringExpenseDetector
         // Detected: the same charge in different months, with a similar amount, still active.
         var candidates = expenses
             .Where(t => t.Recurrence == Recurrence.NONE)
-            .GroupBy(t => (Key: MoneyText.Key(t.Description), t.AccountId))
+            .GroupBy(t => (Key: t.MerchantKey(), t.AccountId))
             .Where(g => g.Key.Key.Length > 0 && !markedKeys.Contains(g.Key));
         foreach (var group in candidates)
         {
             var latest = group.MaxBy(t => t.Date)!;
             if ((now - latest.Date).TotalDays > ActiveWithinDays) continue;
 
-            var rule = RuleFor(group.Key.Key);
+            var rule = RuleFor(MoneyText.Key($"{latest.MerchantName()} {latest.Description}"));
             var usual = Median(group.Select(t => t.AmountCents));
             var similar = group.Where(t => Math.Abs(t.AmountCents - usual) <= usual * rule.Tolerance).ToList();
             var months = similar.Select(t => (t.Date.Year, t.Date.Month)).Distinct().Count();
@@ -62,13 +62,14 @@ public static class RecurringExpenseDetector
 
     private static RecurringExpenseDto ToDto(Transaction latest, long monthlyCents, bool detected) => new()
     {
-        Name = string.IsNullOrWhiteSpace(latest.Description) ? "(sem descrição)" : latest.Description,
+        Name = latest.MerchantName(),
+        Key = latest.MerchantKey(),
         CategoryName = latest.Category?.Name ?? string.Empty,
         AccountId = latest.AccountId,
         AccountName = latest.Account?.Name ?? string.Empty,
         MonthlyCents = monthlyCents,
         LastDate = latest.Date,
-        Kind = MerchantPatterns.Subscriptions().IsMatch(MoneyText.Key(latest.Description))
+        Kind = MerchantPatterns.Subscriptions().IsMatch(MoneyText.Key($"{latest.MerchantName()} {latest.Description}"))
             ? RecurringKind.SUBSCRIPTION
             : RecurringKind.FIXED,
         Detected = detected,

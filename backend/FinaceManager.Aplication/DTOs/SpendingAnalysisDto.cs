@@ -48,16 +48,27 @@ public class MonthSpendingDto
 
 public class MerchantSpendingDto
 {
+    /// <summary>Null for spending that names no merchant.</summary>
+    public Guid? MerchantId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public MerchantKind Kind { get; set; }
     public string CategoryName { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
     public int Count { get; set; }
     public long Cents { get; set; }
+    /// <summary>Share of the period's spending, 0 to 1.</summary>
+    public double Share { get; set; }
+    public long AverageTicketCents { get; set; }
+    public DateTime LastDate { get; set; }
     public SpendingClass Class { get; set; }
 }
 
 public class ReducibleExpenseDto
 {
+    public Guid? MerchantId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public Guid CategoryId { get; set; }
+    public bool Subscription { get; set; }
     public SpendingClass Class { get; set; }
     /// <summary>Average purchases per month.</summary>
     public double TimesPerMonth { get; set; }

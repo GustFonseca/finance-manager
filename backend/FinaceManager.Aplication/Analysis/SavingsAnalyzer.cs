@@ -21,7 +21,7 @@ public record SavingsAnalysisInput(
 /// </summary>
 public static class SavingsAnalyzer
 {
-    /// <summary>Months of history used for averages.</summary>
+    /// <summary>Months of history used for averages (those with data).</summary>
     public const int HistoryMonths = 3;
     /// <summary>Flexible categories are suggested this cut even when the goal is met…</summary>
     private const double BaseCut = 0.10;
@@ -33,6 +33,14 @@ public static class SavingsAnalyzer
     private const double NearLimit = 0.8;
     /// <summary>How many "reduce this category" suggestions to show.</summary>
     private const int CategoryCuts = 3;
+    /// <summary>How many merchant habits to suggest reducing.</summary>
+    private const int HabitCuts = 4;
+    /// <summary>Category cuts smaller than this per month aren't worth a suggestion.</summary>
+    private const long MinCategoryCutCents = 2_000;
+    /// <summary>Above this share of spending, "Outros" hides too much for precise advice.</summary>
+    private const double UnsortedShare = 0.2;
+    /// <summary>The catch-all category (normalized name).</summary>
+    private const string CatchAll = "outros";
 
     /// <summary>Categories kept at their average instead of cut (by normalized name).</summary>
     private static readonly HashSet<string> Essential = ["moradia", "saude", "educacao"];
@@ -41,13 +49,17 @@ public static class SavingsAnalyzer
     {
         var monthEnd = input.MonthStart.AddMonths(1);
         var historyStart = input.MonthStart.AddMonths(-HistoryMonths);
-        var current = input.Transactions.Where(t => t.Date >= input.MonthStart && t.Date < monthEnd).ToList();
-        var history = input.Transactions.Where(t => t.Date >= historyStart && t.Date < input.MonthStart).ToList();
+        // Investments, the card bill and the user's own accounts are neither earned nor spent.
+        var transactions = input.Transactions.Where(t => !t.IsOwnMoney()).ToList();
+        var current = transactions.Where(t => t.Date >= input.MonthStart && t.Date < monthEnd).ToList();
+        var history = transactions.Where(t => t.Date >= historyStart && t.Date < input.MonthStart).ToList();
         var elapsed = Math.Clamp((input.Now - input.MonthStart) / (monthEnd - input.MonthStart), 0.01, 1);
+        var historyMonths = AnalysisHistory.MonthsWithData(history, input.MonthStart, HistoryMonths);
+        var divisor = Math.Max(1, historyMonths);
 
         var monthIncome = Sum(current, TransactionType.INCOME);
         var monthExpense = Sum(current, TransactionType.EXPENSE);
-        var averageSaved = (Sum(history, TransactionType.INCOME) - Sum(history, TransactionType.EXPENSE)) / HistoryMonths;
+        var averageSaved = (Sum(history, TransactionType.INCOME) - Sum(history, TransactionType.EXPENSE)) / divisor;
 
         var budgets = input.ExpenseCategories.Select(c => new CategoryBudgetDto
         {
@@ -56,7 +68,7 @@ public static class SavingsAnalyzer
             Color = c.Color,
             LimitCents = input.Budgets.TryGetValue(c.Id, out var limit) ? limit : null,
             SpentCents = SumCategory(current, c.Id),
-            AverageCents = SumCategory(history, c.Id) / HistoryMonths,
+            AverageCents = SumCategory(history, c.Id) / divisor,
             Essential = Essential.Contains(MoneyText.Key(c.Name)),
         }).ToList();
 
@@ -68,12 +80,25 @@ public static class SavingsAnalyzer
         SuggestLimits(budgets, gap, fixedByCategory);
 
         var projected = ProjectMonth(current, input.Recurring, elapsed);
-        var suggestions = new List<SavingsSuggestionDto>();
-        if (input.GoalCents > 0) suggestions.Add(GoalSuggestion(input.GoalCents, averageSaved, gap));
-        suggestions.AddRange(BudgetWarnings(budgets, projected));
+        var habits = SpendingAnalyzer.Habits(history, historyMonths)
+            .Where(h => !h.Subscription)
+            .Take(HabitCuts)
+            .ToList();
         var savings = new List<SavingsSuggestionDto>();
         savings.AddRange(SubscriptionSuggestions(input.Recurring));
-        savings.AddRange(CategorySuggestions(budgets, projected));
+        savings.AddRange(habits.Select(HabitSuggestion));
+        var trends = TrendWarnings(budgets, projected).ToList();
+        // A category already flagged, or whose habits are suggested, isn't cut again on top.
+        var covered = trends.Select(t => t.CategoryId).Concat(habits.Select(h => h.CategoryId)).ToHashSet();
+        savings.AddRange(CategoryCutSuggestions(budgets, covered));
+        var potential = savings.Sum(s => s.PotentialCents);
+
+        var suggestions = new List<SavingsSuggestionDto>();
+        if (input.GoalCents > 0) suggestions.Add(GoalSuggestion(input.GoalCents, averageSaved, gap, historyMonths, potential));
+        suggestions.AddRange(BudgetWarnings(budgets, projected));
+        suggestions.AddRange(trends.Select(t => t.Suggestion));
+        var unsorted = UnsortedSuggestion(budgets);
+        if (unsorted != null) suggestions.Add(unsorted);
         suggestions.AddRange(savings.OrderByDescending(s => s.PotentialCents));
 
         return new SavingsPlanDto
@@ -83,12 +108,11 @@ public static class SavingsAnalyzer
             MonthExpenseCents = monthExpense,
             MonthSavedCents = monthIncome - monthExpense,
             AverageSavedCents = averageSaved,
-            HistoryMonths = Enumerable.Range(1, HistoryMonths)
-                .Count(i => history.Any(t => t.Date >= input.MonthStart.AddMonths(-i) && t.Date < input.MonthStart.AddMonths(1 - i))),
+            HistoryMonths = historyMonths,
             MonthProgress = elapsed,
             Budgets = budgets.OrderByDescending(b => b.AverageCents).ThenBy(b => b.CategoryName).ToList(),
             Suggestions = suggestions,
-            PotentialSavingsCents = savings.Sum(s => s.PotentialCents),
+            PotentialSavingsCents = potential,
         };
     }
 
@@ -117,13 +141,17 @@ public static class SavingsAnalyzer
         }
     }
 
-    private static SavingsSuggestionDto GoalSuggestion(long goal, long averageSaved, long gap) => gap > 0
+    private static SavingsSuggestionDto GoalSuggestion(long goal, long averageSaved, long gap, int historyMonths, long potential) => gap > 0
         ? new SavingsSuggestionDto
         {
             Kind = SuggestionKind.GOAL,
             Title = $"Faltam {MoneyText.Format(gap)} por mês para a sua meta",
-            Detail = $"Nos últimos {HistoryMonths} meses você economizou em média {MoneyText.Format(averageSaved, signed: averageSaved < 0)} por mês. " +
-                     "Os limites sugeridos para as categorias flexíveis cobrem essa diferença.",
+            Detail = $"{(historyMonths == 1 ? "No último mês" : $"Nos últimos {historyMonths} meses")} você economizou em média " +
+                     $"{MoneyText.Format(averageSaved, signed: averageSaved < 0)} por mês. " +
+                     (potential >= gap
+                         ? $"As sugestões abaixo somam {MoneyText.Format(potential)} por mês e cobrem essa diferença."
+                         : $"As sugestões abaixo somam {MoneyText.Format(potential)} por mês; para chegar à meta, " +
+                           "siga também os limites sugeridos por categoria ou ajuste a meta."),
             PotentialCents = gap,
         }
         : new SavingsSuggestionDto
@@ -156,6 +184,15 @@ public static class SavingsAnalyzer
         }
     }
 
+    /// <summary>"Reduza iFood pela metade": a habit at one merchant, with what changing it saves.</summary>
+    private static SavingsSuggestionDto HabitSuggestion(ReducibleExpenseDto habit) => new()
+    {
+        Kind = SuggestionKind.HABIT,
+        Title = habit.Class == SpendingClass.SUPERFLUOUS ? $"Reduza {habit.Name} pela metade" : $"Economize em {habit.Name}",
+        Detail = habit.Detail,
+        PotentialCents = habit.PotentialCents,
+    };
+
     private static IEnumerable<SavingsSuggestionDto> SubscriptionSuggestions(IEnumerable<RecurringExpenseDto> recurring) =>
         recurring
             .Where(r => r.Kind == RecurringKind.SUBSCRIPTION)
@@ -176,38 +213,64 @@ public static class SavingsAnalyzer
     private static Dictionary<Guid, long> ProjectMonth(
         IEnumerable<Transaction> current, IEnumerable<RecurringExpenseDto> recurring, double elapsed)
     {
-        var fixedCharges = recurring.Select(r => (MoneyText.Key(r.Name), r.AccountId)).ToHashSet();
+        var fixedCharges = recurring.Select(r => (r.Key, r.AccountId)).ToHashSet();
         return current
             .Where(t => t.Type == TransactionType.EXPENSE)
             .GroupBy(t => t.CategoryId)
             .ToDictionary(g => g.Key, g =>
             {
-                var fixedSpent = g.Where(t => fixedCharges.Contains((MoneyText.Key(t.Description), t.AccountId))).Sum(t => t.AmountCents);
+                var fixedSpent = g.Where(t => fixedCharges.Contains((t.MerchantKey(), t.AccountId))).Sum(t => t.AmountCents);
                 var variable = g.Sum(t => t.AmountCents) - fixedSpent;
                 return fixedSpent + (long)(variable / elapsed);
             });
     }
 
-    private static IEnumerable<SavingsSuggestionDto> CategorySuggestions(
+    /// <summary>
+    /// Flexible categories on pace to end the month well above their average. A
+    /// warning about this month, not a monthly saving, so it adds nothing to the potential.
+    /// </summary>
+    private static IEnumerable<(Guid CategoryId, SavingsSuggestionDto Suggestion)> TrendWarnings(
         List<CategoryBudgetDto> budgets, IReadOnlyDictionary<Guid, long> projectedByCategory)
     {
-        var flagged = new HashSet<Guid>();
         foreach (var b in budgets.Where(b => !b.Essential && b.AverageCents > 0 && b.SpentCents > 0))
         {
             var projected = projectedByCategory.GetValueOrDefault(b.CategoryId);
             if (projected <= b.AverageCents * TrendThreshold) continue;
-            flagged.Add(b.CategoryId);
-            yield return new SavingsSuggestionDto
+            yield return (b.CategoryId, new SavingsSuggestionDto
             {
                 Kind = SuggestionKind.CATEGORY,
                 Title = $"{b.CategoryName} está {MoneyText.Percent((double)projected / b.AverageCents - 1)} acima da média",
-                Detail = $"Neste ritmo o mês fecha em {MoneyText.Format(projected)}; a sua média é {MoneyText.Format(b.AverageCents)}.",
-                PotentialCents = projected - b.AverageCents,
-            };
+                Detail = $"Neste ritmo o mês fecha em {MoneyText.Format(projected)}, {MoneyText.Format(projected - b.AverageCents)} " +
+                         $"acima da sua média de {MoneyText.Format(b.AverageCents)}.",
+            });
         }
+    }
 
+    /// <summary>
+    /// When much of the spending sits in "Outros", cuts can't be aimed: the user is
+    /// asked to give those merchants a category (in Estabelecimentos) first.
+    /// </summary>
+    private static SavingsSuggestionDto? UnsortedSuggestion(List<CategoryBudgetDto> budgets)
+    {
+        var total = budgets.Sum(b => b.AverageCents);
+        var unsorted = budgets.FirstOrDefault(b => MoneyText.Key(b.CategoryName) == CatchAll);
+        if (unsorted == null || total == 0 || (double)unsorted.AverageCents / total < UnsortedShare) return null;
+        return new SavingsSuggestionDto
+        {
+            Kind = SuggestionKind.ORGANIZE,
+            Title = $"Organize os gastos em {unsorted.CategoryName}",
+            Detail = $"Em média {MoneyText.Format(unsorted.AverageCents)} por mês ({MoneyText.Percent((double)unsorted.AverageCents / total)} dos gastos) " +
+                     $"estão em {unsorted.CategoryName}. Defina a categoria desses estabelecimentos em Estabelecimentos para o plano sugerir cortes mais precisos.",
+        };
+    }
+
+    /// <summary>"Reduza Lazer em 10%", for categories not <paramref name="covered"/> by a warning or a habit.</summary>
+    private static IEnumerable<SavingsSuggestionDto> CategoryCutSuggestions(List<CategoryBudgetDto> budgets, IReadOnlySet<Guid> covered)
+    {
         var cuts = budgets
-            .Where(b => !b.Essential && !flagged.Contains(b.CategoryId) && b.AverageCents > b.SuggestedLimitCents)
+            // "Reduza Outros" says nothing: that money is sorted first (see UnsortedSuggestion).
+            .Where(b => !b.Essential && !covered.Contains(b.CategoryId) && MoneyText.Key(b.CategoryName) != CatchAll)
+            .Where(b => b.AverageCents - b.SuggestedLimitCents >= MinCategoryCutCents)
             .OrderByDescending(b => b.AverageCents - b.SuggestedLimitCents)
             .Take(CategoryCuts);
         foreach (var b in cuts)

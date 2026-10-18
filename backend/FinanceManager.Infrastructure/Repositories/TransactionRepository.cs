@@ -9,11 +9,12 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 {
     public TransactionRepository(AppDbContext _context) : base(_context){}
 
-    public async Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null)
+    public async Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null, Guid? merchantId = null)
     {
         var query = _dbSet
             .Include(t => t.Account)
             .Include(t => t.Category)
+            .Include(t => t.Merchant)
             .Where(t => t.UserId == userId);
 
         if (start.HasValue)
@@ -31,7 +32,28 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
             query = query.Where(t => t.AccountId == accountId.Value);
         }
 
+        if (merchantId.HasValue)
+        {
+            query = query.Where(t => t.MerchantId == merchantId.Value);
+        }
+
         return await query.OrderByDescending(t => t.Date).ToListAsync();
+    }
+
+    public async Task<List<Transaction>> GetUncataloguedAsync()
+    {
+        return await _dbSet.Include(t => t.Category).Where(t => t.MerchantId == null).ToListAsync();
+    }
+
+    public async Task<List<Transaction>> GetByMerchantIdAsync(Guid merchantId)
+    {
+        return await _dbSet.Where(t => t.MerchantId == merchantId).ToListAsync();
+    }
+
+    public async Task UpdateRangeAsync(IEnumerable<Transaction> transactions)
+    {
+        _dbSet.UpdateRange(transactions);
+        await _context.SaveChangesAsync();
     }
 
     public async Task<int> DeleteByUserIdAsync(Guid userId)

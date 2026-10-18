@@ -16,6 +16,7 @@ export { EmptyState } from './EmptyState';
 export { StatTile } from './StatTile';
 export { MonthSelect, isCurrentMonth, monthKeyOf, monthLabel, monthRange } from './MonthSelect';
 export type { MonthKey } from './MonthSelect';
+export { YearSelect, yearRange } from './YearSelect';
 export { ChartLegend } from './ChartLegend';
 export type { LegendItem } from './ChartLegend';
 export { StackedBar } from './StackedBar';

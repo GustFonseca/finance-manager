@@ -25,16 +25,14 @@ export type MonthSpendingDto = {
   superfluousCents: number;
 };
 
-export type MerchantSpendingDto = {
-  name: string;
-  categoryName: string;
-  count: number;
-  cents: number;
-  class: SpendingClass;
-};
+export type { MerchantSpendingDto } from '@/features/merchants/types';
+import type { MerchantSpendingDto } from '@/features/merchants/types';
 
 export type ReducibleExpenseDto = {
+  merchantId: string | null;
   name: string;
+  categoryId: string;
+  subscription: boolean;
   class: SpendingClass;
   timesPerMonth: number;
   monthlyCents: number;

@@ -8,6 +8,7 @@ import { CategoriesScreen } from '@/features/categories/CategoriesScreen';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
 import { GoalsScreen } from '@/features/goals/GoalsScreen';
+import { MerchantsScreen } from '@/features/merchants/MerchantsScreen';
 import { SavingsScreen } from '@/features/savings/SavingsScreen';
 import { SpendingScreen } from '@/features/spending/SpendingScreen';
 import { TransactionsScreen } from '@/features/transactions/TransactionsScreen';
@@ -20,6 +21,7 @@ const SCREENS: ProgramScreens = {
   '/goals': GoalsScreen,
   '/categories': CategoriesScreen,
   '/spending': SpendingScreen,
+  '/merchants': MerchantsScreen,
   '/savings': SavingsScreen,
   '/events': ActivityScreen,
 };

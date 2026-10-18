@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { FlatList, RefreshControl } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { ImportWizard } from '@/features/import/ImportWizard';
+import { ALL_MERCHANTS, MerchantSelect } from '@/features/merchants/components/MerchantSelect';
 import { getErrorMessage } from '@/lib/http';
+import { spacing } from '@/theme';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionListItem } from './components/TransactionListItem';
 import {
@@ -16,7 +18,10 @@ import { CreateTransactionRequest, TransactionDto } from './types';
 
 export function TransactionsScreen() {
   const { confirm, alert, menu } = useDialog();
-  const { data: transactions = [], isFetching, refetch } = useTransactions();
+  const [merchantId, setMerchantId] = useState(ALL_MERCHANTS);
+  const { data: transactions = [], isFetching, refetch } = useTransactions(
+    merchantId ? { merchantId } : {}
+  );
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const deleteAll = useDeleteAllTransactions();
@@ -99,6 +104,11 @@ export function TransactionsScreen() {
             <TransactionListItem transaction={item} onPress={openOptions} />
           )}
           refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+          ListHeaderComponent={
+            <View style={styles.filters}>
+              <MerchantSelect value={merchantId} onChange={setMerchantId} />
+            </View>
+          }
           ListEmptyComponent={<EmptyState message="Nenhuma transação encontrada" />}
         />
       </Window>
@@ -114,3 +124,7 @@ export function TransactionsScreen() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  filters: { flexDirection: 'row', justifyContent: 'flex-end', padding: spacing.sm },
+});

@@ -13,9 +13,12 @@ public class Transaction
     public string Description { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public Recurrence Recurrence { get; set; } = Recurrence.NONE;
+    /// <summary>Who the money went to or came from; null when the description names nobody.</summary>
+    public Guid? MerchantId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
     public Account Account { get; set; } = null!;
     public Category Category { get; set; } = null!;
+    public Merchant? Merchant { get; set; }
 }

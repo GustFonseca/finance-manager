@@ -207,6 +207,50 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.ToTable("Goals");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Merchant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Document")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("Merchants");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.SavingsPlan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -300,6 +344,9 @@ namespace FinanceManager.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("MerchantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Recurrence")
                         .IsRequired()
                         .HasColumnType("text");
@@ -318,6 +365,8 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("Date");
+
+                    b.HasIndex("MerchantId");
 
                     b.HasIndex("UserId");
 
@@ -430,6 +479,24 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Merchant", b =>
+                {
+                    b.HasOne("FinanceManager.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FinanceManager.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FinanceManager.Domain.Entities.SavingsPlan", b =>
                 {
                     b.HasOne("FinanceManager.Domain.Entities.User", "User")
@@ -474,6 +541,11 @@ namespace FinanceManager.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FinanceManager.Domain.Entities.Merchant", "Merchant")
+                        .WithMany("Transactions")
+                        .HasForeignKey("MerchantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FinanceManager.Domain.Entities.User", "User")
                         .WithMany("Transactions")
                         .HasForeignKey("UserId")
@@ -483,6 +555,8 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Category");
+
+                    b.Navigation("Merchant");
 
                     b.Navigation("User");
                 });
@@ -500,6 +574,11 @@ namespace FinanceManager.Infrastructure.Migrations
             modelBuilder.Entity("FinanceManager.Domain.Entities.Folder", b =>
                 {
                     b.Navigation("Files");
+                });
+
+            modelBuilder.Entity("FinanceManager.Domain.Entities.Merchant", b =>
+                {
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("FinanceManager.Domain.Entities.User", b =>

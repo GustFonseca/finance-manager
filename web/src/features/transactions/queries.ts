@@ -16,6 +16,7 @@ export function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.accounts });
   qc.invalidateQueries({ queryKey: queryKeys.summary });
   qc.invalidateQueries({ queryKey: queryKeys.savings });
+  qc.invalidateQueries({ queryKey: queryKeys.merchants });
 }
 
 export function useCreateTransaction() {

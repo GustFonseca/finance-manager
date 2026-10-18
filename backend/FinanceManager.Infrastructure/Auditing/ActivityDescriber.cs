@@ -26,6 +26,7 @@ public static class ActivityDescriber
         StoredFile file => DescribeFile(entry, file, context),
         SavingsPlan plan => DescribeSavingsPlan(entry, plan),
         CategoryBudget budget => DescribeBudget(entry, budget, context),
+        Merchant merchant => DescribeMerchant(entry, merchant),
         _ => [],
     };
 
@@ -41,6 +42,19 @@ public static class ActivityDescriber
             yield return Log(t.UserId, "Transações", $"Transação criada: {label} ({amount})");
         else if (entry.State == EntityState.Deleted)
             yield return Log(t.UserId, "Transações", $"Transação excluída: {label} ({amount})", ActivityType.WARNING);
+    }
+
+    /// <summary>
+    /// Merchants are created by the catalog and learn categories on their own;
+    /// only what the user edits (name, kind) is history.
+    /// </summary>
+    private static IEnumerable<ActivityLog> DescribeMerchant(EntityEntry entry, Merchant m)
+    {
+        if (entry.State != EntityState.Modified) yield break;
+        if (Changed(entry, nameof(Merchant.Name)))
+            yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento renomeado: {Original<string>(entry, nameof(Merchant.Name))} → {m.Name}");
+        else if (Changed(entry, nameof(Merchant.Kind)))
+            yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento atualizado: {m.Name}");
     }
 
     private static IEnumerable<ActivityLog> DescribeAccount(EntityEntry entry, Account a)

@@ -14,6 +14,9 @@ public class TransactionDto
     public string Description { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public Recurrence Recurrence { get; set; }
+    public Guid? MerchantId { get; set; }
+    /// <summary>Who the money went to or came from; empty when unknown.</summary>
+    public string MerchantName { get; set; } = string.Empty;
 }
 
 public class CreateTransactionRequest

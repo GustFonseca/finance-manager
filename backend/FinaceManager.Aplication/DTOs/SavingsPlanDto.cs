@@ -13,6 +13,8 @@ public class RecurringExpenseDto
     public long MonthlyCents { get; set; }
     public DateTime LastDate { get; set; }
     public RecurringKind Kind { get; set; }
+    /// <summary>The merchant's key: matches the charge to the month's transactions.</summary>
+    public string Key { get; set; } = string.Empty;
     /// <summary>True when found by the app; false when the transaction was marked as recurring.</summary>
     public bool Detected { get; set; }
 }

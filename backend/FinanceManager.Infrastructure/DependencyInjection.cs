@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<ISavingsPlanRepository, SavingsPlanRepository>();
         services.AddScoped<ICategoryBudgetRepository, CategoryBudgetRepository>();
+        services.AddScoped<IMerchantRepository, MerchantRepository>();
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
 

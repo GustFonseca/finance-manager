@@ -176,10 +176,36 @@ public class SavingsAnalysisTests
         Assert.Equal(500000 - 70000, plan.MonthSavedCents);
         Assert.Contains(plan.Suggestions, s => s.Kind == SuggestionKind.BUDGET && s.Title == "Orçamento de Alimentação quase no limite");
         var trend = Assert.Single(plan.Suggestions, s => s.Title.StartsWith("Lazer está"));
-        Assert.True(trend.PotentialCents > 0);
-        // Lazer is already flagged, so the "reduce" advice goes to the next category.
-        Assert.Contains(plan.Suggestions, s => s.Title == "Reduza Alimentação em 10%");
+        // This month's overshoot is a warning, not a monthly saving.
+        Assert.Equal(0, trend.PotentialCents);
+        // A superfluous habit is advice at the place; its category isn't cut again on top.
+        Assert.Contains(plan.Suggestions, s => s.Kind == SuggestionKind.HABIT && s.Title == "Reduza Cinema pela metade");
         Assert.DoesNotContain(plan.Suggestions, s => s.Title.StartsWith("Reduza Lazer"));
+        // One grocery run a month isn't a habit to shop around for: the category is cut instead.
+        Assert.DoesNotContain(plan.Suggestions, s => s.Title == "Economize em Mercado");
+        Assert.Contains(plan.Suggestions, s => s.Title == "Reduza Alimentação em 10%");
+    }
+
+    [Fact]
+    public void Taxes_are_never_a_habit_to_cut_and_a_big_outros_asks_to_be_sorted()
+    {
+        var outros = Cat("Outros");
+        var history = new[] { 7, 8, 9 }.SelectMany(m => new[]
+        {
+            Tx("Salário", 500000, Day(m, 5), Salario, TransactionType.INCOME),
+            Tx("Transferência enviada pelo Pix - RECEITA FEDERAL - 00.394.460/0058-87 - BCO DO BRASIL", 60000, Day(m, 20), outros),
+            Tx("Transferência enviada pelo Pix - B5P211 - 12.345.678/0001-90 - BCO", 40000, Day(m, 21), outros),
+            Tx("Mercado", 20000, Day(m, 12), Alimentacao),
+        }).ToList();
+
+        var plan = SavingsAnalyzer.Analyze(new SavingsAnalysisInput(
+            history, [Alimentacao, outros], new Dictionary<Guid, long>(), 0, MonthStart, Now, []));
+
+        Assert.DoesNotContain(plan.Suggestions, s => s.Title.Contains("Receita Federal"));
+        Assert.DoesNotContain(plan.Suggestions, s => s.Title.StartsWith("Reduza Outros"));
+        var organize = Assert.Single(plan.Suggestions, s => s.Kind == SuggestionKind.ORGANIZE);
+        Assert.Equal("Organize os gastos em Outros", organize.Title);
+        Assert.Equal(0, organize.PotentialCents);
     }
 
     [Fact]
@@ -192,7 +218,7 @@ public class SavingsAnalysisTests
         var subscription = Assert.Single(plan.Suggestions, s => s.Kind == SuggestionKind.SUBSCRIPTION);
         Assert.Equal("Avalie a assinatura Netflix", subscription.Title);
         Assert.Equal(
-            plan.Suggestions.Where(s => s.Kind is SuggestionKind.SUBSCRIPTION or SuggestionKind.CATEGORY).Sum(s => s.PotentialCents),
+            plan.Suggestions.Where(s => s.Kind is SuggestionKind.SUBSCRIPTION or SuggestionKind.HABIT or SuggestionKind.CATEGORY).Sum(s => s.PotentialCents),
             plan.PotentialSavingsCents);
     }
 

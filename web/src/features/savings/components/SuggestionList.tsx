@@ -5,11 +5,16 @@ import { formatCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { SavingsSuggestionDto, SuggestionKind } from '../types';
 
-const KINDS: Record<SuggestionKind, { icon: 'flag' | 'exclamation-triangle' | 'play-circle' | 'scissors'; color: string }> = {
+const KINDS: Record<
+  SuggestionKind,
+  { icon: 'flag' | 'exclamation-triangle' | 'play-circle' | 'scissors' | 'shopping-cart' | 'tags'; color: string }
+> = {
   GOAL: { icon: 'flag', color: '#1565C0' },
   BUDGET: { icon: 'exclamation-triangle', color: '#E8A317' },
   SUBSCRIPTION: { icon: 'play-circle', color: '#C62828' },
   CATEGORY: { icon: 'scissors', color: '#2E7D32' },
+  HABIT: { icon: 'shopping-cart', color: '#00838F' },
+  ORGANIZE: { icon: 'tags', color: '#EF6C00' },
 };
 
 /** The automatic analysis: what is off track and what could be cut, with the monthly savings. */

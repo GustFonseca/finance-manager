@@ -8,6 +8,8 @@ import { useCategories } from '@/features/categories/queries';
 import { transactionsApi } from '@/features/transactions/api';
 import { foldersApi } from '@/features/files/api';
 import { invalidateFiles } from '@/features/files/queries';
+import { merchantsApi } from '@/features/merchants/api';
+import { MerchantMatchDto } from '@/features/merchants/types';
 import { invalidateMoney } from '@/features/transactions/queries';
 import { getErrorMessage } from '@/lib/http';
 import { reportError } from '@/lib/logger';
@@ -117,13 +119,19 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
         end: new Date(`${last}T23:59:59`).toISOString(),
       });
       const duplicates = findDuplicates(statement.rows, existing);
+      const merchants = await resolveMerchants(statement.rows.map((row) => row.description));
       const next: Record<string, RowChoice> = {};
       for (const row of statement.rows) {
         const duplicate = duplicates.has(row.key);
+        const merchant = merchants.get(row.description);
+        // The category the user chose for this merchant before wins over the keyword rules.
+        const learned = categories.find((c) => c.id === merchant?.categoryId && c.type === row.type);
+        const skipReason =
+          row.skipReason ?? (merchant?.kind === 'OWN' ? 'Movimentação entre suas contas (não é renda nem gasto)' : undefined);
         next[row.key] = {
-          include: !duplicate && !row.skipReason,
-          categoryId: suggestCategory(row.description, row.type, categories),
-          note: duplicate ? 'Já existe no app' : row.skipReason,
+          include: !duplicate && !skipReason,
+          categoryId: learned?.id ?? suggestCategory(row.description, row.type, categories),
+          note: duplicate ? 'Já existe no app' : skipReason,
         };
       }
       setChoices(next);
@@ -132,6 +140,16 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
       setError(getErrorMessage(e, 'Não foi possível consultar as transações existentes.'));
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** The merchant of each line; the review still works (with keyword suggestions) if this fails. */
+  async function resolveMerchants(descriptions: string[]): Promise<Map<string, MerchantMatchDto>> {
+    try {
+      const matches = await merchantsApi.resolve([...new Set(descriptions)]);
+      return new Map(matches.map((match) => [match.description, match]));
+    } catch {
+      return new Map();
     }
   }
 

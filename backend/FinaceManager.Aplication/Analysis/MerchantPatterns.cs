@@ -13,8 +13,8 @@ public static partial class MerchantPatterns
     [GeneratedRegex(@"netflix|spotify|disney|hbo|\bmax\b|prime video|amazon prime|youtube|deezer|globoplay|paramount|crunchyroll|apple com|icloud|google one|microsoft|xbox|playstation|nintendo|adobe|canva|chatgpt|openai|gympass|wellhub|smart ?fit|totalpass|dropbox|notion|github")]
     public static partial Regex Subscriptions();
 
-    /// <summary>Housing, utilities, insurance, schooling and loans.</summary>
-    [GeneratedRegex(@"aluguel|condominio|imobiliaria|energia|enel|\blight\b|cemig|copel|celesc|sabesp|\bagua\b|comgas|internet|fibra|\bvivo\b|\bclaro\b|\btim\b|\bnet\b|iptu|ipva|seguro|plano de saude|unimed|amil|sulamerica|escola|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo")]
+    /// <summary>Housing, utilities, insurance, schooling, loans and taxes.</summary>
+    [GeneratedRegex(@"receita federal|simples nacional|darf|\binss\b|fgts|imposto|tributo|prefeitura|municipio|detran|cartorio|aluguel|condominio|imobiliaria|energia|enel|\blight\b|cemig|copel|celesc|sabesp|\bagua\b|comgas|internet|fibra|\bvivo\b|\bclaro\b|\btim\b|\bnet\b|iptu|ipva|seguro|plano de saude|unimed|amil|sulamerica|escola|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo")]
     public static partial Regex Bills();
 
     /// <summary>Needed, but the amount can be managed: groceries, fuel, pharmacy, transport.</summary>
