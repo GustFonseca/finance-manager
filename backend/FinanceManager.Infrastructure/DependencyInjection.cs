@@ -11,6 +11,8 @@ using FinanceManager.Infrastructure.Storage;
 using FinanceManager.Infrastructure.Auditing;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Infrastructure.Classification;
+using FinanceManager.Aplication.Rates;
+using FinanceManager.Infrastructure.Rates;
 using FinanceManager.Aplication.Auth;
 using FinanceManager.Infrastructure.Auth;
 
@@ -45,6 +47,7 @@ public static class DependencyInjection
         services.AddSingleton<IClassificationRulesProvider, ClassificationRulesProvider>();
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
+        services.AddHttpClient<IInterestRateProvider, BcbInterestRateProvider>(client => client.Timeout = TimeSpan.FromSeconds(3));
 
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 

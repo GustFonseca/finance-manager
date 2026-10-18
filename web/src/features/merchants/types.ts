@@ -17,6 +17,7 @@ export type MerchantDto = {
   document: string | null;
   categoryId: string | null;
   categoryName: string;
+  class: SpendingClass | null;
 };
 
 export type MerchantMatchDto = {
@@ -70,6 +71,7 @@ export type UpdateMerchantInput = {
   kind: MerchantKind;
   categoryId: string | null;
   applyToTransactions: boolean;
+  class?: SpendingClass | null;
 };
 
 export type UpdateMerchantResultDto = {

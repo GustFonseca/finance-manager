@@ -53,6 +53,7 @@ const ifood: MerchantDto = {
   document: '14.380.200/0001-21',
   categoryId: 'c1',
   categoryName: 'Alimentação',
+  class: null,
 };
 
 const history = (merchant: MerchantDto, incomeCents = 0): MerchantHistoryDto => ({
@@ -265,6 +266,7 @@ describe('MerchantsScreen', () => {
         kind: 'OWN',
         categoryId: 'c2',
         applyToTransactions: true,
+        class: undefined,
       })
     );
     await waitFor(() => expect(screen.getByText('3 transação(ões) movida(s) para Lazer.')).toBeTruthy());
@@ -287,6 +289,7 @@ describe('MerchantsScreen', () => {
         kind: 'BUSINESS',
         categoryId: 'c1',
         applyToTransactions: false,
+        class: undefined,
       })
     );
     await waitFor(() => expect(screen.queryByText('Editar estabelecimento')).toBeNull());
@@ -315,12 +318,57 @@ describe('MerchantsScreen', () => {
         kind: 'BUSINESS',
         categoryId: null,
         applyToTransactions: false,
+        class: undefined,
       })
     );
 
     fireEvent.click(await screen.findByText('Editar...'));
     fireEvent.click(screen.getByText('Cancelar'));
     await waitFor(() => expect(screen.queryByText('Editar estabelecimento')).toBeNull());
+  });
+
+  it('pre-fills the spending class and sends it only when it changes', async () => {
+    api.history.mockResolvedValue(history({ ...ifood, class: 'SUPERFLUOUS' }));
+    api.update.mockResolvedValue({ merchant: { ...ifood, class: 'ESSENTIAL' }, updatedTransactions: 0 });
+    renderScreen();
+
+    fireEvent.click(await within(await waitFor(table)).findByText('iFood'));
+    fireEvent.click(await screen.findByText('Editar...'));
+    const select = fieldOf('Classificação do gasto:', 'select');
+    expect(select.value).toBe('SUPERFLUOUS');
+    expect(Array.from(select.querySelectorAll('option')).map((o) => o.textContent)).toEqual([
+      'Automática (pelas regras)',
+      'Essencial',
+      'Variável',
+      'Supérfluo',
+    ]);
+
+    fireEvent.change(select, { target: { value: 'ESSENTIAL' } });
+    fireEvent.click(screen.getByText('Salvar'));
+
+    await waitFor(() =>
+      expect(api.update).toHaveBeenCalledWith('m1', expect.objectContaining({ class: 'ESSENTIAL' }))
+    );
+  });
+
+  it('keeps the class untouched when it is not changed and resets it to automatic', async () => {
+    api.history.mockResolvedValue(history({ ...ifood, class: 'VARIABLE' }));
+    api.update.mockResolvedValue({ merchant: ifood, updatedTransactions: 0 });
+    renderScreen();
+
+    fireEvent.click(await within(await waitFor(table)).findByText('iFood'));
+    fireEvent.click(await screen.findByText('Editar...'));
+    fireEvent.click(screen.getByText('Salvar'));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    expect(api.update.mock.calls[0][1].class).toBeUndefined();
+
+    fireEvent.click(await screen.findByText('Editar...'));
+    const select = fieldOf('Classificação do gasto:', 'select');
+    expect(select.value).toBe('VARIABLE');
+    fireEvent.change(select, { target: { value: '' } });
+    fireEvent.click(screen.getByText('Salvar'));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
+    expect(api.update.mock.calls[1][1].class).toBeNull();
   });
 
   it('alerts when saving the merchant fails', async () => {

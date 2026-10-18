@@ -10,4 +10,5 @@ export const queryKeys = {
   activity: ['activity'] as const,
   savings: ['savings'] as const,
   merchants: ['merchants'] as const,
+  avoidable: ['summary', 'avoidable'] as const,
 };

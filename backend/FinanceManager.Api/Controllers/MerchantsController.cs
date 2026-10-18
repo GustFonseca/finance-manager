@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FinanceManager.Api.Models;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantSpending;
@@ -49,6 +50,13 @@ public class MerchantsController : ControllerBase
         var result = await _mediator.Send(new UpdateMerchantCommand(
             GetUserId(), id, request.Name, request.Kind, request.CategoryId, request.ApplyToTransactions));
         return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("{id}/class")]
+    public async Task<ActionResult<MerchantDto>> SetClass(Guid id, [FromBody] SetMerchantClassRequest request)
+    {
+        var merchant = await _mediator.Send(new SetMerchantClassCommand(GetUserId(), id, request.Class));
+        return merchant == null ? NotFound() : Ok(merchant);
     }
 
     [HttpGet("spending")]

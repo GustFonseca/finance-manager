@@ -3,6 +3,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { invalidateMoney } from '@/features/transactions/queries';
 import { DateRange, PeriodFilter } from '@/features/transactions/types';
 import { merchantsApi } from './api';
+import { SpendingClass } from '@/features/spending/types';
 import { UpdateMerchantInput } from './types';
 
 export function useMerchants() {
@@ -29,6 +30,15 @@ export function useMerchantHistory(id: string | null, range: DateRange) {
     queryKey: [...queryKeys.merchants, 'history', id, range],
     queryFn: () => merchantsApi.history(id!, range),
     enabled: !!id,
+  });
+}
+
+export function useSetMerchantClass() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, spendingClass }: { id: string; spendingClass: SpendingClass | null }) =>
+      merchantsApi.setClass(id, spendingClass),
+    onSuccess: () => invalidateMoney(qc),
   });
 }
 

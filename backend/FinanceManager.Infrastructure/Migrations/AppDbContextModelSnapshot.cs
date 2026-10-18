@@ -594,6 +594,66 @@ namespace FinanceManager.Infrastructure.Migrations
                             Pattern = "^outros$",
                             Priority = 420,
                             Type = "CATCH_ALL_CATEGORY"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000043"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "netflix|disney|hbo|\\bmax\\b|prime video|amazon prime|globoplay|paramount|crunchyroll|apple tv|youtube premium|star plus|telecine",
+                            Priority = 430,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Streaming de vídeo"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000044"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "spotify|deezer|apple music|youtube music|tidal|amazon music",
+                            Priority = 440,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Música"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000045"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "icloud|google one|dropbox|onedrive|mega",
+                            Priority = 450,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Armazenamento em nuvem"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000046"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "chatgpt|openai|claude|anthropic|gemini|copilot|midjourney",
+                            Priority = 460,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Inteligência artificial"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000047"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "smart ?fit|gympass|wellhub|totalpass|bluefit|academia",
+                            Priority = 470,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Academia"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000048"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Pattern = "xbox|playstation|nintendo|steam|game pass",
+                            Priority = 480,
+                            Type = "SUBSCRIPTION_GROUP",
+                            Value = "Jogos"
                         });
                 });
 
@@ -671,6 +731,10 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Class")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

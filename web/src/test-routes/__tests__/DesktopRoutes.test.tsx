@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { LoginScreen } from '@/features/auth/LoginScreen';
 import DesktopLayout from '../../../app/(desktop)/_layout';
 import AccountsRoute from '../../../app/(desktop)/accounts';
+import AvoidableRoute from '../../../app/(desktop)/avoidable';
 import CategoriesRoute from '../../../app/(desktop)/categories';
 import EventsRoute from '../../../app/(desktop)/events';
 import GoalsRoute from '../../../app/(desktop)/goals';
@@ -35,6 +36,7 @@ function mockScreen(name: string) {
 
 jest.mock('@/features/accounts/AccountsScreen', () => ({ AccountsScreen: mockScreen('contas') }));
 jest.mock('@/features/activity/ActivityScreen', () => ({ ActivityScreen: mockScreen('eventos') }));
+jest.mock('@/features/avoidable/AvoidableScreen', () => ({ AvoidableScreen: mockScreen('gastos evitáveis') }));
 jest.mock('@/features/categories/CategoriesScreen', () => ({ CategoriesScreen: mockScreen('categorias') }));
 jest.mock('@/features/dashboard/DashboardScreen', () => ({ DashboardScreen: mockScreen('painel') }));
 jest.mock('@/features/files/FileDesktop', () => ({ FileDesktop: mockScreen('arquivos na área de trabalho') }));
@@ -65,7 +67,7 @@ describe('DesktopLayout', () => {
 
     const shell = screen.getByTestId('shell');
     expect(shell.textContent).toContain(
-      '/ /transactions /accounts /goals /categories /spending /merchants /savings /events'
+      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /events'
     );
     expect(screen.getByText('arquivos na área de trabalho')).toBeTruthy();
     expect(screen.getByText('rota atual')).toBeTruthy();
@@ -76,6 +78,7 @@ describe('program routes', () => {
   it.each([
     ['index', DashboardRoute],
     ['accounts', AccountsRoute],
+    ['avoidable', AvoidableRoute],
     ['categories', CategoriesRoute],
     ['events', EventsRoute],
     ['goals', GoalsRoute],

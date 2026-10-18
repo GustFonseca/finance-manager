@@ -1,5 +1,6 @@
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
+using FinanceManager.Infrastructure.Classification;
 using FinanceManager.Infrastructure.Context;
 using FinanceManager.Infrastructure.Repositories;
 using FinanceManager.Tests.Support;
@@ -46,7 +47,7 @@ public sealed class RepositoryTests : IDisposable
 
         var rules = await new ClassificationRuleRepository(_db).GetActiveAsync();
 
-        Assert.Equal(41, rules.Count);
+        Assert.Equal(DefaultClassificationRules.All.Count - 1, rules.Count);
         Assert.DoesNotContain(rules, r => r.Id == rule.Id);
         Assert.Equal(rules.OrderBy(r => r.Type.ToString()).ThenBy(r => r.Priority).Select(r => r.Id), rules.Select(r => r.Id));
     }

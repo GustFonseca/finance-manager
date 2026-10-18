@@ -1,3 +1,4 @@
+using FinanceManager.Infrastructure.Classification;
 using FinanceManager.Tests.Support;
 
 namespace FinanceManager.Tests.Api;
@@ -11,7 +12,7 @@ public class PilotSqliteTests
         using (connection)
         using (db)
         {
-            Assert.Equal(42, db.ClassificationRules.Count());
+            Assert.Equal(DefaultClassificationRules.All.Count, db.ClassificationRules.Count());
         }
     }
 }

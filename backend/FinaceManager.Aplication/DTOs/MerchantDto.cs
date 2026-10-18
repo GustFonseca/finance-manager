@@ -10,6 +10,7 @@ public class MerchantDto
     public string? Document { get; set; }
     public Guid? CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
+    public SpendingClass? Class { get; set; }
 }
 
 public class MerchantMatchDto
@@ -71,4 +72,9 @@ public class UpdateMerchantRequest
     public MerchantKind Kind { get; set; }
     public Guid? CategoryId { get; set; }
     public bool ApplyToTransactions { get; set; }
+}
+
+public class SetMerchantClassRequest
+{
+    public SpendingClass? Class { get; set; }
 }

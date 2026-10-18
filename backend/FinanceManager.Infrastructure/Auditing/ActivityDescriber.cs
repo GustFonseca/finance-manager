@@ -53,7 +53,17 @@ public static class ActivityDescriber
             yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento renomeado: {Original<string>(entry, nameof(Merchant.Name))} → {m.Name}");
         else if (Changed(entry, nameof(Merchant.Kind)))
             yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento atualizado: {m.Name}");
+        if (Changed(entry, nameof(Merchant.Class)))
+            yield return Log(m.UserId, "Estabelecimentos", $"Estabelecimento {m.Name} classificado como {ClassLabel(m.Class)}");
     }
+
+    private static string ClassLabel(SpendingClass? value) => value switch
+    {
+        SpendingClass.ESSENTIAL => "essencial",
+        SpendingClass.VARIABLE => "variável",
+        SpendingClass.SUPERFLUOUS => "supérfluo",
+        _ => "automático",
+    };
 
     private static readonly string[] EditableTransactionFields =
     [

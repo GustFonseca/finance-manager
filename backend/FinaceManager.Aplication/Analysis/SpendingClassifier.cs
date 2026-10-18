@@ -7,7 +7,8 @@ namespace FinanceManager.Aplication.Analysis;
 public static class SpendingClassifier
 {
     public static SpendingClass Classify(Transaction transaction, ClassificationRules rules) =>
-        Classify($"{transaction.Merchant?.Name} {transaction.Description}", transaction.Category?.Name ?? string.Empty, rules);
+        transaction.Merchant?.Class
+        ?? Classify($"{transaction.Merchant?.Name} {transaction.Description}", transaction.Category?.Name ?? string.Empty, rules);
 
     public static SpendingClass Classify(string description, string categoryName, ClassificationRules rules)
     {

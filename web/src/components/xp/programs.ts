@@ -59,6 +59,13 @@ export const PROGRAMS: Program[] = [
     description: 'Quanto você gasta em cada lugar',
   },
   {
+    route: '/avoidable',
+    title: 'Gastos evitáveis',
+    icon: 'scissors',
+    color: '#C62828',
+    description: 'Onde dá para cortar sem sofrer',
+  },
+  {
     route: '/savings',
     title: 'Plano de economia',
     icon: 'money',

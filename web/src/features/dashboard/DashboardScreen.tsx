@@ -7,6 +7,7 @@ import { colors, spacing, fontSize } from '@/theme';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
 import { useAuth } from '@/features/auth/AuthContext';
+import { AvoidableSummaryCard } from '@/features/avoidable/components/AvoidableSummaryCard';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
 import { RecurringExpenses } from './components/RecurringExpenses';
@@ -65,6 +66,8 @@ export function DashboardScreen() {
           <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
         ) : null}
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+
+        <AvoidableSummaryCard filter={filter} />
 
         <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
 

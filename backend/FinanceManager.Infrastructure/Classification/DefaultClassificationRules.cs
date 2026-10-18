@@ -58,6 +58,13 @@ public static class DefaultClassificationRules
         Rule(RuleType.ESSENTIAL_CATEGORY, @"^(moradia|saude|educacao)$"),
         Rule(RuleType.SUPERFLUOUS_CATEGORY, @"^lazer$"),
         Rule(RuleType.CATCH_ALL_CATEGORY, @"^outros$"),
+
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"netflix|disney|hbo|\bmax\b|prime video|amazon prime|globoplay|paramount|crunchyroll|apple tv|youtube premium|star plus|telecine", "Streaming de vídeo"),
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"spotify|deezer|apple music|youtube music|tidal|amazon music", "Música"),
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"icloud|google one|dropbox|onedrive|mega", "Armazenamento em nuvem"),
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"chatgpt|openai|claude|anthropic|gemini|copilot|midjourney", "Inteligência artificial"),
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"smart ?fit|gympass|wellhub|totalpass|bluefit|academia", "Academia"),
+        Rule(RuleType.SUBSCRIPTION_GROUP, @"xbox|playstation|nintendo|steam|game pass", "Jogos"),
     ];
 
     private static ClassificationRule Rule(RuleType type, string pattern, string? value = null, string? note = null)

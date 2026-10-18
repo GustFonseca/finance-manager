@@ -63,6 +63,8 @@ public sealed class ClassificationRules
 
     public bool IsCatchAll(string categoryName) => Any(RuleType.CATCH_ALL_CATEGORY, categoryName);
 
+    public string? SubscriptionGroup(string text) => FirstValue(RuleType.SUBSCRIPTION_GROUP, text);
+
     private bool Any(RuleType type, string text)
     {
         if (!_rules.TryGetValue(type, out var list)) return false;

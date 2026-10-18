@@ -77,6 +77,7 @@ public class AppDbContext : DbContext
             e.Property(m => m.Key).HasMaxLength(100);
             e.Property(m => m.Document).HasMaxLength(30);
             e.Property(m => m.Kind).HasConversion<string>().HasMaxLength(20);
+            e.Property(m => m.Class).HasConversion<string>().HasMaxLength(20);
             e.HasOne(m => m.User).WithMany().HasForeignKey(m => m.UserId);
             e.HasOne(m => m.Category).WithMany().HasForeignKey(m => m.CategoryId).OnDelete(DeleteBehavior.SetNull);
         });

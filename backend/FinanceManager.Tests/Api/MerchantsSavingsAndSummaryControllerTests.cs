@@ -1,15 +1,17 @@
 using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
+using FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
-using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantSpending;
+using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetUnsortedMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.ResolveMerchants;
 using FinanceManager.Aplication.UseCases.Savings.Commands.ApplySuggestedBudgets;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetCategoryBudget;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetSavingsGoal;
 using FinanceManager.Aplication.UseCases.Savings.Queries.GetSavingsPlan;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetAvoidableSpending;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetRecurringExpenses;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetSpendingAnalysis;
@@ -82,6 +84,20 @@ public class MerchantsSavingsAndSummaryControllerTests
         Assert.Equal(2, Assert.IsType<UpdateMerchantResultDto>(Assert.IsType<OkObjectResult>(found.Result).Value).UpdatedTransactions);
         Assert.IsType<NotFoundResult>(missing.Result);
         Assert.Equal(new UpdateMerchantCommand(Me, Known, "iFood", MerchantKind.BUSINESS, category, true), _mediator.Sent[0]);
+    }
+
+    [Fact]
+    public async Task Merchants_SetClass_returns_200_or_404()
+    {
+        var dto = new MerchantDto { Id = Known, Class = SpendingClass.ESSENTIAL };
+        _mediator.Returns<SetMerchantClassCommand>(c => c.MerchantId == Known ? dto : null);
+
+        var found = await Merchants.SetClass(Known, new SetMerchantClassRequest { Class = SpendingClass.ESSENTIAL });
+        var missing = await Merchants.SetClass(Guid.NewGuid(), new SetMerchantClassRequest());
+
+        Assert.Same(dto, Assert.IsType<OkObjectResult>(found.Result).Value);
+        Assert.IsType<NotFoundResult>(missing.Result);
+        Assert.Equal(new SetMerchantClassCommand(Me, Known, SpendingClass.ESSENTIAL), _mediator.Sent[0]);
     }
 
     [Fact]
@@ -193,6 +209,18 @@ public class MerchantsSavingsAndSummaryControllerTests
 
         Assert.Same(recurring, Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Equal(new GetRecurringExpensesQuery(Me, End, Known), Assert.Single(_mediator.Sent));
+    }
+
+    [Fact]
+    public async Task Summary_GetAvoidable_uses_the_requested_month()
+    {
+        var avoidable = new AvoidableSpendingDto();
+        _mediator.Returns<GetAvoidableSpendingQuery>(_ => avoidable);
+
+        var result = await Summary.GetAvoidable(Start, End, Known);
+
+        Assert.Same(avoidable, Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(new GetAvoidableSpendingQuery(Me, Start, End, Known), Assert.Single(_mediator.Sent));
     }
 
     [Fact]

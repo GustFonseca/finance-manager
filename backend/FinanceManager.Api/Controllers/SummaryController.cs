@@ -4,6 +4,7 @@ using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetRecurringExpenses;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetAvoidableSpending;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetSpendingAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +43,16 @@ public class SummaryController : ControllerBase
         var (_, now) = MonthPeriod.Resolve(null, end);
         var recurring = await _mediator.Send(new GetRecurringExpensesQuery(GetUserId(), now, accountId));
         return Ok(recurring);
+    }
+
+    [HttpGet("avoidable")]
+    public async Task<ActionResult<AvoidableSpendingDto>> GetAvoidable(
+        [FromQuery] DateTime? start,
+        [FromQuery] DateTime? end,
+        [FromQuery] Guid? accountId)
+    {
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
+        return Ok(await _mediator.Send(new GetAvoidableSpendingQuery(GetUserId(), monthStart, now, accountId)));
     }
 
     [HttpGet("spending")]

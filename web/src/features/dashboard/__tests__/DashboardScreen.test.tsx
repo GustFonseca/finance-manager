@@ -7,6 +7,8 @@ import { accountsApi } from '@/features/accounts/api';
 import { transactionsApi } from '@/features/transactions/api';
 import { goalsApi } from '@/features/goals/api';
 import { useAuth } from '@/features/auth/AuthContext';
+import { avoidableApi } from '@/features/avoidable/api';
+import { emptyReport } from '@/features/avoidable/__tests__/fixtures';
 import { DashboardScreen } from '../DashboardScreen';
 import { summaryApi } from '../api';
 import { RecurringExpenseDto } from '../types';
@@ -15,6 +17,7 @@ jest.mock('../api');
 jest.mock('@/features/accounts/api');
 jest.mock('@/features/transactions/api');
 jest.mock('@/features/goals/api');
+jest.mock('@/features/avoidable/api');
 jest.mock('@/features/auth/AuthContext', () => ({ useAuth: jest.fn() }));
 
 const money = (cents: number, signed = false) => formatCents(cents, { signed }).replace(/\s+/g, ' ');
@@ -69,6 +72,7 @@ function setup() {
     txn('t6'),
   ] as never);
   jest.mocked(goalsApi.getAll).mockResolvedValue(goals as never);
+  jest.mocked(avoidableApi.get).mockResolvedValue({ ...emptyReport, monthCents: 12300, yearProjectionCents: 147600 });
 }
 
 const currentKey = monthKeyOf(new Date());
@@ -114,6 +118,12 @@ describe('DashboardScreen', () => {
 
     expect(summaryApi.get).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
+
+    expect(screen.getByText('Gastos evitáveis')).toBeTruthy();
+    expect(screen.getByText(money(12300))).toBeTruthy();
+    expect(screen.getByText(`em gastos supérfluos neste mês · ${money(147600)} em 12 meses no ritmo atual`)).toBeTruthy();
+    expect(screen.getByText('Ver gastos evitáveis')).toBeTruthy();
+    expect(avoidableApi.get).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
   });
 
   it('filters by month and account', async () => {
@@ -131,6 +141,7 @@ describe('DashboardScreen', () => {
       expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' })
     );
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
+    expect(avoidableApi.get).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
     await waitFor(() => expect(screen.getByText(`Resumo de ${monthLabel(previousKey)} · Nubank`)).toBeTruthy());
     expect(screen.getByText('Lazer')).toBeTruthy();
     expect(screen.getByText('Moradia')).toBeTruthy();
@@ -171,6 +182,14 @@ describe('DashboardScreen', () => {
     expect(screen.queryByText('Metas ativas')).toBeNull();
     expect(screen.queryByText('Total por mês')).toBeNull();
     expect(screen.getByText('Olá,')).toBeTruthy();
+  });
+
+  it('hides the avoidable spending card until it loads', async () => {
+    jest.mocked(avoidableApi.get).mockReturnValue(new Promise(() => {}));
+    renderWithProviders(<DashboardScreen />, { windowId: '/' });
+
+    await waitFor(() => expect(screen.getByText('Viagem')).toBeTruthy());
+    expect(screen.queryByText('Ver gastos evitáveis')).toBeNull();
   });
 
   it('handles a user without a name', async () => {

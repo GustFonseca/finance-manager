@@ -5,6 +5,8 @@ jest.mock('@/lib/http', () => ({ http: { get: jest.fn(), post: jest.fn(), put: j
 
 const mocked = jest.mocked(http);
 
+beforeEach(() => jest.clearAllMocks());
+
 describe('merchantsApi', () => {
   it('lists merchants', async () => {
     mocked.get.mockResolvedValue({ data: [{ id: 'm' }] });
@@ -24,6 +26,28 @@ describe('merchantsApi', () => {
     mocked.put.mockResolvedValue({ data: { updatedTransactions: 2 } });
     await expect(merchantsApi.update('m', data)).resolves.toEqual({ updatedTransactions: 2 });
     expect(mocked.put).toHaveBeenCalledWith('/merchants/m', data);
+    expect(mocked.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets the spending class of a merchant', async () => {
+    mocked.put.mockResolvedValue({ data: { id: 'm', class: 'ESSENTIAL' } });
+    await expect(merchantsApi.setClass('m', 'ESSENTIAL')).resolves.toEqual({ id: 'm', class: 'ESSENTIAL' });
+    expect(mocked.put).toHaveBeenCalledWith('/merchants/m/class', { class: 'ESSENTIAL' });
+  });
+
+  it('updates a merchant and then its class when the class is given', async () => {
+    const data = { name: 'iFood', kind: 'BUSINESS' as const, categoryId: 'c', applyToTransactions: true };
+    mocked.put
+      .mockResolvedValueOnce({ data: { merchant: { id: 'm', class: null }, updatedTransactions: 2 } })
+      .mockResolvedValueOnce({ data: { id: 'm', class: null, name: 'iFood' } });
+
+    await expect(merchantsApi.update('m', { ...data, class: null })).resolves.toEqual({
+      merchant: { id: 'm', class: null, name: 'iFood' },
+      updatedTransactions: 2,
+    });
+    expect(mocked.put).toHaveBeenNthCalledWith(1, '/merchants/m', data);
+    expect(mocked.put.mock.calls[0][1]).not.toHaveProperty('class');
+    expect(mocked.put).toHaveBeenNthCalledWith(2, '/merchants/m/class', { class: null });
   });
 
   it('loads spending and history with their periods', async () => {
