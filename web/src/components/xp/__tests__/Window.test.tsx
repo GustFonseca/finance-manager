@@ -1,0 +1,284 @@
+import React from 'react';
+import { act, fireEvent, screen } from '@testing-library/react';
+import { router } from 'expo-router';
+import { renderWithProviders } from '@/test/render';
+import { Window } from '../Window';
+import { useWindowManager, WindowIdProvider } from '../WindowManager';
+import { pointerDown, pointerMove, pointerUp, setViewport } from './helpers';
+
+type Api = ReturnType<typeof useWindowManager>;
+
+let wm: Api;
+
+function Probe() {
+  wm = useWindowManager();
+  return null;
+}
+
+function frameOf(title: string) {
+  let node: HTMLElement | null = screen.getByText(title);
+  while (node && !node.style.zIndex) node = node.parentElement;
+  return node as HTMLElement;
+}
+
+function titleBarOf(title: string) {
+  return screen.getByText(title).parentElement as HTMLElement;
+}
+
+async function flush() {
+  await act(async () => {});
+}
+
+function renderWindow(props: Partial<React.ComponentProps<typeof Window>> = {}) {
+  return renderWithProviders(
+    <>
+      <Probe />
+      <Window title="Transações" icon="exchange" {...props}>
+        <span>conteúdo</span>
+      </Window>
+    </>,
+    { windowId: '/transactions' }
+  );
+}
+
+describe('Window', () => {
+  let now = 1_000_000;
+
+  beforeEach(() => {
+    setViewport(1200, 800);
+    now = 1_000_000;
+    jest.spyOn(Date, 'now').mockImplementation(() => now);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('renders the title, content, toolbar actions and status bar', async () => {
+    const onAction = jest.fn();
+    const onRefresh = jest.fn();
+    renderWindow({ actions: [{ label: 'Nova', icon: 'plus', onPress: onAction }], onRefresh, status: '3 itens' });
+    await flush();
+
+    expect(screen.getByText('conteúdo')).toBeTruthy();
+    expect(screen.getByText('3 itens')).toBeTruthy();
+    fireEvent.click(screen.getByText('Nova'));
+    expect(onAction).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('Atualizar'));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    const frame = frameOf('Transações');
+    expect(frame.style.left).toBe('114px');
+    expect(frame.style.top).toBe('49px');
+    expect(frame.style.width).toBe('860px');
+    expect(wm.metaOf('/transactions')).toEqual({ title: 'Transações', icon: 'exchange' });
+  });
+
+  it('omits the toolbar and status bar when there is nothing to show', async () => {
+    renderWindow();
+    await flush();
+    expect(screen.queryAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Minimizar',
+      'Maximizar',
+      'Fechar',
+    ]);
+    fireEvent.click(screen.getByText('Arquivo'));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Fechar']);
+  });
+
+  it('does not render when the window is not open', async () => {
+    renderWithProviders(
+      <WindowIdProvider value="/accounts">
+        <Window title="Contas" icon="bank">
+          <span>contas</span>
+        </Window>
+      </WindowIdProvider>,
+      { windowId: '/transactions' }
+    );
+    await flush();
+    expect(screen.queryByText('contas')).toBeNull();
+  });
+
+  it('runs the actions and closes from the Arquivo menu', async () => {
+    const onAction = jest.fn();
+    renderWindow({ actions: [{ label: 'Nova', icon: 'plus', onPress: onAction }] });
+    await flush();
+
+    fireEvent.click(screen.getByText('Arquivo'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Nova...' }));
+    expect(onAction).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Arquivo'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Fechar' }));
+    expect(screen.queryByText('conteúdo')).toBeNull();
+    expect(wm.isOpen('/transactions')).toBe(false);
+  });
+
+  it('maximizes, restores and minimizes from the Exibir menu', async () => {
+    const onRefresh = jest.fn();
+    renderWindow({ onRefresh });
+    await flush();
+
+    fireEvent.click(screen.getByText('Exibir'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Atualizar' }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Exibir'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Maximizar' }));
+    expect(wm.isMaximized('/transactions')).toBe(true);
+    expect(frameOf('Transações').style.left).toBe('');
+    expect(screen.getByRole('button', { name: 'Restaurar' })).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Exibir'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Restaurar' }));
+    expect(wm.isMaximized('/transactions')).toBe(false);
+
+    fireEvent.click(screen.getByText('Exibir'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Minimizar' }));
+    expect(screen.queryByText('conteúdo')).toBeNull();
+    expect(wm.isMinimized('/transactions')).toBe(true);
+  });
+
+  it('shows the about dialog from the Ajuda menu', async () => {
+    renderWindow();
+    await flush();
+    fireEvent.click(screen.getByText('Ajuda'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sobre o Finance Manager' }));
+    expect(await screen.findByText(/Controle de receitas, despesas, contas e metas/)).toBeTruthy();
+  });
+
+  it('uses the caption buttons to minimize, maximize and close', async () => {
+    renderWindow();
+    await flush();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Maximizar' }));
+    expect(wm.isMaximized('/transactions')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+    expect(wm.isMaximized('/transactions')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minimizar' }));
+    expect(wm.isMinimized('/transactions')).toBe(true);
+
+    act(() => wm.open('/transactions'));
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+    expect(wm.isOpen('/transactions')).toBe(false);
+  });
+
+  it('drags the window by the title bar and remembers the position', async () => {
+    renderWindow();
+    await flush();
+
+    pointerDown(titleBarOf('Transações'), { clientX: 200, clientY: 100 });
+    expect(document.body.style.userSelect).toBe('none');
+    pointerMove({ clientX: 250, clientY: 130 });
+    expect(frameOf('Transações').style.left).toBe('164px');
+    expect(frameOf('Transações').style.top).toBe('79px');
+    pointerUp();
+
+    expect(document.body.style.userSelect).toBe('');
+    expect(wm.positionOf('/transactions')).toEqual({ x: 164, y: 79 });
+    pointerMove({ clientX: 900, clientY: 900 });
+    expect(frameOf('Transações').style.left).toBe('164px');
+  });
+
+  it('keeps the window reachable when dragged off screen', async () => {
+    renderWindow();
+    await flush();
+
+    pointerDown(titleBarOf('Transações'), { clientX: 200, clientY: 100 });
+    pointerMove({ clientX: -5000, clientY: -5000 });
+    expect(frameOf('Transações').style.left).toBe('-760px');
+    expect(frameOf('Transações').style.top).toBe('0px');
+    pointerMove({ clientX: 5000, clientY: 5000 });
+    expect(frameOf('Transações').style.left).toBe('1100px');
+    expect(frameOf('Transações').style.top).toBe('742px');
+    pointerUp('pointercancel');
+    expect(wm.positionOf('/transactions')).toEqual({ x: 1100, y: 742 });
+  });
+
+  it('toggles maximize on a title bar double click', async () => {
+    renderWindow();
+    await flush();
+    const bar = titleBarOf('Transações');
+
+    pointerDown(bar, { clientX: 10, clientY: 10 });
+    pointerUp();
+    now += 100;
+    pointerDown(bar, { clientX: 10, clientY: 10 });
+    expect(wm.isMaximized('/transactions')).toBe(true);
+
+    now += 1000;
+    pointerDown(titleBarOf('Transações'), { clientX: 10, clientY: 10 });
+    pointerMove({ clientX: 60, clientY: 60 });
+    expect(frameOf('Transações').style.left).toBe('');
+    now += 100;
+    pointerDown(titleBarOf('Transações'), { clientX: 10, clientY: 10 });
+    expect(wm.isMaximized('/transactions')).toBe(false);
+  });
+
+  it('ignores non primary buttons and presses on the caption buttons', async () => {
+    renderWindow();
+    await flush();
+
+    pointerDown(titleBarOf('Transações'), { button: 2, clientX: 0, clientY: 0 });
+    pointerMove({ clientX: 100, clientY: 100 });
+    expect(frameOf('Transações').style.left).toBe('114px');
+
+    pointerDown(screen.getByRole('button', { name: 'Fechar' }), { clientX: 0, clientY: 0 });
+    pointerMove({ clientX: 100, clientY: 100 });
+    expect(frameOf('Transações').style.left).toBe('114px');
+    expect(document.body.style.userSelect).toBe('');
+  });
+
+  it('brings an inactive window to the front when pressed', async () => {
+    renderWithProviders(
+      <>
+        <Probe />
+        <Window title="Transações" icon="exchange">
+          <span>t</span>
+        </Window>
+        <WindowIdProvider value="/accounts">
+          <Window title="Contas" icon="bank">
+            <span>c</span>
+          </Window>
+        </WindowIdProvider>
+      </>,
+      { windowId: '/transactions' }
+    );
+    await flush();
+
+    act(() => wm.open('/accounts'));
+    expect(wm.activeWindow).toBe('/accounts');
+    expect(router.navigate).toHaveBeenCalledWith('/accounts');
+    expect(frameOf('Contas').style.left).toBe('142px');
+    expect(frameOf('Contas').style.zIndex).toBe('2');
+    expect(frameOf('Transações').style.zIndex).toBe('1');
+
+    pointerDown(frameOf('Contas'));
+    expect(wm.activeWindow).toBe('/accounts');
+
+    pointerDown(frameOf('Transações'));
+    expect(wm.activeWindow).toBe('/transactions');
+    expect(frameOf('Transações').style.zIndex).toBe('2');
+  });
+
+  it('is always maximized on a compact screen', async () => {
+    setViewport(600, 800);
+    renderWindow();
+    await flush();
+
+    expect(screen.queryByRole('button', { name: 'Maximizar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Restaurar' })).toBeNull();
+    expect(frameOf('Transações').style.left).toBe('');
+
+    fireEvent.click(screen.getByText('Exibir'));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Minimizar']);
+    fireEvent.click(screen.getByText('Exibir'));
+
+    const bar = titleBarOf('Transações');
+    pointerDown(bar, { clientX: 10, clientY: 10 });
+    now += 100;
+    pointerDown(bar, { clientX: 10, clientY: 10 });
+    expect(wm.isMaximized('/transactions')).toBe(false);
+  });
+});

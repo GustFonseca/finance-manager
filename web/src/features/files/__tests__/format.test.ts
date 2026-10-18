@@ -1,4 +1,4 @@
-import { fileIcon, formatBytes, nextFolderName } from '../format';
+import { fileIcon, folderWindowId, formatBytes, formatDate, nextFolderName, TRASH_WINDOW_ID } from '../format';
 
 describe('nextFolderName', () => {
   it('uses "Nova pasta" when it is free', () => {
@@ -31,5 +31,32 @@ describe('fileIcon', () => {
 
   it('falls back to a generic file icon', () => {
     expect(fileIcon('sem-extensao').icon).toBe('file-o');
+  });
+});
+
+describe('formatBytes for large files', () => {
+  it('stops at GB', () => {
+    expect(formatBytes(5 * 1024 ** 3)).toBe('5 GB');
+    expect(formatBytes(2048 * 1024 ** 3)).toBe('2.048 GB');
+  });
+});
+
+describe('fileIcon for the other kinds', () => {
+  it('recognizes documents, archives and text files', () => {
+    expect(fileIcon('contrato.docx').icon).toBe('file-word-o');
+    expect(fileIcon('backup.zip').icon).toBe('file-archive-o');
+    expect(fileIcon('notas.txt').icon).toBe('file-text-o');
+  });
+});
+
+describe('window ids and dates', () => {
+  it('builds folder window ids and exposes the trash id', () => {
+    expect(folderWindowId('abc')).toBe('folder:abc');
+    expect(TRASH_WINDOW_ID).toBe('trash');
+  });
+
+  it('formats dates in pt-BR with date and time', () => {
+    const iso = '2026-10-02T13:30:00Z';
+    expect(formatDate(iso)).toBe(new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }));
   });
 });

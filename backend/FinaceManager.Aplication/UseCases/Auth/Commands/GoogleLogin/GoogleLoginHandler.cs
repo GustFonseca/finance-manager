@@ -1,12 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using FinanceManager.Aplication.Auth;
 using FinanceManager.Aplication.DTOs.Auth;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
-using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -18,6 +18,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
     private readonly IAccountRepository _accountRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IActivityLogRepository _activityLogRepository;
+    private readonly IGoogleTokenValidator _googleTokenValidator;
     private readonly IConfiguration _config;
 
     public GoogleLoginHandler(
@@ -25,21 +26,20 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
         IAccountRepository accountRepository,
         ICategoryRepository categoryRepository,
         IActivityLogRepository activityLogRepository,
+        IGoogleTokenValidator googleTokenValidator,
         IConfiguration config)
     {
         _userRepository = userRepository;
         _accountRepository = accountRepository;
         _categoryRepository = categoryRepository;
         _activityLogRepository = activityLogRepository;
+        _googleTokenValidator = googleTokenValidator;
         _config = config;
     }
 
     public async Task<LoginResponse> Handle(GoogleLoginCommand request, CancellationToken cancellationToken = default)
     {
-        var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, new GoogleJsonWebSignature.ValidationSettings
-        {
-            Audience = [_config["Google:ClientId"]!]
-        });
+        var payload = await _googleTokenValidator.ValidateAsync(request.IdToken, cancellationToken);
 
         var user = await _userRepository.GetByGoogleIdAsync(payload.Subject);
         if (user == null)

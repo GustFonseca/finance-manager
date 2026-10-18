@@ -11,6 +11,8 @@ using FinanceManager.Infrastructure.Storage;
 using FinanceManager.Infrastructure.Auditing;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Infrastructure.Classification;
+using FinanceManager.Aplication.Auth;
+using FinanceManager.Infrastructure.Auth;
 
 namespace FinanceManager.Infrastructure;
 
@@ -43,6 +45,8 @@ public static class DependencyInjection
         services.AddSingleton<IClassificationRulesProvider, ClassificationRulesProvider>();
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
+
+        services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 
         return services;
     }
