@@ -11,7 +11,7 @@ import { avoidableApi } from '@/features/avoidable/api';
 import { emptyReport } from '@/features/avoidable/__tests__/fixtures';
 import { DashboardScreen } from '../DashboardScreen';
 import { summaryApi } from '../api';
-import { RecurringExpenseDto } from '../types';
+import { CashFlowForecastDto, RecurringExpenseDto } from '../types';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -45,6 +45,31 @@ const recurring: RecurringExpenseDto[] = [
   },
 ];
 
+const forecast: CashFlowForecastDto = {
+  isCurrentMonth: true,
+  remainingDays: 10,
+  incomeSoFarCents: 500000,
+  expenseSoFarCents: 320000,
+  pendingIncomeCents: 0,
+  pendingBillsCents: 25000,
+  variableEstimateCents: 40000,
+  projectedIncomeCents: 500000,
+  projectedExpenseCents: 385000,
+  projectedBalanceCents: 115000,
+  upcoming: [{ kind: 'INSTALLMENT', name: 'Magazine', amountCents: 25000, expectedDate: '2026-10-28T12:00:00Z' }],
+  nextIncome: null,
+  installments: {
+    monthlyCents: 25000,
+    remainingCents: 150000,
+    items: [
+      {
+        merchantId: 'm1', key: 'magazine', name: 'Magazine', amountCents: 25000, paid: 4, total: 10,
+        remainingCents: 150000, lastDate: '2026-09-28T12:00:00Z', endsOn: '2027-04-28T12:00:00Z',
+      },
+    ],
+  },
+};
+
 function txn(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, accountId: 'a1', accountName: 'Nubank', categoryId: 'c1', categoryName: 'Alimentação',
@@ -63,6 +88,7 @@ function setup() {
   jest.mocked(accountsApi.getAll).mockResolvedValue(accounts);
   jest.mocked(summaryApi.get).mockResolvedValue(summary);
   jest.mocked(summaryApi.recurring).mockResolvedValue(recurring);
+  jest.mocked(summaryApi.forecast).mockResolvedValue(forecast);
   jest.mocked(transactionsApi.getAll).mockResolvedValue([
     txn('t1'),
     txn('t2', { type: 'INCOME', amountCents: 250000, description: '', categoryName: 'Salário' }),
@@ -118,6 +144,14 @@ describe('DashboardScreen', () => {
 
     expect(summaryApi.get).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
+    expect(summaryApi.forecast).toHaveBeenCalledWith({ ...monthRange(currentKey), accountId: undefined });
+
+    expect(screen.getByText('Previsão do mês')).toBeTruthy();
+    expect(screen.getByText(money(115000))).toBeTruthy();
+    expect(screen.getByText('Próximos lançamentos')).toBeTruthy();
+    expect(screen.getByText('Parcelamentos')).toBeTruthy();
+    expect(screen.getAllByText('Magazine')).toHaveLength(2);
+    expect(screen.getByText(`Comprometido por mês · falta pagar ${money(150000)}`)).toBeTruthy();
 
     expect(screen.getByText('Gastos evitáveis')).toBeTruthy();
     expect(screen.getByText(money(12300))).toBeTruthy();
@@ -141,6 +175,7 @@ describe('DashboardScreen', () => {
       expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' })
     );
     expect(summaryApi.recurring).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
+    expect(summaryApi.forecast).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
     expect(avoidableApi.get).toHaveBeenCalledWith({ ...monthRange(previousKey), accountId: 'a1' });
     await waitFor(() => expect(screen.getByText(`Resumo de ${monthLabel(previousKey)} · Nubank`)).toBeTruthy());
     expect(screen.getByText('Lazer')).toBeTruthy();
@@ -158,6 +193,7 @@ describe('DashboardScreen', () => {
     await waitFor(() => expect(summaryApi.get).toHaveBeenCalledTimes(2));
     expect(transactionsApi.getAll).toHaveBeenCalledTimes(2);
     expect(summaryApi.recurring).toHaveBeenCalledTimes(2);
+    expect(summaryApi.forecast).toHaveBeenCalledTimes(2);
     expect(goalsApi.getAll).toHaveBeenCalledTimes(2);
   });
 
@@ -168,6 +204,22 @@ describe('DashboardScreen', () => {
     const toolbarButton = screen.getAllByRole('button').find((b) => within(b).queryByText('Atualizar'));
     fireEvent.click(toolbarButton!);
     await waitFor(() => expect(goalsApi.getAll).toHaveBeenCalledTimes(2));
+    expect(summaryApi.forecast).toHaveBeenCalledTimes(2);
+  });
+
+  it('hides the forecast for a closed month and the installments when there are none', async () => {
+    jest.mocked(summaryApi.forecast).mockResolvedValue({
+      ...forecast,
+      isCurrentMonth: false,
+      installments: { monthlyCents: 0, remainingCents: 0, items: [] },
+    });
+    renderWithProviders(<DashboardScreen />, { windowId: '/' });
+
+    await waitFor(() => expect(screen.getByText('Viagem')).toBeTruthy());
+    await waitFor(() => expect(summaryApi.forecast).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText('Atualizando...')).toBeNull());
+    expect(screen.queryByText('Previsão do mês')).toBeNull();
+    expect(screen.queryByText('Parcelamentos')).toBeNull();
   });
 
   it('shows the empty states when there is nothing in the month', async () => {

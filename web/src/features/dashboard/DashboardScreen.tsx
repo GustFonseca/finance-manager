@@ -10,9 +10,11 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { AvoidableSummaryCard } from '@/features/avoidable/components/AvoidableSummaryCard';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
+import { ForecastCard } from './components/ForecastCard';
+import { Installments } from './components/Installments';
 import { RecurringExpenses } from './components/RecurringExpenses';
 import { SummaryCards } from './components/SummaryCards';
-import { useRecurringExpenses, useSummary } from './queries';
+import { useForecast, useRecurringExpenses, useSummary } from './queries';
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -26,18 +28,21 @@ export function DashboardScreen() {
   const summaryQuery = useSummary(filter);
   const transactionsQuery = useTransactions(filter);
   const recurringQuery = useRecurringExpenses(filter);
+  const forecastQuery = useForecast(filter);
   const goalsQuery = useGoals();
 
   const isFetching =
     summaryQuery.isFetching ||
     transactionsQuery.isFetching ||
     recurringQuery.isFetching ||
+    forecastQuery.isFetching ||
     goalsQuery.isFetching;
 
   function refetchAll() {
     summaryQuery.refetch();
     transactionsQuery.refetch();
     recurringQuery.refetch();
+    forecastQuery.refetch();
     goalsQuery.refetch();
   }
 
@@ -67,9 +72,13 @@ export function DashboardScreen() {
         ) : null}
         {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
 
+        {forecastQuery.data && <ForecastCard forecast={forecastQuery.data} />}
+
         <AvoidableSummaryCard filter={filter} />
 
         <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
+
+        {forecastQuery.data && <Installments installments={forecastQuery.data.installments} />}
 
         {activeGoals.length > 0 && (
           <Card title="Metas ativas" style={styles.section}>

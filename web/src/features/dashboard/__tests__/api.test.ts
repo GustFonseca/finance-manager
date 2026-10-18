@@ -27,4 +27,16 @@ describe('summaryApi', () => {
     await summaryApi.recurring();
     expect(http.get).toHaveBeenCalledWith('/summary/recurring', { params: { end: undefined, accountId: undefined } });
   });
+
+  it('gets the cash flow forecast for a period and account', async () => {
+    jest.mocked(http.get).mockResolvedValue({ data: { projectedBalanceCents: 7 } });
+    await expect(summaryApi.forecast({ start: 's', end: 'e', accountId: 'a1' })).resolves.toEqual({ projectedBalanceCents: 7 });
+    expect(http.get).toHaveBeenCalledWith('/summary/forecast', { params: { start: 's', end: 'e', accountId: 'a1' } });
+  });
+
+  it('gets the cash flow forecast without filters', async () => {
+    jest.mocked(http.get).mockResolvedValue({ data: {} });
+    await summaryApi.forecast();
+    expect(http.get).toHaveBeenCalledWith('/summary/forecast', { params: { start: undefined, end: undefined, accountId: undefined } });
+  });
 });

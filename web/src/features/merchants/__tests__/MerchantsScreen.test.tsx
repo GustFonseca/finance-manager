@@ -54,6 +54,7 @@ const ifood: MerchantDto = {
   categoryId: 'c1',
   categoryName: 'Alimentação',
   class: null,
+  activity: 'Restaurantes e similares',
 };
 
 const history = (merchant: MerchantDto, incomeCents = 0): MerchantHistoryDto => ({
@@ -211,6 +212,7 @@ describe('MerchantsScreen', () => {
     expect(screen.getByText('Carregando...')).toBeTruthy();
 
     await waitFor(() => expect(screen.getByText('Empresa · Alimentação · 14.380.200/0001-21')).toBeTruthy());
+    expect(screen.getByText('Atividade: Restaurantes e similares')).toBeTruthy();
     const range = twelveMonthsUntil(currentKey);
     expect(api.history).toHaveBeenCalledWith('m1', range);
     expect(transactionsApi.getAll).toHaveBeenCalledWith({ ...range, merchantId: 'm1' });
@@ -228,13 +230,14 @@ describe('MerchantsScreen', () => {
   });
 
   it('labels the yearly history and merchants without category or document', async () => {
-    api.history.mockResolvedValue(history({ ...ifood, id: 'm2', name: 'Ana Souza', kind: 'PERSON', categoryName: '', document: null }));
+    api.history.mockResolvedValue(history({ ...ifood, id: 'm2', name: 'Ana Souza', kind: 'PERSON', categoryName: '', document: null, activity: null }));
     renderScreen();
     await waitFor(() => expect(screen.getByText('Ana Souza')).toBeTruthy());
     fireEvent.change(screen.getByDisplayValue('Por mês'), { target: { value: 'year' } });
 
     fireEvent.click(await within(await waitFor(table)).findByText('Ana Souza'));
     await waitFor(() => expect(screen.getByText('Pessoa · sem categoria')).toBeTruthy());
+    expect(screen.queryByText(/Atividade:/)).toBeNull();
     expect(api.history).toHaveBeenCalledWith('m2', yearRange(currentYear));
     expect(screen.getByText(`Gasto por mês, ${currentYear}`)).toBeTruthy();
     expect(screen.queryByText('Recebido')).toBeNull();

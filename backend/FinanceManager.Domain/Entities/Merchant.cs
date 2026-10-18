@@ -12,6 +12,9 @@ public class Merchant
     public string? Document { get; set; }
     public Guid? CategoryId { get; set; }
     public SpendingClass? Class { get; set; }
+    public string? ActivityCode { get; set; }
+    public string? Activity { get; set; }
+    public DateTime? EnrichedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;

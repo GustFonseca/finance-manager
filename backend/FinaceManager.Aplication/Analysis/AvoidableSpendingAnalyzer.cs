@@ -13,6 +13,8 @@ public static class AvoidableSpendingAnalyzer
     public const double SmallPurchaseTimesPerMonth = 4;
     public const double SpikeRatio = 1.5;
     public const long MinSpikeCents = 5_000;
+    public const int RobustSpikeMinMonths = 3;
+    public const double SpikeDeviations = 3;
     public const long FirstTimeMinCents = 20_000;
     public const double SuperfluousCut = 0.5;
     public const double PriceIncreaseTolerance = 0.02;
@@ -51,7 +53,7 @@ public static class AvoidableSpendingAnalyzer
             Subscriptions = Subscriptions(expenses, now, rules, monthlyRate, out var similar),
             SimilarSubscriptions = similar,
             SmallPurchases = SmallPurchases(historyMonths > 0 ? history : current, divisor),
-            Spikes = Spikes(current, history, divisor, historyMonths, rules),
+            Spikes = Spikes(current, expenses, monthStart, rules),
             FirstTimePurchases = FirstTimePurchases(current, expenses, monthStart),
         };
     }
@@ -167,20 +169,29 @@ public static class AvoidableSpendingAnalyzer
     }
 
     private static List<SpendingSpikeDto> Spikes(
-        List<Expense> current, List<Expense> history, int divisor, int historyMonths, ClassificationRules rules)
+        List<Expense> current, List<Expense> expenses, DateTime monthStart, ClassificationRules rules)
     {
-        if (historyMonths == 0) return [];
+        var months = Enumerable.Range(1, LookbackMonths)
+            .Select(i => monthStart.AddMonths(-i))
+            .Where(m => expenses.Any(e => e.Tx.Date >= m && e.Tx.Date < m.AddMonths(1)))
+            .ToList();
+        if (months.Count == 0) return [];
+
+        var history = expenses.Where(e => e.Tx.Date >= monthStart.AddMonths(-LookbackMonths) && e.Tx.Date < monthStart).ToList();
+        List<long> Series(Func<Expense, bool> belongs) => months
+            .Select(m => Sum(history.Where(e => belongs(e) && e.Tx.Date >= m && e.Tx.Date < m.AddMonths(1))))
+            .ToList();
 
         var byMerchant = current
             .Where(e => e.Class != SpendingClass.ESSENTIAL)
             .GroupBy(e => e.Key)
             .Select(g => Spike(SpikeKind.MERCHANT, g.MaxBy(e => e.Tx.Date)!.Tx.MerchantId, g.MaxBy(e => e.Tx.Date)!.Name,
-                Sum(g), Sum(history.Where(e => e.Key == g.Key)) / divisor));
+                Sum(g), Series(e => e.Key == g.Key)));
         var byCategory = current
             .Where(e => e.Tx.Category != null && rules.CategoryClass(e.Tx.Category.Name) != SpendingClass.ESSENTIAL)
             .GroupBy(e => e.Tx.CategoryId)
             .Select(g => Spike(SpikeKind.CATEGORY, g.Key, g.First().Tx.Category!.Name,
-                Sum(g), Sum(history.Where(e => e.Tx.CategoryId == g.Key)) / divisor));
+                Sum(g), Series(e => e.Tx.CategoryId == g.Key)));
 
         return byCategory.Concat(byMerchant)
             .Where(s => s != null)
@@ -189,10 +200,37 @@ public static class AvoidableSpendingAnalyzer
             .ToList();
     }
 
-    private static SpendingSpikeDto? Spike(SpikeKind kind, Guid? id, string name, long month, long average) =>
-        average > 0 && month >= average * SpikeRatio && month - average >= MinSpikeCents
-            ? new SpendingSpikeDto { Kind = kind, Id = id, Name = name, MonthCents = month, AverageCents = average, Ratio = Math.Round((double)month / average, 1) }
+    private static SpendingSpikeDto? Spike(SpikeKind kind, Guid? id, string name, long month, List<long> series)
+    {
+        var average = series.Sum() / series.Count;
+        if (average <= 0) return null;
+        var threshold = SpikeThreshold(series, average);
+        return month > threshold && month - Math.Max(average, Median(series)) >= MinSpikeCents
+            ? new SpendingSpikeDto
+            {
+                Kind = kind, Id = id, Name = name, MonthCents = month, AverageCents = average,
+                ThresholdCents = threshold, Ratio = Math.Round((double)month / average, 1),
+            }
             : null;
+    }
+
+    public static long SpikeThreshold(IReadOnlyList<long> series, long average)
+    {
+        var floor = (long)Math.Ceiling(average * SpikeRatio);
+        if (series.Count < RobustSpikeMinMonths) return floor;
+        var median = Median(series);
+        var deviation = Median(series.Select(v => Math.Abs(v - median)).ToList());
+        var robust = median + (long)Math.Ceiling(SpikeDeviations * 1.4826 * deviation);
+        return Math.Max(robust, (long)Math.Ceiling(Math.Max(median, average) * SpikeRatio));
+    }
+
+    public static long Median(IReadOnlyList<long> values)
+    {
+        if (values.Count == 0) return 0;
+        var sorted = values.Order().ToList();
+        var middle = sorted.Count / 2;
+        return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
 
     private static List<FirstTimePurchaseDto> FirstTimePurchases(List<Expense> current, List<Expense> expenses, DateTime monthStart)
     {

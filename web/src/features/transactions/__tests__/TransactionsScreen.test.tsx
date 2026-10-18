@@ -72,7 +72,7 @@ function renderScreen() {
 beforeEach(() => {
   api.getAll.mockResolvedValue([ifood]);
   jest.mocked(merchantsApi.getAll).mockResolvedValue([
-    { id: 'm1', name: 'iFood', kind: 'BUSINESS', document: null, categoryId: 'c1', categoryName: 'Alimentação', class: null },
+    { id: 'm1', name: 'iFood', kind: 'BUSINESS', document: null, categoryId: 'c1', categoryName: 'Alimentação', class: null, activity: null },
   ]);
   jest.mocked(accountsApi.getAll).mockResolvedValue([
     { id: 'a1', name: 'Nubank', balanceCents: 0, createdAt: '' },

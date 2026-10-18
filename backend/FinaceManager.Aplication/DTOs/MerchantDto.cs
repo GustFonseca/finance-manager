@@ -11,6 +11,7 @@ public class MerchantDto
     public Guid? CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public SpendingClass? Class { get; set; }
+    public string? Activity { get; set; }
 }
 
 public class MerchantMatchDto

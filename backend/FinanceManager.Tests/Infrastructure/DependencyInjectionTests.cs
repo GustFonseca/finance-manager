@@ -11,6 +11,9 @@ using FinanceManager.Domain.Interfaces.Repositories;
 using FinanceManager.Infrastructure;
 using FinanceManager.Infrastructure.Auth;
 using FinanceManager.Infrastructure.Classification;
+using FinanceManager.Infrastructure.Companies;
+using FinanceManager.Aplication.Companies;
+using Microsoft.Extensions.Hosting;
 using FinanceManager.Infrastructure.Context;
 using FinanceManager.Infrastructure.Messaging;
 using FinanceManager.Infrastructure.Repositories;
@@ -92,6 +95,18 @@ public class DependencyInjectionTests
         Assert.IsType<GoogleTokenValidator>(services.GetRequiredService<IGoogleTokenValidator>());
         Assert.IsType<ClassificationRulesProvider>(services.GetRequiredService<IClassificationRulesProvider>());
         Assert.Same(app.GetRequiredService<IClassificationRulesProvider>(), services.GetRequiredService<IClassificationRulesProvider>());
+        Assert.IsType<BrasilApiCompanyRegistry>(services.GetRequiredService<ICompanyRegistry>());
+        Assert.Single(app.GetServices<IHostedService>().OfType<MerchantEnrichmentService>());
+    }
+
+    [Fact]
+    public void The_enrichment_job_can_be_turned_off()
+    {
+        var config = new ConfigurationBuilder().AddConfiguration(Config)
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Enrichment:Enabled"] = "false" }).Build();
+        var services = new ServiceCollection().AddLogging().AddInfrastructure(config);
+
+        Assert.DoesNotContain(services, d => d.ImplementationType == typeof(MerchantEnrichmentService));
     }
 
     [Fact]

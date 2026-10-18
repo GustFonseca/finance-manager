@@ -18,6 +18,7 @@ export type MerchantDto = {
   categoryId: string | null;
   categoryName: string;
   class: SpendingClass | null;
+  activity: string | null;
 };
 
 export type MerchantMatchDto = {

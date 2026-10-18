@@ -81,6 +81,7 @@ public class SpendingSpikeDto
     public string Name { get; set; } = string.Empty;
     public long MonthCents { get; set; }
     public long AverageCents { get; set; }
+    public long ThresholdCents { get; set; }
     public double Ratio { get; set; }
 }
 

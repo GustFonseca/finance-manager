@@ -51,6 +51,7 @@ export type SpendingSpikeDto = {
   name: string;
   monthCents: number;
   averageCents: number;
+  thresholdCents: number;
   ratio: number;
 };
 

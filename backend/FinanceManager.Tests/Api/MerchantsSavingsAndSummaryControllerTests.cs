@@ -12,6 +12,7 @@ using FinanceManager.Aplication.UseCases.Savings.Commands.SetCategoryBudget;
 using FinanceManager.Aplication.UseCases.Savings.Commands.SetSavingsGoal;
 using FinanceManager.Aplication.UseCases.Savings.Queries.GetSavingsPlan;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetAvoidableSpending;
+using FinanceManager.Aplication.UseCases.Summary.Queries.GetCashFlowForecast;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetFinancialSummary;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetRecurringExpenses;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetSpendingAnalysis;
@@ -221,6 +222,18 @@ public class MerchantsSavingsAndSummaryControllerTests
 
         Assert.Same(avoidable, Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Equal(new GetAvoidableSpendingQuery(Me, Start, End, Known), Assert.Single(_mediator.Sent));
+    }
+
+    [Fact]
+    public async Task Summary_GetForecast_uses_the_requested_month()
+    {
+        var forecast = new CashFlowForecastDto();
+        _mediator.Returns<GetCashFlowForecastQuery>(_ => forecast);
+
+        var result = await Summary.GetForecast(Start, End, Known);
+
+        Assert.Same(forecast, Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(new GetCashFlowForecastQuery(Me, Start, End, Known), Assert.Single(_mediator.Sent));
     }
 
     [Fact]

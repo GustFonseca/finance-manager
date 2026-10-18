@@ -16,3 +16,10 @@ export function useRecurringExpenses(filter: PeriodFilter = {}) {
     queryFn: () => summaryApi.recurring(filter),
   });
 }
+
+export function useForecast(filter: PeriodFilter = {}) {
+  return useQuery({
+    queryKey: [...queryKeys.summary, 'forecast', filter],
+    queryFn: () => summaryApi.forecast(filter),
+  });
+}

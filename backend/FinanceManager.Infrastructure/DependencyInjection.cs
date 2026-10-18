@@ -13,6 +13,8 @@ using FinanceManager.Aplication.Classification;
 using FinanceManager.Infrastructure.Classification;
 using FinanceManager.Aplication.Rates;
 using FinanceManager.Infrastructure.Rates;
+using FinanceManager.Aplication.Companies;
+using FinanceManager.Infrastructure.Companies;
 using FinanceManager.Aplication.Auth;
 using FinanceManager.Infrastructure.Auth;
 
@@ -48,6 +50,8 @@ public static class DependencyInjection
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
         services.AddHttpClient<IInterestRateProvider, BcbInterestRateProvider>(client => client.Timeout = TimeSpan.FromSeconds(3));
+        services.AddHttpClient<ICompanyRegistry, BrasilApiCompanyRegistry>(client => client.Timeout = TimeSpan.FromSeconds(10));
+        if (configuration.GetValue("Enrichment:Enabled", true)) services.AddHostedService<MerchantEnrichmentService>();
 
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 

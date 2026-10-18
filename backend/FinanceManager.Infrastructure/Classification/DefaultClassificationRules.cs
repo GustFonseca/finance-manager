@@ -65,6 +65,16 @@ public static class DefaultClassificationRules
         Rule(RuleType.SUBSCRIPTION_GROUP, @"chatgpt|openai|claude|anthropic|gemini|copilot|midjourney", "Inteligência artificial"),
         Rule(RuleType.SUBSCRIPTION_GROUP, @"smart ?fit|gympass|wellhub|totalpass|bluefit|academia", "Academia"),
         Rule(RuleType.SUBSCRIPTION_GROUP, @"xbox|playstation|nintendo|steam|game pass", "Jogos"),
+
+        Rule(RuleType.CATEGORY_HINT, @"restaurantes|lanchonetes|padaria|supermercados|hipermercados|minimercados|produtos alimenticios|bebidas|confeitaria", "Alimentação", "Atividade (CNAE)"),
+        Rule(RuleType.CATEGORY_HINT, @"combustiveis|transporte rodoviario|transporte aereo|taxi|transporte por aplicativo|estacionamento", "Transporte", "Atividade (CNAE)"),
+        Rule(RuleType.CATEGORY_HINT, @"energia eletrica|captacao tratamento e distribuicao de agua|telecomunicacoes|condominios|aluguel de imoveis|gas canalizado", "Moradia", "Atividade (CNAE)"),
+        Rule(RuleType.CATEGORY_HINT, @"farmaceuticos|medic|odontolog|hospital|laboratorios clinicos|planos de saude|atividades de atencao a saude", "Saúde", "Atividade (CNAE)"),
+        Rule(RuleType.CATEGORY_HINT, @"\bensino\b|educacao|treinamento|cursos", "Educação", "Atividade (CNAE)"),
+        Rule(RuleType.CATEGORY_HINT, @"apostas|jogos de azar|loterias|cinema|espetaculos|recreacao|parques de diversao|esportivas|streaming", "Lazer", "Atividade (CNAE)"),
+        Rule(RuleType.BILL, @"energia eletrica|telecomunicacoes|condominios|planos de saude|seguros|administracao publica|\bensino\b", null, "Atividade (CNAE)"),
+        Rule(RuleType.GROCERY, @"supermercados|hipermercados|minimercados|combustiveis|farmaceuticos|transporte rodoviario|taxi", null, "Atividade (CNAE)"),
+        Rule(RuleType.SUPERFLUOUS, @"restaurantes|lanchonetes|bares|apostas|jogos de azar|loterias|cinema|espetaculos|vestuario|calcados|cosmeticos|perfumaria|tabacaria", null, "Atividade (CNAE)"),
     ];
 
     private static ClassificationRule Rule(RuleType type, string pattern, string? value = null, string? note = null)

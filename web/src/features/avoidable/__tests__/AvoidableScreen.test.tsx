@@ -35,6 +35,7 @@ const netflix: MerchantDto = {
   categoryId: 'c1',
   categoryName: 'Lazer',
   class: null,
+  activity: null,
 };
 
 const history: MerchantHistoryDto = {
@@ -150,11 +151,11 @@ describe('AvoidableScreen', () => {
 
     expect(screen.getByText('Picos fora do normal')).toBeTruthy();
     const leisure = rowOf('Lazer');
-    expect(within(leisure).getByText(`Categoria · média de ${money(20000)} por mês`)).toBeTruthy();
+    expect(within(leisure).getByText(`Categoria · média de ${money(20000)} por mês · normal até ${money(30000)}`)).toBeTruthy();
     expect(within(leisure).getByText('3x a média')).toBeTruthy();
     expect(within(leisure).queryByRole('button')).toBeNull();
     const bar = rowOf('Bar do Zé');
-    expect(within(bar).getByText(`Estabelecimento · média de ${money(10000)} por mês`)).toBeTruthy();
+    expect(within(bar).getByText(`Estabelecimento · média de ${money(10000)} por mês · normal até ${money(15000)}`)).toBeTruthy();
     expect(within(bar).getByText('2,5x a média')).toBeTruthy();
     expect(within(bar).getByText('Ver detalhes')).toBeTruthy();
     expect(within(bar).queryByText('Marcar como supérfluo')).toBeNull();

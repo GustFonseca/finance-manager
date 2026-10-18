@@ -93,9 +93,9 @@ export const fullReport: AvoidableSpendingDto = {
     ],
   },
   spikes: [
-    { kind: 'CATEGORY', id: 'c1', name: 'Lazer', monthCents: 60000, averageCents: 20000, ratio: 3 },
-    { kind: 'MERCHANT', id: 'm5', name: 'Bar do Zé', monthCents: 25000, averageCents: 10000, ratio: 2.5 },
-    { kind: 'MERCHANT', id: null, name: 'Sem cadastro', monthCents: 9000, averageCents: 3000, ratio: 3 },
+    { kind: 'CATEGORY', id: 'c1', name: 'Lazer', monthCents: 60000, averageCents: 20000, ratio: 3, thresholdCents: 30000 },
+    { kind: 'MERCHANT', id: 'm5', name: 'Bar do Zé', monthCents: 25000, averageCents: 10000, ratio: 2.5, thresholdCents: 15000 },
+    { kind: 'MERCHANT', id: null, name: 'Sem cadastro', monthCents: 9000, averageCents: 3000, ratio: 3, thresholdCents: 4500 },
   ],
   firstTimePurchases: [
     { transactionId: 't1', merchantId: 'm6', name: 'Magazine', cents: 150000, date: '2026-10-12T12:00:00Z', class: 'VARIABLE' },

@@ -33,6 +33,7 @@ export function MerchantDetail({ merchantId, range, rangeLabel, onClose, onEdit 
               .filter(Boolean)
               .join(' · ')}
           </Text>
+          {merchant.activity ? <Text style={styles.meta}>Atividade: {merchant.activity}</Text> : null}
 
           <View style={styles.tiles}>
             <StatTile

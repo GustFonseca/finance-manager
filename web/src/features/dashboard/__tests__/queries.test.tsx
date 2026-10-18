@@ -2,7 +2,7 @@ import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
-import { useRecurringExpenses, useSummary } from '../queries';
+import { useForecast, useRecurringExpenses, useSummary } from '../queries';
 import { summaryApi } from '../api';
 
 jest.mock('../api');
@@ -36,5 +36,23 @@ describe('dashboard queries', () => {
     expect(summaryApi.get).toHaveBeenCalledWith({});
     expect(summaryApi.recurring).toHaveBeenCalledWith({});
     expect(client.getQueryData(['summary', 'recurring', {}])).toEqual([]);
+  });
+
+  it('loads the forecast with the filter in the key', async () => {
+    jest.mocked(summaryApi.forecast).mockResolvedValue({ projectedBalanceCents: 9 } as never);
+    const { client, Wrapper } = wrapper();
+    const { result } = renderHook(() => useForecast({ start: 's', end: 'e' }), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.data).toEqual({ projectedBalanceCents: 9 }));
+    expect(summaryApi.forecast).toHaveBeenCalledWith({ start: 's', end: 'e' });
+    expect(client.getQueryData(['summary', 'forecast', { start: 's', end: 'e' }])).toEqual({ projectedBalanceCents: 9 });
+  });
+
+  it('loads the forecast with an empty filter by default', async () => {
+    jest.mocked(summaryApi.forecast).mockResolvedValue({} as never);
+    const { client, Wrapper } = wrapper();
+    const { result } = renderHook(() => useForecast(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(summaryApi.forecast).toHaveBeenCalledWith({});
+    expect(client.getQueryData(['summary', 'forecast', {}])).toEqual({});
   });
 });

@@ -654,6 +654,102 @@ namespace FinanceManager.Infrastructure.Migrations
                             Priority = 480,
                             Type = "SUBSCRIPTION_GROUP",
                             Value = "Jogos"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000049"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "restaurantes|lanchonetes|padaria|supermercados|hipermercados|minimercados|produtos alimenticios|bebidas|confeitaria",
+                            Priority = 490,
+                            Type = "CATEGORY_HINT",
+                            Value = "Alimentação"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000050"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "combustiveis|transporte rodoviario|transporte aereo|taxi|transporte por aplicativo|estacionamento",
+                            Priority = 500,
+                            Type = "CATEGORY_HINT",
+                            Value = "Transporte"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000051"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "energia eletrica|captacao tratamento e distribuicao de agua|telecomunicacoes|condominios|aluguel de imoveis|gas canalizado",
+                            Priority = 510,
+                            Type = "CATEGORY_HINT",
+                            Value = "Moradia"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000052"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "farmaceuticos|medic|odontolog|hospital|laboratorios clinicos|planos de saude|atividades de atencao a saude",
+                            Priority = 520,
+                            Type = "CATEGORY_HINT",
+                            Value = "Saúde"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000053"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "\\bensino\\b|educacao|treinamento|cursos",
+                            Priority = 530,
+                            Type = "CATEGORY_HINT",
+                            Value = "Educação"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000054"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "apostas|jogos de azar|loterias|cinema|espetaculos|recreacao|parques de diversao|esportivas|streaming",
+                            Priority = 540,
+                            Type = "CATEGORY_HINT",
+                            Value = "Lazer"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000055"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "energia eletrica|telecomunicacoes|condominios|planos de saude|seguros|administracao publica|\\bensino\\b",
+                            Priority = 550,
+                            Type = "BILL"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000056"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "supermercados|hipermercados|minimercados|combustiveis|farmaceuticos|transporte rodoviario|taxi",
+                            Priority = 560,
+                            Type = "GROCERY"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1a55100-0000-0000-0000-000000000057"),
+                            CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Note = "Atividade (CNAE)",
+                            Pattern = "restaurantes|lanchonetes|bares|apostas|jogos de azar|loterias|cinema|espetaculos|vestuario|calcados|cosmeticos|perfumaria|tabacaria",
+                            Priority = 570,
+                            Type = "SUPERFLUOUS"
                         });
                 });
 
@@ -729,6 +825,14 @@ namespace FinanceManager.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Activity")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("ActivityCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
@@ -742,6 +846,9 @@ namespace FinanceManager.Infrastructure.Migrations
                     b.Property<string>("Document")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime?>("EnrichedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Key")
                         .IsRequired()

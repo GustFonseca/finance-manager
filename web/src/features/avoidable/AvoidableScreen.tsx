@@ -165,7 +165,7 @@ export function AvoidableScreen() {
                     <AvoidableRow
                       key={`${s.kind}-${s.id ?? s.name}`}
                       title={s.name}
-                      detail={`${s.kind === 'CATEGORY' ? 'Categoria' : 'Estabelecimento'} · média de ${formatCents(s.averageCents)} por mês`}
+                      detail={`${s.kind === 'CATEGORY' ? 'Categoria' : 'Estabelecimento'} · média de ${formatCents(s.averageCents)} por mês · normal até ${formatCents(s.thresholdCents)}`}
                       highlight={`${s.ratio.toLocaleString('pt-BR')}x a média`}
                       value={formatCents(s.monthCents)}
                       actions={s.kind === 'MERCHANT' ? actions(s.id, s.name) : []}
