@@ -4,7 +4,7 @@ import { reportError } from '@/lib/logger';
 import { Clock } from '../Clock';
 import { CrashDialog } from '../CrashDialog';
 import { MenuBar } from '../MenuBar';
-import { findProgram, PROGRAMS, visiblePrograms } from '../programs';
+import { desktopPrograms, findProgram, PROGRAMS, visiblePrograms } from '../programs';
 import { TitleBar } from '../TitleBar';
 import { Toolbar } from '../Toolbar';
 import { RetroMark } from '../RetroMark';
@@ -47,9 +47,19 @@ describe('programs', () => {
     expect(visiblePrograms(true)).toEqual(PROGRAMS);
   });
 
+  it('keeps the start menu only programs off the desktop', () => {
+    expect(findProgram('/account')).toMatchObject({ title: 'Minha conta', icon: 'user-circle', startMenuOnly: true });
+    expect(findProgram('/events')).toMatchObject({ startMenuOnly: true });
+    const routes = desktopPrograms(PROGRAMS).map((program) => program.route);
+    expect(routes).not.toContain('/account');
+    expect(routes).not.toContain('/events');
+    expect(routes).toHaveLength(PROGRAMS.length - 2);
+  });
+
   it('is re-exported from the package entry', () => {
     expect(xp.PROGRAMS).toBe(PROGRAMS);
     expect(typeof xp.useVisiblePrograms).toBe('function');
+    expect(typeof xp.useDesktopPrograms).toBe('function');
     expect(typeof xp.XpShell).toBe('function');
   });
 });

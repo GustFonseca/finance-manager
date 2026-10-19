@@ -8,6 +8,7 @@ export type Program = {
   color: string;
   description: string;
   adminOnly?: boolean;
+  startMenuOnly?: boolean;
 };
 
 export const PROGRAMS: Program[] = [
@@ -87,6 +88,7 @@ export const PROGRAMS: Program[] = [
     icon: 'list-alt',
     color: palette.tealDeep,
     description: 'Histórico das suas ações',
+    startMenuOnly: true,
   },
   {
     route: '/wishlist',
@@ -131,10 +133,22 @@ export const PROGRAMS: Program[] = [
     description: 'Como o sistema classifica seus gastos',
     adminOnly: true,
   },
+  {
+    route: '/account',
+    title: 'Minha conta',
+    icon: 'user-circle',
+    color: palette.sky,
+    description: 'Seus dados, ícone e preferências',
+    startMenuOnly: true,
+  },
 ];
 
 export function visiblePrograms(isAdmin: boolean): Program[] {
   return PROGRAMS.filter((program) => !program.adminOnly || isAdmin);
+}
+
+export function desktopPrograms(programs: Program[]): Program[] {
+  return programs.filter((program) => !program.startMenuOnly);
 }
 
 export function findProgram(route: string): Program | undefined {

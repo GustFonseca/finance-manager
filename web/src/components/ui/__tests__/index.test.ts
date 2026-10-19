@@ -28,6 +28,7 @@ describe('UI kit entry point', () => {
         'Select',
         'StackedBar',
         'StatTile',
+        'UserAvatar',
         'YearSelect',
         'useDialog',
       ].sort()

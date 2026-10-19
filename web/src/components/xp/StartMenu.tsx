@@ -2,7 +2,9 @@ import React from 'react';
 import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useProfile } from '@/features/profile/queries';
 import { queryClient } from '@/lib/queryClient';
 import { bevels, colors, fonts, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 import type { IconName } from './TitleBar';
@@ -11,6 +13,7 @@ import { useWindowManager } from './WindowManager';
 
 export const TASKBAR_HEIGHT = 30;
 const MENU_WIDTH = 400;
+const ACCOUNT_ROUTE = '/account';
 
 type Props = {
   visible: boolean;
@@ -23,8 +26,12 @@ export function StartMenu({ visible, onClose }: Props) {
   const { alert, confirm } = useDialog();
   const { width } = useWindowDimensions();
   const programs = useVisiblePrograms();
+  const profile = useProfile().data;
 
   if (!visible) return null;
+
+  const mainPrograms = programs.filter((program) => !program.startMenuOnly);
+  const sidePrograms = programs.filter((program) => program.startMenuOnly);
 
   const run = (action: () => void) => () => {
     onClose();
@@ -45,18 +52,20 @@ export function StartMenu({ visible, onClose }: Props) {
     <>
       <Pressable style={styles.dismiss} onPress={onClose} accessibilityLabel="Fechar menu Iniciar" />
       <View style={[styles.menu, { width: Math.min(MENU_WIDTH, width) }]}>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() ?? '?'}</Text>
-          </View>
+        <Pressable
+          style={styles.header}
+          onPress={run(() => open(ACCOUNT_ROUTE))}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir Minha conta">
+          <UserAvatar name={user?.name} icon={profile?.avatarIcon} color={profile?.avatarColor} size={40} />
           <Text style={[styles.userName, { fontFamily: fonts.pixel }]} numberOfLines={1}>
             {user?.name ?? 'Usuário'}
           </Text>
-        </View>
+        </Pressable>
 
         <View style={styles.body}>
           <View style={styles.left}>
-            {programs.map((program) => (
+            {mainPrograms.map((program) => (
               <StartItem
                 key={program.route}
                 icon={program.icon}
@@ -68,6 +77,17 @@ export function StartMenu({ visible, onClose }: Props) {
             ))}
           </View>
           <View style={styles.right}>
+            {sidePrograms.map((program) => (
+              <StartItem
+                key={program.route}
+                compact
+                icon={program.icon}
+                color={program.color}
+                title={program.title}
+                onPress={run(() => open(program.route))}
+              />
+            ))}
+            <View style={styles.separator} />
             <StartItem
               compact
               icon="refresh"
@@ -173,18 +193,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     padding: spacing.sm,
-    ...webStyle({ backgroundImage: gradients.startMenuHeader }),
+    ...webStyle({ backgroundImage: gradients.startMenuHeader, cursor: 'pointer' }),
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderWidth: 2,
-    borderColor: palette.sandLight,
-    backgroundColor: palette.amber,
-    alignItems: 'center',
-    justifyContent: 'center',
+  separator: {
+    height: 1,
+    marginVertical: spacing.xs,
+    marginHorizontal: spacing.sm,
+    backgroundColor: palette.stoneDark,
   },
-  avatarText: { color: palette.tealDark, fontWeight: '700', fontSize: 20 },
   userName: {
     flex: 1,
     color: colors.textOnAccent,

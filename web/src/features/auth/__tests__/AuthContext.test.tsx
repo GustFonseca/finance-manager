@@ -137,6 +137,28 @@ describe('AuthProvider', () => {
     expect(setUnauthorizedHandler).toHaveBeenLastCalledWith(null);
   });
 
+  it('updates the signed in user and keeps it stored', async () => {
+    localStorage.setItem('jwt_token', 'tok');
+    localStorage.setItem('user_data', JSON.stringify({ email: 'g@x.com', name: 'Gustavo' }));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.token).toBe('tok'));
+
+    await act(() => result.current.updateUser({ name: 'Gustavo Fonseca' }));
+
+    expect(result.current.user).toEqual({ email: 'g@x.com', name: 'Gustavo Fonseca' });
+    expect(JSON.parse(localStorage.getItem('user_data')!)).toEqual({ email: 'g@x.com', name: 'Gustavo Fonseca' });
+  });
+
+  it('ignores user updates while signed out', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(() => result.current.updateUser({ name: 'Ninguém' }));
+
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem('user_data')).toBeNull();
+  });
+
   it('redirects to the Google consent screen', async () => {
     const original = window.location;
     const fake = { origin: 'http://localhost:8081', href: '', hash: '', pathname: '/' };
@@ -166,5 +188,6 @@ describe('useAuth without a provider', () => {
     expect(result.current).toMatchObject({ token: null, user: null, isLoading: true, error: null });
     await expect(result.current.signInWithGoogle()).resolves.toBeUndefined();
     await expect(result.current.signOut()).resolves.toBeUndefined();
+    await expect(result.current.updateUser({ name: 'x' })).resolves.toBeUndefined();
   });
 });

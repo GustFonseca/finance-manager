@@ -33,6 +33,13 @@ public class AppDbContext : DbContext
             e.HasKey(u => u.Id);
             e.HasIndex(u => u.GoogleId).IsUnique();
             e.HasIndex(u => u.Email).IsUnique();
+            e.Property(u => u.Name).HasMaxLength(100);
+            e.Property(u => u.AvatarIcon).HasMaxLength(40);
+            e.Property(u => u.AvatarColor).HasMaxLength(7);
+            e.Property(u => u.Phone).HasMaxLength(20);
+            e.Property(u => u.City).HasMaxLength(100);
+            e.Property(u => u.State).HasMaxLength(2);
+            e.Property(u => u.Occupation).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Account>(e =>

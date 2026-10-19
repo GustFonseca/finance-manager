@@ -1,6 +1,8 @@
 using System.Security.Claims;
-using FinanceManager.Aplication.Auth;
 using FinanceManager.Aplication.DTOs.Auth;
+using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Profile.Commands.UpdateProfile;
+using FinanceManager.Aplication.UseCases.Profile.Queries.GetProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,17 +13,28 @@ namespace FinanceManager.Api.Controllers;
 [Authorize]
 public class ProfileController : ControllerBase
 {
-    private readonly IAdminDirectory _admins;
+    private readonly IMediator _mediator;
 
-    public ProfileController(IAdminDirectory admins)
+    public ProfileController(IMediator mediator)
     {
-        _admins = admins;
+        _mediator = mediator;
     }
 
+    private Guid GetUserId() => User.GetUserId();
+
     [HttpGet]
-    public ActionResult<ProfileDto> Get()
+    public async Task<ActionResult<ProfileDto>> Get()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-        return Ok(new ProfileDto { Email = email, Name = User.FindFirstValue(ClaimTypes.Name) ?? email, IsAdmin = _admins.IsAdmin(email) });
+        var profile = await _mediator.Send(new GetProfileQuery(GetUserId()));
+        if (profile == null) return NotFound();
+        return Ok(profile);
+    }
+
+    [HttpPut]
+    public async Task<ActionResult<ProfileDto>> Update([FromBody] UpdateProfileRequest request)
+    {
+        var profile = await _mediator.Send(new UpdateProfileCommand(GetUserId(), request, DateTime.UtcNow));
+        if (profile == null) return NotFound();
+        return Ok(profile);
     }
 }

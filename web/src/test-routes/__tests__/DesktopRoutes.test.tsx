@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { LoginScreen } from '@/features/auth/LoginScreen';
 import DesktopLayout from '../../../app/(desktop)/_layout';
+import AccountRoute from '../../../app/(desktop)/account';
 import AccountsRoute from '../../../app/(desktop)/accounts';
 import AvoidableRoute from '../../../app/(desktop)/avoidable';
 import CalendarRoute from '../../../app/(desktop)/calendar';
@@ -78,6 +79,7 @@ jest.mock('@/features/debts/DebtsScreen', () => ({ DebtsScreen: mockScreen('dív
 jest.mock('@/features/planning/PlanningScreen', () => ({ PlanningScreen: mockScreen('planejamento') }));
 jest.mock('@/features/tax/TaxScreen', () => ({ TaxScreen: mockScreen('imposto de renda') }));
 jest.mock('@/features/calendar/CalendarScreen', () => ({ CalendarScreen: mockScreen('calendário') }));
+jest.mock('@/features/profile/AccountScreen', () => ({ AccountScreen: mockScreen('minha conta') }));
 
 function signedIn(token: string | null) {
   jest.mocked(useAuth).mockReturnValue({ token } as ReturnType<typeof useAuth>);
@@ -100,7 +102,7 @@ describe('DesktopLayout', () => {
 
     const shell = screen.getByTestId('shell');
     expect(shell.textContent).toContain(
-      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /challenges /events /wishlist /debts /planning /tax /calendar /rules'
+      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /challenges /events /wishlist /debts /planning /tax /calendar /rules /account'
     );
     expect(screen.getByText('arquivos na área de trabalho')).toBeTruthy();
     expect(screen.getByText('rota atual')).toBeTruthy();
@@ -111,7 +113,7 @@ describe('DesktopLayout', () => {
 
     render(<DesktopLayout />);
 
-    for (const name of ['transações', 'contas', 'metas', 'categorias', 'gastos', 'estabelecimentos', 'gastos evitáveis', 'economia', 'desafios', 'eventos', 'lista de espera', 'dívidas', 'planejamento', 'imposto de renda', 'calendário', 'regras']) {
+    for (const name of ['transações', 'contas', 'metas', 'categorias', 'gastos', 'estabelecimentos', 'gastos evitáveis', 'economia', 'desafios', 'eventos', 'lista de espera', 'dívidas', 'planejamento', 'imposto de renda', 'calendário', 'regras', 'minha conta']) {
       expect(await screen.findByText(name)).toBeTruthy();
     }
     expect(screen.getByText('painel')).toBeTruthy();
@@ -122,6 +124,7 @@ describe('DesktopLayout', () => {
 describe('program routes', () => {
   it.each([
     ['index', DashboardRoute],
+    ['account', AccountRoute],
     ['accounts', AccountsRoute],
     ['avoidable', AvoidableRoute],
     ['calendar', CalendarRoute],

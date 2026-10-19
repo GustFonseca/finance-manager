@@ -4,7 +4,7 @@ import {
   DesktopIcon,
   useDesktop,
   useDesktopMenu,
-  useVisiblePrograms,
+  useDesktopPrograms,
   useWindowManager,
   WindowIdProvider,
 } from '@/components/xp';
@@ -29,7 +29,7 @@ export function FileDesktop() {
   const renameFolder = useRenameFolder();
   const trashFolder = useTrashFolder();
   const emptyTrash = useEmptyTrash();
-  const programs = useVisiblePrograms();
+  const programs = useDesktopPrograms();
 
   const trashCount = (trash?.folders.length ?? 0) + (trash?.files.length ?? 0);
 

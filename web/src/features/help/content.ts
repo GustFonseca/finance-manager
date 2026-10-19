@@ -266,4 +266,21 @@ export const HELP: HelpRegistry = {
     ],
     tips: ['Use \\b para casar palavras inteiras e | para alternativas. Padrões muito genéricos podem classificar errado muitas transações.'],
   },
+  '/account': {
+    title: 'Minha conta',
+    icon: 'user-circle',
+    summary: 'Seus dados pessoais, o ícone que representa você no sistema e as suas preferências.',
+    howItWorks: [
+      'O ícone e a cor escolhidos aparecem no topo do menu Iniciar, ao lado do seu nome. Sem ícone, aparece a primeira letra do nome.',
+      'O e-mail vem da sua conta Google e não pode ser mudado aqui.',
+      'Os dados ficam guardados só na sua conta e não são mostrados a outras pessoas. Todos os campos, menos o nome, são opcionais.',
+      'Renda mensal, dia do pagamento e dependentes serão usados em recursos futuros, como previsões e o Imposto de Renda.',
+    ],
+    steps: [
+      { title: 'Escolha o ícone e a cor', text: 'No cartão "Ícone", clique num desenho e numa cor de fundo. Use "Usar a letra" para voltar à inicial do nome.' },
+      { title: 'Preencha os dados', text: 'Complete os dados pessoais e financeiros que quiser. O telefone é formatado enquanto você digita.' },
+      { title: 'Salve', text: 'Clique em "Salvar" na barra de ferramentas. Se algum campo estiver errado, a janela mostra o que corrigir.' },
+    ],
+    tips: ['Também dá para abrir esta janela clicando no seu nome no topo do menu Iniciar.'],
+  },
 };

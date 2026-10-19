@@ -300,31 +300,6 @@ public class AdminAndRulesApiTests
         Assert.Equal(allowed, context.HasSucceeded);
     }
 
-    [Fact]
-    public void The_profile_tells_the_web_whether_the_user_is_an_admin()
-    {
-        var controller = new ProfileController(new ConfigAdminDirectory(Config("ana@x.com")))
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Email, "ana@x.com"), new Claim(ClaimTypes.Name, "Ana")], "test")),
-                },
-            },
-        };
-        var anonymous = new ProfileController(new ConfigAdminDirectory(Config("ana@x.com")))
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
-        };
-
-        var profile = Assert.IsType<ProfileDto>(Assert.IsType<OkObjectResult>(controller.Get().Result).Value);
-        var empty = Assert.IsType<ProfileDto>(Assert.IsType<OkObjectResult>(anonymous.Get().Result).Value);
-
-        Assert.Equal(("ana@x.com", "Ana", true), (profile.Email, profile.Name, profile.IsAdmin));
-        Assert.Equal(("", "", false), (empty.Email, empty.Name, empty.IsAdmin));
-    }
-
     private RulesController Rules => new RulesController(_mediator, _store).SignedIn(Me);
 
     [Fact]

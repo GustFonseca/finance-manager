@@ -6,7 +6,7 @@ import { onContextMenu, useContextMenu } from './ContextMenu';
 import { DesktopProvider, useDesktop } from './DesktopContext';
 import { DesktopIcon } from './DesktopIcon';
 import type { MenuEntry } from './MenuBar';
-import { useVisiblePrograms } from './useVisiblePrograms';
+import { useDesktopPrograms } from './useVisiblePrograms';
 import { useWindowManager, WindowIdProvider } from './WindowManager';
 
 export type ProgramScreens = Record<string, React.ComponentType>;
@@ -29,7 +29,7 @@ function DesktopSurface({ screens, extras, children }: Props) {
   const { open, openWindows } = useWindowManager();
   const desktop = useDesktop();
   const contextMenu = useContextMenu();
-  const programs = useVisiblePrograms();
+  const programs = useDesktopPrograms();
 
   const showDesktopMenu = (point: { x: number; y: number }) => {
     desktop.selectIcon(null);

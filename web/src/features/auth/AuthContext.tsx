@@ -22,6 +22,7 @@ type AuthState = {
 type AuthContextType = AuthState & {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (changes: Partial<User>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   error: null,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  updateUser: async () => {},
 });
 
 const GOOGLE_CLIENT_ID =
@@ -134,8 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: null, user: null, isLoading: false, error: null });
   }
 
+  async function updateUser(changes: Partial<User>) {
+    if (!state.user) return;
+    const user = { ...state.user, ...changes };
+    await setItem(USER_KEY, JSON.stringify(user));
+    setState((prev) => ({ ...prev, user }));
+  }
+
   return (
-    <AuthContext.Provider value={{ ...state, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ ...state, signInWithGoogle, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

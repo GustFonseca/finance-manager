@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, fireEvent, renderHook, screen, waitFor } from '@testing-library/react';
 import { profileApi } from '@/features/profile/api';
+import { profile } from '@/features/profile/__tests__/fixtures';
 import { queryClient } from '@/lib/queryClient';
 import { renderWithProviders } from '@/test/render';
 import { useContextMenu } from '../ContextMenu';
@@ -88,7 +89,7 @@ describe('Desktop', () => {
     setViewport(1200, 800);
     now = 1_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
-    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: false });
+    jest.mocked(profileApi.get).mockResolvedValue(profile());
   });
 
   afterEach(() => {
@@ -102,23 +103,30 @@ describe('Desktop', () => {
     expect(iconStyle('Gastos evitáveis')).toEqual({ left: '8px', top: '568px' });
     expect(iconStyle('Plano de economia')).toEqual({ left: '8px', top: '648px' });
     expect(iconStyle('Desafios')).toEqual({ left: '92px', top: '8px' });
-    expect(iconStyle('Visualizar eventos')).toEqual({ left: '92px', top: '88px' });
-    expect(iconStyle('Lista de espera')).toEqual({ left: '92px', top: '168px' });
-    expect(iconStyle('Dívidas')).toEqual({ left: '92px', top: '248px' });
-    expect(iconStyle('Planejamento')).toEqual({ left: '92px', top: '328px' });
-    expect(iconStyle('Imposto de Renda')).toEqual({ left: '92px', top: '408px' });
-    expect(iconStyle('Calendário')).toEqual({ left: '92px', top: '488px' });
+    expect(iconStyle('Lista de espera')).toEqual({ left: '92px', top: '88px' });
+    expect(iconStyle('Dívidas')).toEqual({ left: '92px', top: '168px' });
+    expect(iconStyle('Planejamento')).toEqual({ left: '92px', top: '248px' });
+    expect(iconStyle('Imposto de Renda')).toEqual({ left: '92px', top: '328px' });
+    expect(iconStyle('Calendário')).toEqual({ left: '92px', top: '408px' });
     expect(iconStyle('Extrato')).toEqual({ left: '1108px', top: '682px' });
     expect(screen.getByText('extra')).toBeTruthy();
     await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: 'Abrir Regras de classificação' })).toBeNull();
   });
 
+  it('keeps the start menu only programs off the desktop', async () => {
+    await renderDesktop();
+    await waitFor(() => expect(profileApi.get).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Abrir Visualizar eventos' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Abrir Minha conta' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^Abrir / })).toHaveLength(15);
+  });
+
   it('shows the admin only programs to admins', async () => {
-    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'Gustavo', isAdmin: true });
+    jest.mocked(profileApi.get).mockResolvedValue(profile({ name: 'Gustavo', isAdmin: true }));
     await renderDesktop();
     expect(await screen.findByRole('button', { name: 'Abrir Regras de classificação' })).toBeTruthy();
-    expect(iconStyle('Regras de classificação')).toEqual({ left: '92px', top: '568px' });
+    expect(iconStyle('Regras de classificação')).toEqual({ left: '92px', top: '488px' });
   });
 
   it('hides the admin only programs while the profile is unknown', async () => {
@@ -430,6 +438,11 @@ describe('Desktop', () => {
       expect(iconStyle('Transações')).toEqual({ left: '103px', top: '20px' });
       expect(iconStyle('Metas')).toEqual({ left: '287px', top: '20px' });
       expect(iconStyle('Categorias')).toEqual({ left: '11px', top: '116px' });
+      expect(iconStyle('Desafios')).toEqual({ left: '103px', top: '212px' });
+      expect(iconStyle('Lista de espera')).toEqual({ left: '195px', top: '212px' });
+      expect(iconStyle('Calendário')).toEqual({ left: '195px', top: '308px' });
+      expect(screen.queryByRole('button', { name: 'Abrir Visualizar eventos' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Abrir Minha conta' })).toBeNull();
       expect(iconStyle('Extrato')).toEqual({ left: '287px', top: '710px' });
       expect(screen.getByRole('button', { name: 'Abrir Painel' }).style.width).toBe('84px');
     });

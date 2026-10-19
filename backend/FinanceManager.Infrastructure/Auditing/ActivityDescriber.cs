@@ -23,6 +23,7 @@ public static class ActivityDescriber
         CategoryBudget budget => DescribeBudget(entry, budget, context),
         Merchant merchant => DescribeMerchant(entry, merchant),
         Challenge challenge => DescribeChallenge(entry, challenge),
+        User user => DescribeUser(entry, user),
         SubscriptionDecision decision => DescribeSubscriptionDecision(entry, decision),
         WishlistItem wish => DescribeWish(entry, wish),
         Debt debt => DescribeDebt(entry, debt),
@@ -230,6 +231,12 @@ public static class ActivityDescriber
             yield return Log(d.UserId, "Assinaturas", $"Assinatura {d.Name} marcada como {label}");
         else if (entry.State == EntityState.Deleted)
             yield return Log(d.UserId, "Assinaturas", $"Decisão sobre a assinatura {d.Name} desfeita");
+    }
+
+    private static IEnumerable<ActivityLog> DescribeUser(EntityEntry entry, User u)
+    {
+        if (entry.State == EntityState.Modified && Changed(entry, nameof(User.ProfileUpdatedAt)))
+            yield return Log(u.Id, "Minha conta", "Dados da conta atualizados");
     }
 
     private static IEnumerable<ActivityLog> DescribeChallenge(EntityEntry entry, Challenge c)

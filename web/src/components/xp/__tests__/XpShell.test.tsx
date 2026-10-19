@@ -2,6 +2,7 @@ import React from 'react';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { profileApi } from '@/features/profile/api';
+import { profile } from '@/features/profile/__tests__/fixtures';
 import { queryClient } from '@/lib/queryClient';
 import { SLOW_REQUEST_MS, trackRequest } from '@/lib/serverWake';
 import { renderWithProviders } from '@/test/render';
@@ -72,7 +73,7 @@ describe('XpShell', () => {
   beforeEach(() => {
     setViewport(1200, 800);
     jest.mocked(useAuth).mockReturnValue({ user: { name: 'gustavo' }, signOut } as unknown as ReturnType<typeof useAuth>);
-    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'gustavo', isAdmin: false });
+    jest.mocked(profileApi.get).mockResolvedValue(profile({ name: 'gustavo', isAdmin: false }));
   });
 
   it('lists the admin only programs in the start menu for admins only', async () => {
@@ -83,7 +84,7 @@ describe('XpShell', () => {
     fireEvent.click(startButton());
     cleanup();
 
-    jest.mocked(profileApi.get).mockResolvedValue({ email: 'g@x.com', name: 'gustavo', isAdmin: true });
+    jest.mocked(profileApi.get).mockResolvedValue(profile({ name: 'gustavo', isAdmin: true }));
     await renderShell();
     fireEvent.click(startButton());
     expect(await screen.findByText('Como o sistema classifica seus gastos')).toBeTruthy();
@@ -126,7 +127,7 @@ describe('XpShell', () => {
     setViewport(300, 800);
     await renderShell();
     fireEvent.click(startButton());
-    const menu = screen.getByText('gustavo').parentElement?.parentElement as HTMLElement;
+    const menu = screen.getByRole('button', { name: 'Abrir Minha conta' }).parentElement as HTMLElement;
     expect(menu.style.width).toBe('300px');
   });
 
@@ -136,6 +137,38 @@ describe('XpShell', () => {
     fireEvent.click(startButton());
     expect(screen.getByText('Usuário')).toBeTruthy();
     expect(screen.getByText('?')).toBeTruthy();
+  });
+
+  it('lists the start menu only programs in the side column and opens them', async () => {
+    await renderShell();
+    fireEvent.click(startButton());
+    const side = screen.getByText('Atualizar dados').closest('[tabindex="0"]')?.parentElement as HTMLElement;
+    expect(within(side).getByText('Visualizar eventos')).toBeTruthy();
+    expect(within(side).getByText('Minha conta')).toBeTruthy();
+    expect(screen.queryByText('Histórico das suas ações')).toBeNull();
+    expect(screen.queryByText('Seus dados, ícone e preferências')).toBeNull();
+
+    fireEvent.click(within(side).getByText('Visualizar eventos'));
+    expect(screen.queryByText('Atualizar dados')).toBeNull();
+    expect(wm.openWindows).toContain('/events');
+  });
+
+  it('opens the account window from the user in the start menu header', async () => {
+    await renderShell();
+    fireEvent.click(startButton());
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Minha conta' }));
+    expect(screen.queryByText('Atualizar dados')).toBeNull();
+    expect(wm.openWindows).toContain('/account');
+    expect(wm.activeWindow).toBe('/account');
+  });
+
+  it('shows the chosen avatar icon in the start menu header', async () => {
+    jest.mocked(profileApi.get).mockResolvedValue(profile({ name: 'gustavo', avatarIcon: 'rocket', avatarColor: '#357263' }));
+    await renderShell();
+    fireEvent.click(startButton());
+    const header = screen.getByRole('button', { name: 'Abrir Minha conta' });
+    expect(await within(header).findByTestId('icon-rocket')).toBeTruthy();
+    expect(within(header).queryByText('G')).toBeNull();
   });
 
   it('opens programs from the start menu and lists them on the taskbar', async () => {

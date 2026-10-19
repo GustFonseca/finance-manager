@@ -19,6 +19,7 @@ export { FormError } from './FormError';
 export { StatTile } from './StatTile';
 export { MonthSelect } from './MonthSelect';
 export { YearSelect } from './YearSelect';
+export { UserAvatar } from './UserAvatar';
 export { ChartLegend } from './ChartLegend';
 export type { LegendItem } from './ChartLegend';
 export { StackedBar } from './StackedBar';
