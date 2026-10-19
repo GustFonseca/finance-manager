@@ -10,6 +10,7 @@ import { TASKBAR_HEIGHT } from './StartMenu';
 import { IconName, TitleBar } from './TitleBar';
 import { Toolbar, ToolbarButton } from './Toolbar';
 import { Point, useWindowDrag } from './useWindowDrag';
+import { Edge, EDGES, useWindowResize } from './useWindowResize';
 import { useWindowId, useWindowManager } from './WindowManager';
 
 const RESTORED_MAX_WIDTH = 860;
@@ -55,10 +56,13 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
   const maximized = compact || wm.isMaximized(id);
 
   const desktopHeight = height - TASKBAR_HEIGHT;
-  const size = {
-    width: Math.min(RESTORED_MAX_WIDTH, width - spacing.xxl * 2),
-    height: Math.min(RESTORED_MAX_HEIGHT, desktopHeight - spacing.xxl * 2),
-  };
+  const stored = wm.sizeOf(id);
+  const size = stored
+    ? { width: Math.min(stored.width, width), height: Math.min(stored.height, desktopHeight) }
+    : {
+        width: Math.min(RESTORED_MAX_WIDTH, width - spacing.xxl * 2),
+        height: Math.min(RESTORED_MAX_HEIGHT, desktopHeight - spacing.xxl * 2),
+      };
   const clamp = (point: Point): Point => ({
     x: Math.min(Math.max(point.x, MIN_VISIBLE - size.width), width - MIN_VISIBLE),
     y: Math.min(Math.max(point.y, 0), desktopHeight - TITLE_BAR_HEIGHT),
@@ -75,6 +79,16 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     onDragEnd: (point) => wm.setPosition(id, point),
     onDoubleClick: () => !compact && wm.toggleMaximize(id),
     draggable: !maximized,
+  });
+
+  const resize = useWindowResize({
+    rect: { ...drag.position, ...size },
+    bounds: { width, height: desktopHeight },
+    enabled: !maximized,
+    onResizeEnd: (rect) => {
+      wm.setPosition(id, { x: rect.x, y: rect.y });
+      wm.setSize(id, { width: rect.width, height: rect.height });
+    },
   });
 
   if (!wm.isOpen(id) || wm.isMinimized(id)) return null;
@@ -130,7 +144,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
         !active && styles.inactiveFrame,
         maximized
           ? styles.maximized
-          : { left: drag.position.x, top: drag.position.y, ...size },
+          : { left: resize.rect.x, top: resize.rect.y, width: resize.rect.width, height: resize.rect.height },
       ]}>
       <TitleBar
         active={active}
@@ -153,10 +167,54 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
             <Text style={styles.statusText} numberOfLines={1}>
               {status}
             </Text>
+            {maximized ? null : <SizeGrip />}
           </View>
         ) : null}
       </View>
+      {maximized
+        ? null
+        : EDGES.map((edge) => (
+            <View
+              key={edge}
+              testID={`resize-${edge}`}
+              onPointerDown={resize.start(edge)}
+              style={[styles.handle, HANDLE_STYLES[edge]]}
+            />
+          ))}
       {help && helpOpen ? help.present(help.topic, closeHelp) : null}
+    </View>
+  );
+}
+
+const EDGE = 5;
+const CORNER = 14;
+
+const HANDLE_STYLES: Record<Edge, object> = {
+  n: { top: -EDGE / 2, left: CORNER, right: CORNER, height: EDGE, ...webStyle({ cursor: 'ns-resize' }) },
+  s: { bottom: -EDGE / 2, left: CORNER, right: CORNER, height: EDGE, ...webStyle({ cursor: 'ns-resize' }) },
+  e: { right: -EDGE / 2, top: CORNER, bottom: CORNER, width: EDGE, ...webStyle({ cursor: 'ew-resize' }) },
+  w: { left: -EDGE / 2, top: CORNER, bottom: CORNER, width: EDGE, ...webStyle({ cursor: 'ew-resize' }) },
+  ne: { right: -EDGE / 2, top: -EDGE / 2, width: CORNER, height: CORNER, ...webStyle({ cursor: 'nesw-resize' }) },
+  sw: { left: -EDGE / 2, bottom: -EDGE / 2, width: CORNER, height: CORNER, ...webStyle({ cursor: 'nesw-resize' }) },
+  nw: { left: -EDGE / 2, top: -EDGE / 2, width: CORNER, height: CORNER, ...webStyle({ cursor: 'nwse-resize' }) },
+  se: { right: -EDGE / 2, bottom: -EDGE / 2, width: CORNER + 4, height: CORNER + 4, ...webStyle({ cursor: 'nwse-resize' }) },
+};
+
+const GRIP_DOTS = [
+  [8, 0],
+  [4, 4],
+  [8, 4],
+  [0, 8],
+  [4, 8],
+  [8, 8],
+];
+
+function SizeGrip() {
+  return (
+    <View style={styles.grip} accessibilityLabel="Redimensionar">
+      {GRIP_DOTS.map(([left, top]) => (
+        <View key={`${left}-${top}`} style={[styles.gripDot, { left, top }]} />
+      ))}
     </View>
   );
 }
@@ -182,7 +240,11 @@ const styles = StyleSheet.create({
     margin: 2,
     overflow: 'hidden',
   },
+  handle: { position: 'absolute', zIndex: 2 },
+  grip: { position: 'absolute', right: 2, bottom: 2, width: 11, height: 11 },
+  gripDot: { position: 'absolute', width: 2, height: 2, backgroundColor: palette.stoneDark },
   statusBar: {
+    paddingRight: 18,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     marginHorizontal: 2,

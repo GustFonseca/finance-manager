@@ -197,6 +197,55 @@ describe('Window', () => {
     expect(wm.positionOf('/transactions')).toEqual({ x: 1100, y: 742 });
   });
 
+  it('resizes from the corner, remembers the size and shows the grip', async () => {
+    renderWindow({ status: 'ok' });
+    await flush();
+    const frame = frameOf('Transações');
+    const width = parseInt(frame.style.width, 10);
+    const height = parseInt(frame.style.height, 10);
+
+    expect(screen.getByLabelText('Redimensionar')).toBeTruthy();
+    pointerDown(screen.getByTestId('resize-se'), { clientX: 500, clientY: 500 });
+    expect(document.body.style.userSelect).toBe('none');
+    pointerMove({ clientX: 540, clientY: 470 });
+    expect(frameOf('Transações').style.width).toBe(`${width + 40}px`);
+    expect(frameOf('Transações').style.height).toBe(`${height - 30}px`);
+    pointerUp();
+
+    expect(document.body.style.userSelect).toBe('');
+    expect(wm.sizeOf('/transactions')).toEqual({ width: width + 40, height: height - 30 });
+    pointerMove({ clientX: 900, clientY: 900 });
+    expect(frameOf('Transações').style.width).toBe(`${width + 40}px`);
+  });
+
+  it('pulls the left edge, moving the window, and ignores other buttons', async () => {
+    renderWindow();
+    await flush();
+    const left = parseInt(frameOf('Transações').style.left, 10);
+
+    pointerDown(screen.getByTestId('resize-w'), { clientX: 300, clientY: 300, button: 2 });
+    pointerMove({ clientX: 200, clientY: 300 });
+    expect(frameOf('Transações').style.left).toBe(`${left}px`);
+
+    pointerDown(screen.getByTestId('resize-w'), { clientX: 300, clientY: 300 });
+    pointerMove({ clientX: 250, clientY: 300 });
+    pointerUp('pointercancel');
+
+    expect(wm.positionOf('/transactions')?.x).toBe(left - 50);
+  });
+
+  it('uses a remembered size limited to the screen and hides the handles when maximized', async () => {
+    renderWindow({ status: 'ok' });
+    await flush();
+    act(() => wm.setSize('/transactions', { width: 5000, height: 5000 }));
+
+    expect(frameOf('Transações').style.width).toBe('1200px');
+    act(() => wm.toggleMaximize('/transactions'));
+
+    expect(screen.queryByTestId('resize-se')).toBeNull();
+    expect(screen.queryByLabelText('Redimensionar')).toBeNull();
+  });
+
   it('toggles maximize on a title bar double click', async () => {
     renderWindow();
     await flush();

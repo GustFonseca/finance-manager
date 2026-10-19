@@ -3,6 +3,7 @@ import { Href, usePathname, useRouter } from 'expo-router';
 import { findProgram } from './programs';
 import type { IconName } from './TitleBar';
 import type { Point } from './useWindowDrag';
+import type { Size } from './useWindowResize';
 
 export type WindowMeta = { title: string; icon: IconName };
 
@@ -20,6 +21,8 @@ type WindowManagerApi = {
   toggleFromTaskbar: (id: string) => void;
   positionOf: (id: string) => Point | undefined;
   setPosition: (id: string, point: Point) => void;
+  sizeOf: (id: string) => Size | undefined;
+  setSize: (id: string, size: Size) => void;
   metaOf: (id: string) => WindowMeta | undefined;
   setMeta: (id: string, meta: WindowMeta) => void;
 };
@@ -39,6 +42,7 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
   const [minimized, setMinimized] = useState<string[]>([]);
   const [maximized, setMaximized] = useState<string[]>([]);
   const [positions, setPositions] = useState<Record<string, Point>>({});
+  const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [metas, setMetas] = useState<Record<string, WindowMeta>>({});
 
   const activeWindow = [...zOrder].reverse().find((r) => !minimized.includes(r));
@@ -77,6 +81,10 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
     setPositions((prev) => ({ ...prev, [id]: point }));
   }, []);
 
+  const setSize = useCallback((id: string, size: Size) => {
+    setSizes((prev) => ({ ...prev, [id]: size }));
+  }, []);
+
   const setMeta = useCallback((id: string, meta: WindowMeta) => {
     setMetas((prev) =>
       prev[id]?.title === meta.title && prev[id]?.icon === meta.icon ? prev : { ...prev, [id]: meta }
@@ -98,6 +106,8 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
       toggleFromTaskbar: (id) => (id === activeWindow ? minimize(id) : open(id)),
       positionOf: (id) => positions[id],
       setPosition,
+      sizeOf: (id) => sizes[id],
+      setSize,
       metaOf: (id) => metas[id],
       setMeta,
     }),
@@ -108,12 +118,14 @@ export function WindowManagerProvider({ children }: { children: React.ReactNode 
       minimized,
       maximized,
       positions,
+      sizes,
       metas,
       open,
       close,
       minimize,
       toggleMaximize,
       setPosition,
+      setSize,
       setMeta,
     ]
   );
