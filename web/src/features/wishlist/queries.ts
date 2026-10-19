@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateWishlist } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { wishlistApi } from './api';
 import { CreateWishInput, WishStatus } from './types';
@@ -11,7 +12,7 @@ export function useCreateWish() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateWishInput) => wishlistApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.wishlist }),
+    onSuccess: () => invalidateWishlist(qc),
   });
 }
 
@@ -19,7 +20,7 @@ export function useDecideWish() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { id: string; status: WishStatus }) => wishlistApi.decide(input.id, input.status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.wishlist }),
+    onSuccess: () => invalidateWishlist(qc),
   });
 }
 
@@ -27,6 +28,6 @@ export function useDeleteWish() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => wishlistApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.wishlist }),
+    onSuccess: () => invalidateWishlist(qc),
   });
 }

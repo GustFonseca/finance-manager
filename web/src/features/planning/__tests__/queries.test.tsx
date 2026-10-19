@@ -43,6 +43,8 @@ describe('planning queries', () => {
     const save = renderHook(() => useSetEmergencyFund(), { wrapper });
     await act(() => save.result.current.mutateAsync({ months: 3, goalId: 'g1' }));
     expect(planningApi.setEmergency).toHaveBeenCalledWith({ months: 3, goalId: 'g1' });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary', 'planning'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['goals'] });
   });
 });

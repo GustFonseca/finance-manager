@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateGoals } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { goalsApi } from './api';
 import { CreateGoalInput } from './types';
@@ -11,7 +12,7 @@ export function useCreateGoal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateGoalInput) => goalsApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.goals }),
+    onSuccess: () => invalidateGoals(qc),
   });
 }
 
@@ -20,7 +21,7 @@ export function useAddGoalProgress() {
   return useMutation({
     mutationFn: (input: { id: string; amountCents: number }) =>
       goalsApi.addProgress(input.id, input.amountCents),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.goals }),
+    onSuccess: () => invalidateGoals(qc),
   });
 }
 
@@ -28,7 +29,7 @@ export function useCompleteGoal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => goalsApi.complete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.goals }),
+    onSuccess: () => invalidateGoals(qc),
   });
 }
 
@@ -36,6 +37,6 @@ export function useDeleteGoal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => goalsApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.goals }),
+    onSuccess: () => invalidateGoals(qc),
   });
 }

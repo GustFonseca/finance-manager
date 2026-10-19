@@ -91,7 +91,9 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
     },
   });
 
-  if (!wm.isOpen(id) || wm.isMinimized(id)) return null;
+  if (!wm.isOpen(id)) return null;
+
+  const minimized = wm.isMinimized(id);
 
   const close = () => wm.close(id);
 
@@ -140,7 +142,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
       {...isolateContextMenu}
       style={[
         styles.frame,
-        { zIndex: wm.zIndexOf(id) },
+        { zIndex: wm.zIndexOf(id), display: minimized ? 'none' : 'flex' },
         !active && styles.inactiveFrame,
         maximized
           ? styles.maximized
@@ -181,7 +183,7 @@ export function Window({ title, icon, actions = [], onRefresh, status, children 
               style={[styles.handle, HANDLE_STYLES[edge]]}
             />
           ))}
-      {help && helpOpen ? help.present(help.topic, closeHelp) : null}
+      {help && helpOpen && !minimized ? help.present(help.topic, closeHelp) : null}
     </View>
   );
 }

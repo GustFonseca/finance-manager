@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.RateLimiting;
+using FinanceManager.Api.Security;
 using System.Security.Claims;
 using FinanceManager.Api.Authorization;
-using FinanceManager.Api.Caching;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Rules.Commands.SaveRule;
@@ -9,7 +10,6 @@ using FinanceManager.Aplication.UseCases.Rules.Queries.GetRules;
 using FinanceManager.Aplication.UseCases.Rules.Queries.TestRule;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Controllers;
 
@@ -19,12 +19,9 @@ namespace FinanceManager.Api.Controllers;
 public class RulesController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IOutputCacheStore _cache;
-
-    public RulesController(IMediator mediator, IOutputCacheStore cache)
+    public RulesController(IMediator mediator)
     {
         _mediator = mediator;
-        _cache = cache;
     }
 
     private Guid GetUserId() => User.GetUserId();
@@ -36,7 +33,6 @@ public class RulesController : ControllerBase
     public async Task<ActionResult<RuleDto>> Create([FromBody] SaveRuleRequest request)
     {
         var rule = await _mediator.Send(new SaveRuleCommand(GetUserId(), null, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
-        await _cache.EvictByTagAsync(UserDataCachePolicy.AllTag, HttpContext.RequestAborted);
         return Created($"/api/rules/{rule!.Id}", rule);
     }
 
@@ -45,7 +41,6 @@ public class RulesController : ControllerBase
     {
         var rule = await _mediator.Send(new SaveRuleCommand(GetUserId(), id, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
         if (rule == null) return NotFound();
-        await _cache.EvictByTagAsync(UserDataCachePolicy.AllTag, HttpContext.RequestAborted);
         return Ok(rule);
     }
 
@@ -54,11 +49,11 @@ public class RulesController : ControllerBase
     {
         var rule = await _mediator.Send(new SetRuleActiveCommand(GetUserId(), id, request.IsActive));
         if (rule == null) return NotFound();
-        await _cache.EvictByTagAsync(UserDataCachePolicy.AllTag, HttpContext.RequestAborted);
         return Ok(rule);
     }
 
     [HttpPost("test")]
+    [EnableRateLimiting(RateLimits.Lookup)]
     public async Task<ActionResult<RuleTestDto>> Test([FromBody] RuleTestRequest request) =>
         Ok(await _mediator.Send(new TestRuleQuery(GetUserId(), request.Pattern, DateTime.UtcNow)));
 }

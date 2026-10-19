@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, Card, MoneyText, ProgressBar } from '@/components/ui';
 import { colors, spacing, fontSize } from '@/theme';
 import { GoalDto, GoalStatus } from '../types';
+import { formatDay } from '@/lib/periods';
 
 type Props = {
   goal: GoalDto;
@@ -38,7 +39,7 @@ export function GoalCard({ goal, onAddProgress, onComplete, onDelete }: Props) {
 
       {goal.deadline ? (
         <Text style={styles.deadline}>
-          Prazo: {new Date(goal.deadline).toLocaleDateString('pt-BR')}
+          Prazo: {formatDay(goal.deadline)}
         </Text>
       ) : null}
 

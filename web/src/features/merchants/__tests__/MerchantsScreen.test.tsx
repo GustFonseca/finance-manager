@@ -10,6 +10,7 @@ import { MerchantsScreen } from '../MerchantsScreen';
 import { merchantsApi } from '../api';
 import { MerchantDto, MerchantHistoryDto, MerchantSpendingDto, MerchantSpendingReportDto } from '../types';
 import { apiError } from '@/test/http';
+import * as text from '@/lib/text';
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
@@ -149,6 +150,27 @@ describe('MerchantsScreen', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Procurar estabelecimento...'), { target: { value: 'zzz' } });
     expect(screen.getByText('Nenhum gasto encontrado neste período.')).toBeTruthy();
+  });
+
+  it('normalizes the merchant names once instead of on every keystroke', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Ana Souza')).toBeTruthy());
+    const normalize = jest.spyOn(text, 'normalizeText');
+
+    fireEvent.change(screen.getByPlaceholderText('Procurar estabelecimento...'), { target: { value: 'a' } });
+    fireEvent.change(screen.getByPlaceholderText('Procurar estabelecimento...'), { target: { value: 'an' } });
+
+    expect(normalize.mock.calls.map(([value]) => value)).not.toContain('iFood');
+    normalize.mockRestore();
+  });
+
+  it('renders only the visible part of long merchant lists', async () => {
+    const merchants = Array.from({ length: 300 }, (_, i) => spendingRow({ merchantId: `m${i}`, name: `Loja ${i}` }));
+    api.spending.mockResolvedValue({ totalCents: 1, count: 300, merchants });
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText('Loja 1')).toBeTruthy());
+    expect(screen.queryByText('Loja 299')).toBeNull();
   });
 
   it('switches between months, years and accounts', async () => {

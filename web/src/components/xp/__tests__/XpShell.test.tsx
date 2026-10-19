@@ -69,6 +69,13 @@ function taskButton(label: string) {
   return screen.getAllByRole('button').find((b) => !b.hasAttribute('aria-label') && b.textContent === label) as HTMLElement;
 }
 
+function isHidden(element: HTMLElement) {
+  for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+    if (node.style.display === 'none') return true;
+  }
+  return false;
+}
+
 describe('XpShell', () => {
   beforeEach(() => {
     setViewport(1200, 800);
@@ -211,12 +218,12 @@ describe('XpShell', () => {
     expect(taskButtons()).toEqual(['Minhas metas']);
 
     fireEvent.click(taskButton('Minhas metas'));
-    expect(screen.queryByText('metas')).toBeNull();
+    expect(isHidden(screen.getByText('metas'))).toBe(true);
     expect(taskButtons()).toEqual(['Minhas metas']);
     expect(wm.activeWindow).toBeUndefined();
 
     fireEvent.click(taskButton('Minhas metas'));
-    expect(screen.getByText('metas')).toBeTruthy();
+    expect(isHidden(screen.getByText('metas'))).toBe(false);
   });
 
   it('presents the help topic of a window through the shell', async () => {

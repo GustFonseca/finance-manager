@@ -40,16 +40,18 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? end,
         [FromQuery] Guid? accountId)
     {
-        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId));
+        var (monthStart, now) = MonthPeriod.Resolve(start, end);
+        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), monthStart, now, accountId));
         return Ok(summary);
     }
 
     [HttpGet("recurring")]
     public async Task<ActionResult<List<RecurringExpenseDto>>> GetRecurring(
         [FromQuery] DateTime? end,
-        [FromQuery] Guid? accountId)
+        [FromQuery] Guid? accountId,
+        [FromQuery] DateTime? start = null)
     {
-        var (_, now) = MonthPeriod.Resolve(null, end);
+        var (_, now) = MonthPeriod.Resolve(start, end);
         var recurring = await _mediator.Send(new GetRecurringExpensesQuery(GetUserId(), now, accountId));
         return Ok(recurring);
     }
@@ -81,8 +83,7 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? dayStart)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var day = dayStart?.ToUniversalTime() ?? new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
-        if (day > now) day = now;
+        var day = MonthPeriod.DayStart(monthStart, now, dayStart);
         return Ok(await _mediator.Send(new GetDailyBudgetQuery(GetUserId(), monthStart, now, day)));
     }
 
@@ -93,8 +94,7 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? dayStart)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var day = dayStart?.ToUniversalTime() ?? new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
-        if (day > now) day = now;
+        var day = MonthPeriod.DayStart(monthStart, now, dayStart);
         return Ok(await _mediator.Send(new GetDigestQuery(GetUserId(), monthStart, now, day)));
     }
 

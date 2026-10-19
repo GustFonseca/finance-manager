@@ -20,15 +20,20 @@ public static class MerchantCatalog
         if (parsed == null) return null;
         if (cache != null && cache.TryGetValue(parsed.Key, out var known)) return known;
 
-        var merchant = await repository.GetByKeyAsync(userId, parsed.Key)
-            ?? await repository.CreateAsync(new Merchant
+        var merchant = await repository.GetByKeyAsync(userId, parsed.Key);
+        if (merchant == null)
+        {
+            merchant = new Merchant
             {
                 UserId = userId,
                 Name = parsed.Name,
                 Key = parsed.Key,
                 Kind = parsed.Kind,
                 Document = parsed.Document,
-            });
+            };
+            if (cache != null) repository.Stage(merchant);
+            else await repository.CreateAsync(merchant);
+        }
         if (cache != null) cache[parsed.Key] = merchant;
         return merchant;
     }
@@ -47,7 +52,7 @@ public static class MerchantCatalog
         if (merchant != null && learnCategory && ShouldLearn(merchant, category, rules))
         {
             merchant.CategoryId = category.Id;
-            await repository.UpdateAsync(merchant);
+            if (cache == null) await repository.UpdateAsync(merchant);
         }
         return merchant;
     }

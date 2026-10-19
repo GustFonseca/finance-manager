@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
-import { invalidateMoney } from '@/features/transactions/queries';
+import { invalidateMoney } from '@/lib/invalidation';
 import { DateRange, PeriodFilter } from '@/features/transactions/types';
 import { merchantsApi } from './api';
 import { SpendingClass } from '@/features/spending/types';

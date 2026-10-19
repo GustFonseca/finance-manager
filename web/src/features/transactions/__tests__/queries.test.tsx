@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render';
 import { foldersApi } from '@/features/files/api';
 import { transactionsApi } from '../api';
-import { invalidateMoney, useSetReceipt, useTransactions, useUpdateTransaction } from '../queries';
+import { useImportTransactions, useSetReceipt, useTransactions, useUpdateTransaction } from '../queries';
 
 jest.mock('../api');
 jest.mock('@/features/files/api');
@@ -35,22 +35,6 @@ describe('transactions queries', () => {
     expect(transactionsApi.getAll).not.toHaveBeenCalled();
   });
 
-  it('invalidates every query that depends on money', () => {
-    const client = createTestQueryClient();
-    const invalidate = jest.spyOn(client, 'invalidateQueries');
-
-    invalidateMoney(client);
-
-    expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toEqual([
-      ['transactions'],
-      ['accounts'],
-      ['summary'],
-      ['savings'],
-      ['merchants'],
-      ['challenges'],
-    ]);
-  });
-
   it('updates a transaction and refreshes the money queries', async () => {
     jest.mocked(transactionsApi.update).mockResolvedValue({ id: 't1' } as never);
     const { client, wrapper } = wrapperFor();
@@ -68,6 +52,7 @@ describe('transactions queries', () => {
       ['savings'],
       ['merchants'],
       ['challenges'],
+      ['wishlist'],
     ]);
   });
 
@@ -90,6 +75,7 @@ describe('transactions queries', () => {
       ['savings'],
       ['merchants'],
       ['challenges'],
+      ['wishlist'],
       ['folders'],
       ['files'],
       ['trash'],
@@ -98,6 +84,20 @@ describe('transactions queries', () => {
     await act(() => result.current.mutateAsync({ id: 't1', file: null }));
     expect(transactionsApi.setReceipt).toHaveBeenLastCalledWith('t1', null);
     expect(foldersApi.upload).toHaveBeenCalledTimes(1);
+  });
+
+  it('imports a statement through a mutation and refreshes the money queries', async () => {
+    jest.mocked(transactionsApi.importMany).mockResolvedValue(2);
+    const { client, wrapper } = wrapperFor();
+    const invalidate = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useImportTransactions(), { wrapper });
+    const request = { accountId: 'a', lines: [] };
+
+    await act(async () => {
+      await expect(result.current.mutateAsync(request)).resolves.toBe(2);
+    });
+    expect(transactionsApi.importMany).toHaveBeenCalledWith(request);
+    expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toContainEqual(['wishlist']);
   });
 
   it('refreshes the files even when attaching fails', async () => {

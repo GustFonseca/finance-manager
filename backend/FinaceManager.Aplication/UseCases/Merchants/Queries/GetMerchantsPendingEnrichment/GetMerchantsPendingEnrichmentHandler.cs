@@ -18,8 +18,7 @@ public class GetMerchantsPendingEnrichmentHandler : IRequestHandler<GetMerchants
         var merchants = await _merchantRepository.GetPendingEnrichmentAsync(request.Max);
         return merchants
             .Select(m => (m.Id, Cnpj: Cnpj.Digits(m.Document)))
-            .Where(m => m.Cnpj != null)
-            .Select(m => new PendingEnrichment(m.Id, m.Cnpj!))
+            .Select(m => new PendingEnrichment(m.Id, m.Cnpj != null && Cnpj.IsNumeric(m.Cnpj) ? m.Cnpj : null))
             .ToList();
     }
 }

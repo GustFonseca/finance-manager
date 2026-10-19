@@ -39,14 +39,14 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
 
     public async Task<TransactionDto> Handle(CreateTransactionCommand request, CancellationToken cancellationToken = default)
     {
-        TransactionInput.Validate(request.AmountCents, request.Description);
+        var description = TransactionInput.Validate(request.AmountCents, request.Description, request.Type, request.Recurrence);
         var (account, category) = await TransactionInput.LoadReferencesAsync(
             _accountRepository, _categoryRepository, request.UserId, request.AccountId, request.CategoryId, request.Type);
 
         var owner = await _userRepository.GetByIdAsync(request.UserId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
         var merchant = await MerchantCatalog.FileAsync(
-            _merchantRepository, rules, request.UserId, request.Description, owner?.Name, category);
+            _merchantRepository, rules, request.UserId, description, owner?.Name, category);
 
         var transaction = new Transaction
         {
@@ -55,7 +55,7 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
             CategoryId = request.CategoryId,
             Type = request.Type,
             AmountCents = request.AmountCents,
-            Description = request.Description,
+            Description = description,
             Date = TransactionInput.ToUtc(request.Date),
             Recurrence = request.Recurrence,
             MerchantId = merchant?.Id,

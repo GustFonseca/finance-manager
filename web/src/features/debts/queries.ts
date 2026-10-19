@@ -1,12 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateDebts } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { debtsApi } from './api';
 import { DebtInput } from './types';
-
-function invalidateDebts(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: queryKeys.debts });
-  qc.invalidateQueries({ queryKey: queryKeys.summary });
-}
 
 export function useDebts() {
   return useQuery({ queryKey: queryKeys.debts, queryFn: debtsApi.getAll });

@@ -1,5 +1,5 @@
 import type { IconName } from '@/components/xp';
-import { formatCentsForInput, parseSignedAmountToCents } from '@/lib/money';
+import { formatCentsForInput, parseAmountToCents } from '@/lib/money';
 import { palette } from '@/theme';
 import { ProfileDto, UpdateProfileRequest } from './types';
 
@@ -173,8 +173,8 @@ export function validateProfile(form: ProfileForm, today: string): ValidationRes
   if (occupation && occupation.length > MAX_TEXT_LENGTH) return { error: MESSAGES.occupation };
 
   const incomeText = optional(form.income);
-  const income = incomeText ? parseSignedAmountToCents(incomeText) : null;
-  if (incomeText && (income === null || income < 0)) return { error: MESSAGES.income };
+  const income = incomeText ? parseAmountToCents(incomeText) : null;
+  if (incomeText && income === null) return { error: MESSAGES.income };
 
   const payday = wholeNumber(form.payday, 1, 31);
   if (payday === undefined) return { error: MESSAGES.payday };

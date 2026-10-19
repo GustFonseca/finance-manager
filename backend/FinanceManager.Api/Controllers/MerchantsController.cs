@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using FinanceManager.Api.Security;
 using System.Security.Claims;
 using FinanceManager.Api.Models;
 using FinanceManager.Aplication.DTOs;
@@ -41,6 +43,7 @@ public class MerchantsController : ControllerBase
     }
 
     [HttpPost("resolve")]
+    [EnableRateLimiting(RateLimits.Lookup)]
     public async Task<ActionResult<List<MerchantMatchDto>>> Resolve([FromBody] ResolveMerchantsRequest request)
     {
         if (request.Lines.Count > MaxDescriptions)
@@ -64,6 +67,7 @@ public class MerchantsController : ControllerBase
     }
 
     [HttpGet("company/{cnpj}")]
+    [EnableRateLimiting(RateLimits.Lookup)]
     public async Task<ActionResult<CompanyDto>> LookupCompany(string cnpj)
     {
         var company = await _mediator.Send(new LookupCompanyQuery(cnpj));

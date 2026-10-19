@@ -3,7 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { DialogButtons, FormError, Input, Modal, RadioGroup, Select } from '@/components/ui';
 import { useCategories } from '@/features/categories/queries';
 import { useMerchants } from '@/features/merchants/queries';
-import { INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
+import { INVALID_AMOUNT_MESSAGE, parseAmountToCents } from '@/lib/money';
 import { todayStartIso } from '@/lib/periods';
 import { colors, fontSize, spacing } from '@/theme';
 import { ChallengeScope, CreateChallengeInput } from '../types';
@@ -25,12 +25,6 @@ type Props = {
   onClose: () => void;
   onSubmit: (data: CreateChallengeInput) => void;
 };
-
-function parseLimit(text: string): number | null {
-  const trimmed = text.trim();
-  if (trimmed === '' || /^0+([.,]0+)?$/.test(trimmed)) return 0;
-  return parseToCents(trimmed);
-}
 
 export function ChallengeForm({ visible, saving, onClose, onSubmit }: Props) {
   const { data: categories = [] } = useCategories('EXPENSE');
@@ -58,7 +52,7 @@ export function ChallengeForm({ visible, saving, onClose, onSubmit }: Props) {
   }
 
   function handleSubmit() {
-    const limitCents = parseLimit(limit);
+    const limitCents = limit.trim() === '' ? 0 : parseAmountToCents(limit);
     const dayCount = Number(days.trim());
     const problem =
       !name.trim() ? CHALLENGE_NAME_REQUIRED

@@ -127,7 +127,7 @@ public class DebtTests
     {
         var plan = DebtPlanner.Plan([Debt("Cartão", 500000, 12m, 30000), Debt("Empréstimo", 100000, 2m, 10000), Debt("Zerada", 0, 1m, 100)], 50000);
 
-        Assert.Equal(40100 + 50000, plan.MonthlyBudgetCents);
+        Assert.Equal(40000 + 50000, plan.MonthlyBudgetCents);
         Assert.Equal(50000, plan.ExtraCents);
         Assert.True(plan.Avalanche.Feasible);
         Assert.True(plan.Avalanche.Months <= plan.Snowball.Months);

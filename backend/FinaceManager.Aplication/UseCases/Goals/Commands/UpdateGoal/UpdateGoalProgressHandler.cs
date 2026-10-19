@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
@@ -20,6 +21,7 @@ public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressComma
 
     public async Task<GoalDto> Handle(UpdateGoalProgressCommand request, CancellationToken cancellationToken = default)
     {
+        Input.Positive(request.AmountCents, "O valor deve ser maior que zero.");
         var goal = await _goalRepository.GetByIdAsync(request.GoalId)
             ?? throw new NotFoundException("Meta não encontrada.");
         if (goal.UserId != request.UserId)

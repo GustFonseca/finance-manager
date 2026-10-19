@@ -19,6 +19,6 @@ public class GoogleTokenValidator : IGoogleTokenValidator
         {
             Audience = [_config["Google:ClientId"]!]
         });
-        return new GoogleIdentity(payload.Subject, payload.Email, payload.Name);
+        return new GoogleIdentity(payload.Subject, payload.Email, payload.Name, payload.EmailVerified, payload.Nonce);
     }
 }

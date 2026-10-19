@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -21,9 +22,10 @@ public class UpdateCategoryHandler : IRequestHandler<UpdateCategoryCommand, Cate
         var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
         if (category == null || category.UserId != request.UserId) return null;
 
-        category.Name = request.Name;
+        Input.Defined(request.Type, "Tipo de categoria inválido.");
+        category.Name = Input.Name(request.Name);
         category.Type = request.Type;
-        category.Color = request.Color;
+        category.Color = Input.Color(request.Color);
         await _categoryRepository.UpdateAsync(category);
 
         return _mapper.Map<CategoryDto>(category);

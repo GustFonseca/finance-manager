@@ -1,5 +1,6 @@
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Interfaces.Repositories;
+using FinanceManager.Infrastructure.Auditing;
 using FinanceManager.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
     public async Task<List<Transaction>> SearchAsync(Guid userId, TransactionFilter filter)
     {
         var query = _dbSet
-            .AsNoTracking()
+            .AsNoTrackingWithIdentityResolution()
             .Include(t => t.Account)
             .Include(t => t.Category)
             .Include(t => t.Merchant)
@@ -40,9 +41,14 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         return await (filter.Limit is > 0 ? ordered.Take(filter.Limit.Value) : ordered).ToListAsync();
     }
 
-    public async Task<List<Transaction>> GetUncataloguedAsync()
+    public async Task<List<Transaction>> GetUncataloguedAsync(int max)
     {
-        return await _dbSet.Include(t => t.Category).Where(t => t.MerchantId == null).ToListAsync();
+        return await _dbSet
+            .Include(t => t.Category)
+            .Where(t => t.MerchantId == null && t.CatalogAttemptedAt == null)
+            .OrderBy(t => t.CreatedAt)
+            .Take(max)
+            .ToListAsync();
     }
 
     public async Task<List<Transaction>> GetByMerchantIdAsync(Guid merchantId)
@@ -68,6 +74,15 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 
     public async Task<int> DeleteByUserIdAsync(Guid userId)
     {
+        if (_context.Database.IsRelational())
+        {
+            var deleted = await _dbSet.Where(t => t.UserId == userId).ExecuteDeleteAsync();
+            if (deleted == 0) return 0;
+            _context.ActivityLogs.Add(ActivityDescriber.BulkDelete(userId, deleted));
+            await _context.SaveChangesAsync();
+            return deleted;
+        }
+
         var transactions = await _dbSet.Where(t => t.UserId == userId).ToListAsync();
         if (transactions.Count == 0) return 0;
         _dbSet.RemoveRange(transactions);

@@ -3,6 +3,7 @@ import {
   formatCentsCompact,
   formatCentsForInput,
   INVALID_AMOUNT_MESSAGE,
+  parseAmountToCents,
   parseSignedAmountToCents,
   parseToCents,
 } from '../money';
@@ -49,8 +50,9 @@ describe('parseToCents', () => {
     expect(parseToCents('  99,90  ')).toBe(9990);
   });
 
-  it('rounds to the nearest cent', () => {
-    expect(parseToCents('0,015')).toBe(2);
+  it('rejects more than two decimal places', () => {
+    expect(parseToCents('1,5555')).toBeNull();
+    expect(parseToCents('1.5555')).toBeNull();
   });
 
   it('rejects empty, zero, negative and non-numeric input', () => {
@@ -61,6 +63,35 @@ describe('parseToCents', () => {
     expect(parseToCents('-10,00')).toBeNull();
     expect(parseToCents('abc')).toBeNull();
   });
+});
+
+describe('parseAmountToCents', () => {
+  it.each([
+    ['12,50', 1250],
+    ['1.234,56', 123456],
+    ['1,234.56', 123456],
+    ['12.50', 1250],
+    ['12.5', 1250],
+    ['1234', 123400],
+    ['1.234', 123400],
+    ['1.234.567,8', 123456780],
+    ['12,345', null],
+    ['1,234', null],
+    ['R$ 12,50', 1250],
+    ['r$1.000,00', 100000],
+    [' 7 ', 700],
+    ['0', 0],
+    ['0,00', 0],
+  ])('parses %s as %d cents', (input, cents) => {
+    expect(parseAmountToCents(input)).toBe(cents);
+  });
+
+  it.each(['', '   ', 'abc', '1e3', '0x10', '12.5.0', '-10,00', '+10', '12,', ',50', '1.23,45', 'R$', 'Infinity'])(
+    'rejects %p',
+    (input) => {
+      expect(parseAmountToCents(input)).toBeNull();
+    },
+  );
 });
 
 describe('formatCents / parseToCents round-trip', () => {
@@ -89,7 +120,22 @@ describe('parseSignedAmountToCents', () => {
     expect(parseSignedAmountToCents('+0.99')).toBe(99);
   });
 
+  it('reads accounting parentheses, D/C suffixes and the Unicode minus as signs', () => {
+    expect(parseSignedAmountToCents('(1.234,56)')).toBe(-123456);
+    expect(parseSignedAmountToCents('1.234,56-')).toBe(-123456);
+    expect(parseSignedAmountToCents('1.234,56 D')).toBe(-123456);
+    expect(parseSignedAmountToCents('1.234,56 C')).toBe(123456);
+    expect(parseSignedAmountToCents('5,00d')).toBe(-500);
+    expect(parseSignedAmountToCents('R$ 10,00 C')).toBe(1000);
+    expect(parseSignedAmountToCents('−12,34')).toBe(-1234);
+    expect(parseSignedAmountToCents('- R$ 12,34')).toBe(-1234);
+    expect(parseSignedAmountToCents('R$ -12,34')).toBe(-1234);
+    expect(parseSignedAmountToCents('-12.345.678,90')).toBe(-1234567890);
+  });
+
   it('rejects non-numeric input', () => {
+    expect(parseSignedAmountToCents('D')).toBeNull();
+    expect(parseSignedAmountToCents('()')).toBeNull();
     expect(parseSignedAmountToCents('')).toBeNull();
     expect(parseSignedAmountToCents('abc')).toBeNull();
   });

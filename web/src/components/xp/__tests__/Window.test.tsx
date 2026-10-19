@@ -136,8 +136,46 @@ describe('Window', () => {
 
     fireEvent.click(screen.getByText('Exibir'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Minimizar' }));
-    expect(screen.queryByText('conteúdo')).toBeNull();
+    expect(frameOf('Transações').style.display).toBe('none');
     expect(wm.isMinimized('/transactions')).toBe(true);
+  });
+
+  it('keeps the content mounted while minimized and unmounts it when closed', async () => {
+    const mounts = { count: 0, unmounts: 0 };
+    function Stateful() {
+      const [value, setValue] = React.useState(0);
+      React.useEffect(() => {
+        mounts.count += 1;
+        return () => {
+          mounts.unmounts += 1;
+        };
+      }, []);
+      return <button onClick={() => setValue(value + 1)}>{`cliques ${value}`}</button>;
+    }
+    renderWithProviders(
+      <>
+        <Probe />
+        <Window title="Transações" icon="exchange">
+          <Stateful />
+        </Window>
+      </>,
+      { windowId: '/transactions' }
+    );
+    await flush();
+    fireEvent.click(screen.getByText('cliques 0'));
+
+    act(() => wm.minimize('/transactions'));
+    expect(frameOf('Transações').style.display).toBe('none');
+    expect(screen.queryByRole('button', { name: 'cliques 1' })).toBeNull();
+
+    act(() => wm.open('/transactions'));
+    expect(frameOf('Transações').style.display).not.toBe('none');
+    expect(screen.getByRole('button', { name: 'cliques 1' })).toBeTruthy();
+    expect(mounts).toEqual({ count: 1, unmounts: 0 });
+
+    act(() => wm.close('/transactions'));
+    expect(screen.queryByText('cliques 1')).toBeNull();
+    expect(mounts).toEqual({ count: 1, unmounts: 1 });
   });
 
   it('shows the about dialog from the Ajuda menu', async () => {

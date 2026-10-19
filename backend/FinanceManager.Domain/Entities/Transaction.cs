@@ -15,6 +15,7 @@ public class Transaction
     public Recurrence Recurrence { get; set; } = Recurrence.NONE;
     public Guid? MerchantId { get; set; }
     public Guid? ReceiptFileId { get; set; }
+    public DateTime? CatalogAttemptedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;

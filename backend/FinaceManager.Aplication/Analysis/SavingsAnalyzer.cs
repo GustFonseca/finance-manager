@@ -26,6 +26,7 @@ public static class SavingsAnalyzer
     private const int HabitCuts = 4;
     private const long MinCategoryCutCents = 2_000;
     private const double UnsortedShare = 0.2;
+    public const double MinProjectionElapsed = 7.0 / 30;
 
     public static SavingsPlanDto Analyze(SavingsAnalysisInput input)
     {
@@ -36,7 +37,7 @@ public static class SavingsAnalyzer
         var current = transactions.Where(t => t.Date >= input.MonthStart && t.Date < monthEnd).ToList();
         var history = transactions.Where(t => t.Date >= historyStart && t.Date < input.MonthStart).ToList();
         var elapsed = Math.Clamp((input.Now - input.MonthStart) / (monthEnd - input.MonthStart), 0.01, 1);
-        var historyMonths = AnalysisHistory.MonthsWithData(history, input.MonthStart, HistoryMonths);
+        var historyMonths = AnalysisHistory.MonthsWithData(history.Where(t => t.Type == TransactionType.EXPENSE), input.MonthStart, HistoryMonths);
         var divisor = Math.Max(1, historyMonths);
 
         var monthIncome = Sum(current, TransactionType.INCOME);
@@ -60,7 +61,7 @@ public static class SavingsAnalyzer
             .ToDictionary(g => g.Key, g => g.Sum(r => r.MonthlyCents));
         SuggestLimits(budgets, gap, fixedByCategory);
 
-        var projected = ProjectMonth(current, input.Recurring, elapsed, rules);
+        var projected = ProjectMonth(current, input.Recurring, Math.Max(elapsed, MinProjectionElapsed), rules);
         var habits = SpendingAnalyzer.Habits(history, historyMonths, rules)
             .Where(h => !h.Subscription)
             .Take(HabitCuts)

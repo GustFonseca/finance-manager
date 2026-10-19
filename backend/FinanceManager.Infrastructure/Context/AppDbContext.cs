@@ -46,6 +46,8 @@ public class AppDbContext : DbContext
         {
             e.HasKey(a => a.Id);
             e.HasIndex(a => a.UserId);
+            e.Property(a => a.Name).HasMaxLength(EntityLimits.NameLength);
+            e.Property(a => a.Version).IsConcurrencyToken();
             e.HasOne(a => a.User).WithMany(u => u.Accounts).HasForeignKey(a => a.UserId);
         });
 
@@ -53,6 +55,8 @@ public class AppDbContext : DbContext
         {
             e.HasKey(c => c.Id);
             e.HasIndex(c => c.UserId);
+            e.Property(c => c.Name).HasMaxLength(EntityLimits.NameLength);
+            e.Property(c => c.Color).HasMaxLength(7);
             e.Property(c => c.Type).HasConversion<string>();
             e.HasOne(c => c.User).WithMany(u => u.Categories).HasForeignKey(c => c.UserId);
         });
@@ -101,6 +105,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(g => g.Id);
             e.HasIndex(g => g.UserId);
+            e.Property(g => g.Name).HasMaxLength(EntityLimits.NameLength);
             e.Property(g => g.Status).HasConversion<string>();
             e.HasOne(g => g.User).WithMany(u => u.Goals).HasForeignKey(g => g.UserId);
         });
@@ -109,6 +114,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(f => f.Id);
             e.HasIndex(f => f.UserId);
+            e.HasIndex(f => f.UserId, "IX_Folders_UserId_System").IsUnique().HasFilter("\"IsSystem\"");
             e.Property(f => f.Name).HasMaxLength(100);
             e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
         });

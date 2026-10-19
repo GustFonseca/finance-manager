@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateFiles, invalidateMoney } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
-import { invalidateFiles } from '@/features/files/queries';
 import { transactionsApi } from './api';
 import { uploadReceipt } from './receipts';
-import { CreateTransactionRequest, TransactionFilter } from './types';
+import { CreateTransactionRequest, ImportTransactionsRequest, TransactionFilter } from './types';
 
 export function useTransactions(range: TransactionFilter = {}, enabled = true) {
   return useQuery({
@@ -11,15 +11,6 @@ export function useTransactions(range: TransactionFilter = {}, enabled = true) {
     queryFn: () => transactionsApi.getAll(range),
     enabled,
   });
-}
-
-export function invalidateMoney(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: queryKeys.transactions });
-  qc.invalidateQueries({ queryKey: queryKeys.accounts });
-  qc.invalidateQueries({ queryKey: queryKeys.summary });
-  qc.invalidateQueries({ queryKey: queryKeys.savings });
-  qc.invalidateQueries({ queryKey: queryKeys.merchants });
-  qc.invalidateQueries({ queryKey: queryKeys.challenges });
 }
 
 export function useCreateTransaction() {
@@ -34,6 +25,14 @@ export function useUpdateTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateTransactionRequest }) => transactionsApi.update(id, data),
+    onSuccess: () => invalidateMoney(qc),
+  });
+}
+
+export function useImportTransactions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ImportTransactionsRequest) => transactionsApi.importMany(data),
     onSuccess: () => invalidateMoney(qc),
   });
 }

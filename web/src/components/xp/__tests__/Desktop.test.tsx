@@ -470,3 +470,79 @@ describe('Desktop', () => {
     });
   });
 });
+
+describe('Desktop window errors', () => {
+  class Outer extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+    state = { failed: false };
+    static getDerivedStateFromError() {
+      return { failed: true };
+    }
+    render() {
+      return this.state.failed ? <span>falha geral</span> : this.props.children;
+    }
+  }
+
+  function renderBroken(error: Error) {
+    function Broken(): React.ReactElement {
+      throw error;
+    }
+    return renderWithProviders(
+      <Outer>
+        <Desktop screens={{ '/transactions': Broken }}>
+          <Probe />
+        </Desktop>
+      </Outer>,
+      { windowId: '/transactions' }
+    );
+  }
+
+  beforeEach(() => {
+    setViewport(1200, 800);
+    jest.mocked(profileApi.get).mockResolvedValue(profile());
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('asks to reload when a window chunk is missing after a deploy', async () => {
+    renderBroken(Object.assign(new Error('Loading chunk 3 failed.'), { name: 'ChunkLoadError' }));
+    act(() => wm.open('/transactions'));
+
+    expect(await screen.findByText('Esta janela foi atualizada. Recarregue para continuar.')).toBeTruthy();
+    expect(screen.getAllByText('Transações').length).toBeGreaterThan(1);
+
+    const original = window.location;
+    const reload = jest.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, reload } });
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }));
+      expect(reload).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: original });
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
+    expect(wm.isOpen('/transactions')).toBe(false);
+    expect(screen.queryByText('Esta janela foi atualizada. Recarregue para continuar.')).toBeNull();
+  });
+
+  it('uses a generic title for windows that are not programs', async () => {
+    function Broken(): React.ReactElement {
+      throw new TypeError('Failed to fetch dynamically imported module');
+    }
+    renderWithProviders(
+      <Desktop screens={{ 'dialog:x': Broken }}>
+        <Probe />
+      </Desktop>,
+      { windowId: 'dialog:x' }
+    );
+    act(() => wm.open('dialog:x'));
+    expect(await screen.findByText('Finance Manager')).toBeTruthy();
+  });
+
+  it('lets other errors reach the crash dialog', async () => {
+    renderBroken(new Error('boom'));
+    act(() => wm.open('/transactions'));
+    expect(await screen.findByText('falha geral')).toBeTruthy();
+  });
+});

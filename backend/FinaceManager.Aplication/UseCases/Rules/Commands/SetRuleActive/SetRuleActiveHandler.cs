@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Caching;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -13,9 +14,18 @@ public class SetRuleActiveHandler : IRequestHandler<SetRuleActiveCommand, RuleDt
     private readonly IClassificationRuleRepository _ruleRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly IClassificationRulesProvider _rulesProvider;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserDataVersions _versions;
 
-    public SetRuleActiveHandler(IClassificationRuleRepository ruleRepository, IActivityLogRepository activityLogRepository, IClassificationRulesProvider rulesProvider)
+    public SetRuleActiveHandler(
+        IClassificationRuleRepository ruleRepository,
+        IActivityLogRepository activityLogRepository,
+        IClassificationRulesProvider rulesProvider,
+        IUnitOfWork unitOfWork,
+        IUserDataVersions versions)
     {
+        _unitOfWork = unitOfWork;
+        _versions = versions;
         _ruleRepository = ruleRepository;
         _activityLogRepository = activityLogRepository;
         _rulesProvider = rulesProvider;
@@ -35,7 +45,7 @@ public class SetRuleActiveHandler : IRequestHandler<SetRuleActiveCommand, RuleDt
                 Source = "Regras",
                 Description = SaveRuleHandler.Truncate($"Regra {(rule.IsActive ? "ativada" : "desativada")}: {rule.Type} \"{rule.Pattern}\""),
             });
-            _rulesProvider.Invalidate();
+            RulesChanged.AfterCommit(_unitOfWork, _rulesProvider, _versions);
         }
         return GetRulesHandler.ToDto(rule);
     }

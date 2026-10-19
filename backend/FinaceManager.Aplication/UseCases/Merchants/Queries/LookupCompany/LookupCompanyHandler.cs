@@ -16,13 +16,17 @@ public class LookupCompanyHandler : IRequestHandler<LookupCompanyQuery, CompanyD
     public async Task<CompanyDto?> Handle(LookupCompanyQuery request, CancellationToken cancellationToken = default)
     {
         var cnpj = Cnpj.Digits(request.Cnpj);
-        if (cnpj == null) return null;
+        if (cnpj == null || !Cnpj.IsNumeric(cnpj)) return null;
         try
         {
             var company = await _registry.LookupAsync(cnpj, cancellationToken);
             return company == null ? null : new CompanyDto { Cnpj = cnpj, Name = company.Name, Activity = company.Activity };
         }
         catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return null;
         }

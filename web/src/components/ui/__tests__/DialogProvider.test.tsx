@@ -160,3 +160,27 @@ describe('useDialog', () => {
     expect(() => render(<Orphan />)).toThrow('useDialog must be used within a DialogProvider');
   });
 });
+
+describe('DialogProvider context value', () => {
+  it('does not re-render consumers when a dialog opens or closes', () => {
+    let renders = 0;
+    const ref: { current: Api | null } = { current: null };
+    const Consumer = React.memo(function Consumer() {
+      renders += 1;
+      ref.current = useDialog();
+      return null;
+    });
+    render(
+      <DialogProvider>
+        <Consumer />
+      </DialogProvider>
+    );
+    const first = ref.current;
+
+    act(() => ref.current!.alert({ title: 'Aviso' }));
+    click('OK');
+
+    expect(renders).toBe(1);
+    expect(ref.current).toBe(first);
+  });
+});

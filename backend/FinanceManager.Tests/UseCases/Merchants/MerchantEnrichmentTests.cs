@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using FinanceManager.Aplication.Companies;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.ApplyMerchantActivity;
+using FinanceManager.Aplication.UseCases.Merchants.Commands.RecordEnrichmentFailure;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantsPendingEnrichment;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetCashFlowForecast;
 using FinanceManager.Domain.Entities;
@@ -50,8 +51,11 @@ public class MerchantEnrichmentTests
         return merchant;
     }
 
+    private readonly FinanceManager.Infrastructure.Messaging.UnitOfWork _work = new();
+    private readonly List<Guid> _bumped = [];
+
     private ApplyMerchantActivityHandler ApplyHandler => new(
-        new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db), TestRules.Provider);
+        new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db), TestRules.Provider, _work, new RecordingVersions(_bumped));
 
     [Fact]
     public async Task Only_businesses_with_a_cnpj_that_were_never_looked_up_are_pending()
@@ -68,13 +72,35 @@ public class MerchantEnrichmentTests
     }
 
     [Fact]
-    public async Task Malformed_documents_are_skipped()
+    public async Task Documents_that_cannot_be_looked_up_are_pending_without_a_cnpj_so_they_get_marked()
     {
-        AddMerchant("Estranho", "12.345/0001");
+        var malformed = AddMerchant("Estranho", "12.345/0001");
+        var alphanumeric = AddMerchant("Nova", "12.ABC.345/01DE-35");
 
         var result = await new GetMerchantsPendingEnrichmentHandler(new MerchantRepository(_db)).Handle(new GetMerchantsPendingEnrichmentQuery(10));
 
-        Assert.Empty(result);
+        Assert.Equal(
+            new[] { new PendingEnrichment(malformed.Id, null), new PendingEnrichment(alphanumeric.Id, null) }.OrderBy(p => p.MerchantId),
+            result.OrderBy(p => p.MerchantId));
+    }
+
+    [Fact]
+    public async Task Failed_lookups_are_counted_and_given_up_after_the_limit_and_retried_last()
+    {
+        var failing = AddMerchant("Falha");
+        var fresh = AddMerchant("Nova");
+        var handler = new RecordEnrichmentFailureHandler(new MerchantRepository(_db));
+        var now = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
+
+        Assert.False(await handler.Handle(new RecordEnrichmentFailureCommand(failing.Id, now)));
+        var pending = await new MerchantRepository(_db).GetPendingEnrichmentAsync(10);
+        Assert.Equal([fresh.Id, failing.Id], pending.Select(m => m.Id));
+        Assert.False(await handler.Handle(new RecordEnrichmentFailureCommand(failing.Id, now)));
+        Assert.True(await handler.Handle(new RecordEnrichmentFailureCommand(failing.Id, now)));
+        Assert.False(await handler.Handle(new RecordEnrichmentFailureCommand(Guid.NewGuid(), now)));
+
+        Assert.Equal((RecordEnrichmentFailureHandler.MaxAttempts, (DateTime?)now), (failing.EnrichmentAttempts, failing.EnrichedAt));
+        Assert.Equal([fresh.Id], (await new MerchantRepository(_db).GetPendingEnrichmentAsync(10)).Select(m => m.Id));
     }
 
     [Fact]
@@ -94,6 +120,9 @@ public class MerchantEnrichmentTests
         Assert.Equal(_alimentacao.Id, saved.CategoryId);
         Assert.Equal(_alimentacao.Id, _db.Transactions.Single(t => t.Id == unsorted.Id).CategoryId);
         Assert.Equal(_lazer.Id, _db.Transactions.Single(t => t.Id == chosen.Id).CategoryId);
+        Assert.Empty(_bumped);
+        await _work.FlushAsync();
+        Assert.Equal([_me.Id], _bumped);
     }
 
     [Fact]
@@ -255,14 +284,64 @@ public class MerchantEnrichmentServiceTests
     }
 
     [Fact]
-    public async Task An_unavailable_registry_stops_the_batch_without_marking_anything()
+    public async Task An_unavailable_registry_stops_the_batch_and_counts_a_failed_attempt()
     {
-        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment> { new(Guid.NewGuid(), "11111111000111") });
+        var merchant = new PendingEnrichment(Guid.NewGuid(), "11111111000111");
+        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment> { merchant, new(Guid.NewGuid(), "22222222000122") });
         _registry.Fails = true;
 
         Assert.Equal(0, await Service().RunOnceAsync());
         Assert.Empty(_mediator.Sent.OfType<ApplyMerchantActivityCommand>());
+        Assert.Equal(merchant.MerchantId, Assert.Single(_mediator.Sent.OfType<RecordEnrichmentFailureCommand>()).MerchantId);
         Assert.Contains(_logger.Entries, e => e.Level == LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task A_registry_timeout_is_handled_like_an_outage()
+    {
+        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment> { new(Guid.NewGuid(), "11111111000111") });
+        _registry.TimesOut = true;
+
+        Assert.Equal(0, await Service().RunOnceAsync());
+        Assert.Single(_mediator.Sent.OfType<RecordEnrichmentFailureCommand>());
+    }
+
+    [Fact]
+    public async Task Stopping_the_app_during_a_lookup_cancels_without_counting_a_failure()
+    {
+        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment> { new(Guid.NewGuid(), "11111111000111") });
+        _registry.TimesOut = true;
+        using var stopping = new CancellationTokenSource();
+        stopping.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Service().RunOnceAsync(stopping.Token));
+        Assert.Empty(_mediator.Sent.OfType<RecordEnrichmentFailureCommand>());
+    }
+
+    [Fact]
+    public async Task Merchants_without_a_lookup_cnpj_are_marked_without_calling_the_registry()
+    {
+        var merchant = new PendingEnrichment(Guid.NewGuid(), null);
+        _mediator.Returns<GetMerchantsPendingEnrichmentQuery>(_ => new List<PendingEnrichment> { merchant });
+
+        Assert.Equal(0, await Service().RunOnceAsync());
+        var applied = Assert.Single(_mediator.Sent.OfType<ApplyMerchantActivityCommand>());
+        Assert.Equal((merchant.MerchantId, (CompanyInfo?)null), (applied.MerchantId, applied.Company));
+        Assert.Empty(_registry.Calls);
+    }
+
+    [Fact]
+    public async Task A_timeout_inside_the_loop_does_not_stop_the_background_service()
+    {
+        _mediator.Throws<GetMerchantsPendingEnrichmentQuery>(new TaskCanceledException("timeout"));
+        var service = Service();
+
+        await service.StartAsync(CancellationToken.None);
+        for (var i = 0; i < 100 && _logger.Entries.Count < 2; i++) await Task.Delay(20);
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.True(_logger.Entries.Count(e => e.Level == LogLevel.Warning) >= 2);
+        Assert.False(service.ExecuteTask!.IsFaulted);
     }
 
     [Fact]
@@ -296,8 +375,14 @@ public class MerchantEnrichmentServiceTests
     {
         public Dictionary<string, CompanyInfo> Companies { get; } = [];
         public bool Fails { get; set; }
+        public bool TimesOut { get; set; }
+        public List<string> Calls { get; } = [];
 
-        public Task<CompanyInfo?> LookupAsync(string cnpj, CancellationToken cancellationToken = default) =>
-            Fails ? throw new HttpRequestException("indisponível") : Task.FromResult(Companies.GetValueOrDefault(cnpj));
+        public Task<CompanyInfo?> LookupAsync(string cnpj, CancellationToken cancellationToken = default)
+        {
+            Calls.Add(cnpj);
+            if (TimesOut) throw cancellationToken.IsCancellationRequested ? new TaskCanceledException("parado", null, cancellationToken) : new TaskCanceledException("timeout");
+            return Fails ? throw new HttpRequestException("indisponível") : Task.FromResult(Companies.GetValueOrDefault(cnpj));
+        }
     }
 }

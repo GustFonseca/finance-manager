@@ -36,6 +36,28 @@ public class CompanyLookupTests
         Assert.Null(await handler.Handle(new LookupCompanyQuery("99.999.999/0001-99")));
         registry.Fails = true;
         Assert.Null(await handler.Handle(new LookupCompanyQuery("12.345.678/0001-90")));
+        registry.Fails = false;
+        registry.TimesOut = true;
+        Assert.Null(await handler.Handle(new LookupCompanyQuery("12.345.678/0001-90")));
+    }
+
+    [Fact]
+    public async Task Alphanumeric_cnpjs_are_not_sent_to_the_registry()
+    {
+        var registry = new FakeRegistry();
+
+        Assert.Null(await new LookupCompanyHandler(registry).Handle(new LookupCompanyQuery("12.ABC.345/01DE-35")));
+        Assert.Equal(0, registry.Calls);
+    }
+
+    [Fact]
+    public async Task Cancelling_the_request_is_not_hidden_as_a_missing_company()
+    {
+        var registry = new FakeRegistry { TimesOut = true };
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new LookupCompanyHandler(registry).Handle(new LookupCompanyQuery("12.345.678/0001-90"), cancelled.Token));
     }
 
     [Fact]
@@ -53,10 +75,16 @@ public class CompanyLookupTests
     private sealed class FakeRegistry : ICompanyRegistry
     {
         public bool Fails { get; set; }
+        public bool TimesOut { get; set; }
+        public int Calls { get; private set; }
 
-        public Task<CompanyInfo?> LookupAsync(string cnpj, CancellationToken cancellationToken = default) =>
-            Fails ? throw new HttpRequestException("fora")
-            : Task.FromResult(cnpj == "12345678000190" ? new CompanyInfo("5611201", "Restaurantes", "Toru") : null);
+        public Task<CompanyInfo?> LookupAsync(string cnpj, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            if (TimesOut) throw cancellationToken.IsCancellationRequested ? new TaskCanceledException("cancelado", null, cancellationToken) : new TaskCanceledException("timeout");
+            return Fails ? throw new HttpRequestException("fora")
+                : Task.FromResult(cnpj == "12345678000190" ? new CompanyInfo("5611201", "Restaurantes", "Toru") : null);
+        }
     }
 
     private sealed class Stub(HttpStatusCode status, string body) : HttpMessageHandler

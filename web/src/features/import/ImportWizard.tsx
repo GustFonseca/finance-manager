@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useQueryClient } from '@tanstack/react-query';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Checkbox, Modal, MoneyText, Select } from '@/components/ui';
 import { useAccounts } from '@/features/accounts/queries';
 import { useCategories } from '@/features/categories/queries';
 import { transactionsApi } from '@/features/transactions/api';
+import { useImportTransactions } from '@/features/transactions/queries';
 import { foldersApi } from '@/features/files/api';
-import { invalidateFiles } from '@/features/files/queries';
+import { useUploadFiles } from '@/features/files/queries';
 import { merchantsApi } from '@/features/merchants/api';
-import { invalidateMoney } from '@/features/transactions/queries';
 import { getErrorMessage } from '@/lib/http';
 import { colors, fontSize, spacing } from '@/theme';
 import { findDuplicates } from './duplicates';
@@ -47,7 +46,8 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 const formatDay = (day: string) => day.split('-').reverse().join('/');
 
 export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const qc = useQueryClient();
+  const importTransactions = useImportTransactions();
+  const uploadFiles = useUploadFiles();
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
 
@@ -132,7 +132,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     if (!accountId) return;
     setStep('importing');
     try {
-      const imported = await transactionsApi.importMany({
+      const imported = await importTransactions.mutateAsync({
         accountId,
         lines: selected.map((row) => ({
           date: dayToIso(row.date),
@@ -142,7 +142,6 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
           categoryId: choices[row.key].categoryId!,
         })),
       });
-      invalidateMoney(qc);
       setResult({ imported, error: null, savedTo: await saveStatementFile() });
     } catch (e) {
       setResult({ imported: 0, error: getErrorMessage(e, 'Não foi possível importar as transações'), savedTo: null });
@@ -155,8 +154,7 @@ export function ImportWizard({ visible, onClose }: { visible: boolean; onClose: 
     try {
       const folder = (await foldersApi.getAll()).find((f) => f.isSystem);
       if (!folder) return null;
-      await foldersApi.upload(folder.id, [sourceFile]);
-      invalidateFiles(qc);
+      await uploadFiles.mutateAsync({ folderId: folder.id, files: [sourceFile] });
       return folder.name;
     } catch {
       return null;

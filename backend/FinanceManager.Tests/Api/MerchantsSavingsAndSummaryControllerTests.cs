@@ -192,12 +192,16 @@ public class MerchantsSavingsAndSummaryControllerTests
         var localStart = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Local);
         _mediator.Returns<GetFinancialSummaryQuery>(_ => summary);
 
+        var before = DateTime.UtcNow;
+
         var result = await Summary.GetSummary(localStart, End, account);
         await Summary.GetSummary(null, null, null);
 
         Assert.Same(summary, Assert.IsType<OkObjectResult>(result.Result).Value);
         Assert.Equal(new GetFinancialSummaryQuery(Me, localStart.ToUniversalTime(), End, account), _mediator.Sent[0]);
-        Assert.Equal(new GetFinancialSummaryQuery(Me, null, null, null), _mediator.Sent[1]);
+        var current = (GetFinancialSummaryQuery)_mediator.Sent[1];
+        Assert.Equal(new DateTime(before.Year, before.Month, 1, 0, 0, 0, DateTimeKind.Utc), current.Start);
+        Assert.True(current.End >= before && current.End < before.Date.AddDays(2));
     }
 
     [Fact]

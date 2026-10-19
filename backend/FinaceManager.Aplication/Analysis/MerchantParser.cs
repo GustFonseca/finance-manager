@@ -42,6 +42,9 @@ public static partial class MerchantParser
 
     private static (string Name, string? Document, bool Transfer) Split(string text)
     {
+        var bank = BankTransfer().Match(text);
+        if (bank.Success) return (bank.Groups["name"].Value.Trim(), null, true);
+
         var parts = text.Split(" - ").Select(p => p.Trim()).Where(p => !InitiatedBy().IsMatch(p)).ToArray();
         var head = MoneyText.Key(parts[0]);
         if (parts.Length < 2 || !TransferOrPurchase().IsMatch(head)) return (text, null, false);
@@ -77,13 +80,35 @@ public static partial class MerchantParser
             : word.Length == 0 ? word
             : char.ToUpper(word[0]) + word[1..]));
 
+    private const int MinTruncatedLength = 3;
+
     private static bool IsOwner(string plainName, string? ownerName)
     {
-        var owner = MoneyText.Plain(ownerName ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var owner = Significant(MoneyText.Plain(ownerName ?? string.Empty));
         if (owner.Length < 2) return false;
-        var words = plainName.Split(' ').ToHashSet();
-        return owner.All(words.Contains);
+        var words = Significant(plainName);
+        if (owner.All(words.Contains)) return true;
+        if (words.Length < 2 || words[0] != owner[0]) return false;
+
+        var next = 1;
+        var strong = false;
+        foreach (var word in words.Skip(1))
+        {
+            var match = Array.FindIndex(owner, next, o => SameWord(word, o));
+            if (match < 0) return false;
+            strong |= word.Length >= MinTruncatedLength;
+            next = match + 1;
+        }
+        return strong;
     }
+
+    private static string[] Significant(string plain) =>
+        plain.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => !Particles.Contains(w)).ToArray();
+
+    private static bool SameWord(string word, string ownerWord) =>
+        word == ownerWord
+        || (word.Length == 1 && ownerWord.StartsWith(word))
+        || (word.Length >= MinTruncatedLength && ownerWord.StartsWith(word));
 
     private static bool LooksLikePerson(string name, ClassificationRules rules) =>
         MoneyText.Key(name).Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2
@@ -99,19 +124,22 @@ public static partial class MerchantParser
     [GeneratedRegex(@"\s*\(.*\)\s*$")]
     private static partial Regex Parenthesis();
 
-    [GeneratedRegex(@"^[\d•*.\-/ ]{11,20}$")]
+    [GeneratedRegex(@"^(?:pix transf\s+(?<name>.+?)\s?\d{2}/\d{2}|pix (?:enviado|recebido)\s*:\s*""?(?:cp\s*:\s*\d+\s*-\s*)?(?<name>[^""]+?)""?|sispag (?:pix|ted|doc)\s+(?<name>.+?))\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex BankTransfer();
+
+    [GeneratedRegex(@"^(?:[\d•*.\-/ ]{11,20}|[0-9A-Z]{2}\.?[0-9A-Z]{3}\.?[0-9A-Z]{3}/?[0-9A-Z]{4}-?\d{2})$")]
     private static partial Regex Document();
 
-    [GeneratedRegex(@"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$")]
+    [GeneratedRegex(@"^[0-9A-Z]{2}\.[0-9A-Z]{3}\.[0-9A-Z]{3}/[0-9A-Z]{4}-\d{2}$")]
     private static partial Regex Cnpj();
 
-    [GeneratedRegex(@"\s*-?\s*parcela\s*\d+\s*/\s*\d+\s*$|\s+\d{1,2}/\d{1,2}\s*$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\s*-?\s*parc(?:ela)?\.?\s*\d+\s*(?:/|de)\s*\d+\s*$|\s+\d{1,2}/\d{1,2}\s*$|\s+\d{1,2}\s+de\s+\d{1,2}\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex Installment();
 
     [GeneratedRegex(@"^[\d.\-/]{6,}\s+")]
     private static partial Regex LeadingNumbers();
 
-    [GeneratedRegex(@"\s+(ltda|s\s?\.?\s?a|me|epp|eireli|mei|cia|s/a)\.?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<!\b(?:de|da|do|dos|das|e))\s+(ltda|s\s?\.?\s?a|me|epp|eireli|mei|cia|s/a)\.?$", RegexOptions.IgnoreCase)]
     private static partial Regex CorporateSuffix();
 
     [GeneratedRegex(@"\s+")]

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { monthKeyOf, monthRange } from '@/lib/periods';
+import { invalidateSavingsPlan } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { DateRange } from '@/features/transactions/types';
 import { savingsApi } from './api';
@@ -19,10 +20,7 @@ function useSavingsMutation<TInput, TResult>(mutationFn: (input: TInput) => Prom
   const qc = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.savings });
-      qc.invalidateQueries({ queryKey: queryKeys.summary });
-    },
+    onSuccess: () => invalidateSavingsPlan(qc),
   });
 }
 

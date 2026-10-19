@@ -1,4 +1,5 @@
-﻿
+using FinanceManager.Aplication.Validation;
+
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -18,7 +19,7 @@ public class CreateAccountHandler : IRequestHandler<CreateAccountCommand, Accoun
     }
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken = default)
     {
-        var account = new Account(request.userId, request.name);
+        var account = new Account(request.userId, Input.Name(request.name));
 
         await _accountRepository.CreateAsync(account);
 

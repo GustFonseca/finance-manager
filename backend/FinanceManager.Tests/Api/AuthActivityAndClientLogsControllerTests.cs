@@ -2,7 +2,9 @@ using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.DTOs.Auth;
 using FinanceManager.Aplication.UseCases.Activity.Queries.GetActivity;
+using FinanceManager.Aplication.Auth;
 using FinanceManager.Aplication.UseCases.Auth.Commands.GoogleLogin;
+using FinanceManager.Aplication.UseCases.Auth.Queries.ValidateGoogleToken;
 using FinanceManager.Aplication.UseCases.Diagnostics.Commands.ReportClientError;
 using FinanceManager.Tests.Support;
 using Google.Apis.Auth;
@@ -22,18 +24,20 @@ public class AuthActivityAndClientLogsControllerTests
     public async Task GoogleLogin_returns_the_session()
     {
         var session = new LoginResponse { Token = "jwt", Email = "ana@gmail.com", Name = "Ana" };
+        var identity = new GoogleIdentity("sub", "ana@gmail.com", "Ana", true, "n");
+        _mediator.Returns<ValidateGoogleTokenQuery>(_ => identity);
         _mediator.Returns<GoogleLoginCommand>(_ => session);
 
-        var result = await new AuthController(_mediator, _logger).GoogleLogin(new GoogleLoginRequest { IdToken = "google-token" });
+        var result = await new AuthController(_mediator, _logger).GoogleLogin(new GoogleLoginRequest { IdToken = "google-token", Nonce = "n" });
 
         Assert.Same(session, Assert.IsType<OkObjectResult>(result.Result).Value);
-        Assert.Equal(new GoogleLoginCommand("google-token"), Assert.Single(_mediator.Sent));
+        Assert.Equal([new ValidateGoogleTokenQuery("google-token", "n"), new GoogleLoginCommand(identity)], _mediator.Sent);
     }
 
     [Fact]
     public async Task GoogleLogin_with_an_invalid_google_token_is_401_and_logged()
     {
-        _mediator.Throws<GoogleLoginCommand>(new InvalidJwtException("JWT has expired."));
+        _mediator.Throws<ValidateGoogleTokenQuery>(new InvalidJwtException("JWT has expired."));
 
         var result = await new AuthController(_mediator, _logger).GoogleLogin(new GoogleLoginRequest { IdToken = "velho" });
 

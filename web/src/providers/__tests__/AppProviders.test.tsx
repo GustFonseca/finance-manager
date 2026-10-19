@@ -6,7 +6,8 @@ import { Text } from 'react-native';
 import { useDialog } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import { installGlobalErrorReporting } from '@/lib/logger';
-import { OFFLINE_CACHE_KEY } from '@/lib/offlineCache';
+import { clearOfflineCache, offlineCacheKey } from '@/lib/offlineCache';
+import { monthKeyOf, monthRange } from '@/lib/periods';
 import { registerServiceWorker } from '@/lib/serviceWorker';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/theme';
@@ -53,20 +54,26 @@ describe('AppProviders', () => {
     expect(screen.getByText('Olá')).toBeTruthy();
   });
 
-  it('restores the last summary on startup, keeps saving it and registers the service worker', async () => {
-    localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify([{ key: ['summary', 'saved'], data: { netCents: 7 }, updatedAt: 5 }]));
-    render(
+  it('restores the signed in user summary, keeps saving it and registers the service worker', async () => {
+    const month = monthRange(monthKeyOf(new Date()));
+    const key = offlineCacheKey('g@x.com');
+    localStorage.setItem('jwt_token', 'tok');
+    localStorage.setItem('user_data', JSON.stringify({ email: 'g@x.com', name: 'Gustavo' }));
+    localStorage.setItem(key, JSON.stringify([{ key: ['summary', month], data: { netCents: 7 }, updatedAt: Date.now() }]));
+    const { unmount } = render(
       <AppProviders>
         <Probe />
       </AppProviders>
     );
     await waitFor(() => expect(screen.getByText('sessão pronta')).toBeTruthy());
 
-    expect(queryClient.getQueryData(['summary', 'saved'])).toEqual({ netCents: 7 });
+    expect(queryClient.getQueryData(['summary', month])).toEqual({ netCents: 7 });
     expect(registerServiceWorker).toHaveBeenCalled();
-    await act(() => queryClient.fetchQuery({ queryKey: ['summary', 'fresh'], queryFn: async () => 1 }));
-    expect(localStorage.getItem(OFFLINE_CACHE_KEY)).toContain('fresh');
+    await act(() => queryClient.fetchQuery({ queryKey: ['summary', 'forecast', month], queryFn: async () => 'fresh' }));
+    unmount();
+    expect(localStorage.getItem(key)).toContain('fresh');
     queryClient.clear();
+    clearOfflineCache();
   });
 
   it('reports uncaught errors while mounted', async () => {

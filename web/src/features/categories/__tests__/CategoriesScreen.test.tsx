@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient, renderWithProviders } from '@/test/render';
 import { CATEGORY_COLORS } from '@/components/ui';
 import { CategoriesScreen } from '../CategoriesScreen';
+import { CATEGORY_NAME_REQUIRED, CATEGORY_NAME_TOO_LONG } from '../components/CategoryForm';
 import { categoriesApi } from '../api';
 import { useCategories } from '../queries';
 import { CategoryDto } from '../types';
@@ -50,6 +51,12 @@ describe('CategoriesScreen', () => {
     expect(screen.getByText('Nova Categoria')).toBeTruthy();
     fireEvent.click(screen.getByText('Salvar'));
     expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByText(CATEGORY_NAME_REQUIRED)).toBeTruthy();
+
+    fireEvent.change(inputOf('Nome:'), { target: { value: 'x'.repeat(101) } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByText(CATEGORY_NAME_TOO_LONG)).toBeTruthy();
 
     fireEvent.change(inputOf('Nome:'), { target: { value: ' Salário ' } });
     fireEvent.click(screen.getByRole('radio', { name: 'Receita' }));

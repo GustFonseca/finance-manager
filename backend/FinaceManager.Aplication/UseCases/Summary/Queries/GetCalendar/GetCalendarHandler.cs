@@ -21,7 +21,7 @@ public class GetCalendarHandler : IRequestHandler<GetCalendarQuery, CalendarDto>
     {
         var since = request.MonthStart.AddMonths(-PlanningAnalyzer.SeasonalLookbackMonths);
         var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, since, request.Now);
-        var offset = new DateTime(request.MonthStart.Year, request.MonthStart.Month, request.MonthStart.Day, 0, 0, 0, DateTimeKind.Utc) - request.MonthStart;
+        var offset = LocalDay.Offset(request.MonthStart);
         return CalendarBuilder.Build(transactions, request.MonthStart, request.Now, offset, await _rulesProvider.GetAsync(cancellationToken));
     }
 }

@@ -9,9 +9,11 @@ public class DeleteFolderForeverHandler : IRequestHandler<DeleteFolderForeverCom
     private readonly IFolderRepository _folderRepository;
     private readonly IStoredFileRepository _fileRepository;
     private readonly IFileStorage _storage;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteFolderForeverHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository, IFileStorage storage)
+    public DeleteFolderForeverHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository, IFileStorage storage, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _folderRepository = folderRepository;
         _fileRepository = fileRepository;
         _storage = storage;
@@ -23,9 +25,9 @@ public class DeleteFolderForeverHandler : IRequestHandler<DeleteFolderForeverCom
         if (folder == null || folder.UserId != request.UserId || folder.DeletedAt == null) return false;
 
         var files = await _fileRepository.GetByFolderIdAsync(folder.Id);
-        await _storage.DeleteAsync(files.Select(f => f.StorageKey).ToList(), cancellationToken);
         await _fileRepository.DeleteRangeAsync(files);
         await _folderRepository.DeleteAsync(folder);
+        StorageCleanup.AfterCommit(_unitOfWork, _storage, files.Select(f => f.StorageKey).ToList());
         return true;
     }
 }

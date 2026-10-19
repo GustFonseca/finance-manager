@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateInsights } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { PeriodFilter } from '@/features/transactions/types';
 import { avoidableApi } from './api';
@@ -15,7 +16,7 @@ export function useDismissInsight() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (key: string) => avoidableApi.dismiss(key),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.summary }),
+    onSuccess: () => invalidateInsights(qc),
   });
 }
 
@@ -23,6 +24,6 @@ export function useSetSubscriptionChoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: SubscriptionChoiceInput) => avoidableApi.setSubscriptionChoice(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.summary }),
+    onSuccess: () => invalidateInsights(qc),
   });
 }

@@ -1,9 +1,9 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '@/test/render';
+import { createTestQueryClient, renderWithProviders } from '@/test/render';
 import { apiError } from '@/test/http';
 import { filesApi } from '@/features/files/api';
-import { ReceiptViewer } from '../components/ReceiptViewer';
+import { RECEIPT_VIEW_GC_MS, RECEIPT_VIEW_STALE_MS, ReceiptViewer } from '../components/ReceiptViewer';
 import { TransactionDto } from '../types';
 
 jest.mock('@/features/files/api');
@@ -41,6 +41,21 @@ describe('ReceiptViewer', () => {
   afterEach(() => {
     Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
     jest.resetAllMocks();
+  });
+
+  it('forgets signed URLs before they expire and never shows an expired one', async () => {
+    const client = createTestQueryClient();
+    client.setQueryData(['files', 'view', 'f1'], { ...image, url: 'https://files/expirada.jpg' }, { updatedAt: Date.now() - RECEIPT_VIEW_GC_MS });
+    jest.mocked(filesApi.view).mockResolvedValue(image);
+    renderWithProviders(<ReceiptViewer transaction={expense} onClose={jest.fn()} />, { client });
+
+    expect(screen.getByText('Carregando comprovante...')).toBeTruthy();
+    expect(screen.queryByLabelText('Foto do comprovante nota.jpg')).toBeNull();
+    await waitFor(() => expect(filesApi.view).toHaveBeenCalledWith('f1'));
+    expect(await screen.findByLabelText('Foto do comprovante nota.jpg')).toBeTruthy();
+    expect(client.getQueryCache().find({ queryKey: ['files', 'view', 'f1'] })?.options.gcTime).toBe(RECEIPT_VIEW_GC_MS);
+    expect(RECEIPT_VIEW_STALE_MS).toBeLessThan(RECEIPT_VIEW_GC_MS);
+    expect(RECEIPT_VIEW_GC_MS).toBeLessThan(120_000);
   });
 
   it('renders nothing without a transaction', () => {

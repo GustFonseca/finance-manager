@@ -56,6 +56,7 @@ public static class PlanningAnalyzer
                 {
                     Label = g.Key.Label!,
                     Name = last.MerchantName(rules),
+                    Key = g.Key.Key,
                     LastDate = last.Date,
                     LastCents = last.AmountCents,
                     NextDate = next,

@@ -56,7 +56,7 @@ public class UploadFileHandler : IRequestHandler<UploadFileCommand, StoredFileDt
         }
         catch
         {
-            await _storage.DeleteAsync([file.StorageKey], cancellationToken);
+            await _storage.DeleteAsync([file.StorageKey], CancellationToken.None);
             throw;
         }
 

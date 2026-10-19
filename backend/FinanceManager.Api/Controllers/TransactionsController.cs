@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using FinanceManager.Api.Security;
 using System.Security.Claims;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -90,6 +92,7 @@ public class TransactionsController : ControllerBase
     }
 
     [HttpPost("import")]
+    [EnableRateLimiting(RateLimits.Import)]
     public async Task<ActionResult<object>> Import([FromBody] ImportTransactionsRequest request)
     {
         var imported = await _mediator.Send(new ImportTransactionsCommand(GetUserId(), request.AccountId, request.Lines));

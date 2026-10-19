@@ -25,12 +25,13 @@ public static class RecurringExpenseDetector
         foreach (var group in marked)
         {
             var latest = group.MaxBy(t => t.Date)!;
-            result.Add(ToDto(latest, MonthlyEquivalent(latest), detected: false, rules));
+            if ((now - latest.Date).TotalDays > ActiveWindowDays(latest.Recurrence)) continue;
+            result.Add(ToDto(latest, MonthlyEquivalent(latest), detected: false, rules, latest.Recurrence));
         }
         var markedKeys = marked.Select(g => g.Key).ToHashSet();
 
         var candidates = expenses
-            .Where(t => t.Recurrence == Recurrence.NONE)
+            .Where(t => t.Recurrence == Recurrence.NONE && InstallmentDetector.Parse(t) == null)
             .GroupBy(t => (Key: t.MerchantKey(rules), t.AccountId))
             .Where(g => g.Key.Key.Length > 0 && !markedKeys.Contains(g.Key));
         foreach (var group in candidates)
@@ -39,18 +40,26 @@ public static class RecurringExpenseDetector
             if ((now - latest.Date).TotalDays > ActiveWithinDays) continue;
 
             var rule = RuleFor($"{latest.MerchantName(rules)} {latest.Description}", rules);
-            var usual = Median(group.Select(t => t.AmountCents));
+            var usual = AvoidableSpendingAnalyzer.Median(group.Select(t => t.AmountCents).ToList());
             var similar = group.Where(t => Math.Abs(t.AmountCents - usual) <= usual * rule.Tolerance).ToList();
             var months = similar.Select(t => (t.Date.Year, t.Date.Month)).Distinct().Count();
             if (months < rule.MinMonths || similar.Count > months * 1.5) continue;
 
-            result.Add(ToDto(latest, usual, detected: true, rules));
+            result.Add(ToDto(latest, usual, detected: true, rules, Recurrence.MONTHLY));
         }
 
         return result.OrderByDescending(r => r.MonthlyCents).ToList();
     }
 
-    private static RecurringExpenseDto ToDto(Transaction latest, long monthlyCents, bool detected, ClassificationRules rules) => new()
+    public static double ActiveWindowDays(Recurrence period) => period switch
+    {
+        Recurrence.DAILY => 7,
+        Recurrence.WEEKLY => 21,
+        Recurrence.YEARLY => 400,
+        _ => ActiveWithinDays,
+    };
+
+    private static RecurringExpenseDto ToDto(Transaction latest, long monthlyCents, bool detected, ClassificationRules rules, Recurrence period) => new()
     {
         Name = latest.MerchantName(rules),
         Key = latest.MerchantKey(rules),
@@ -63,6 +72,7 @@ public static class RecurringExpenseDetector
             ? RecurringKind.SUBSCRIPTION
             : RecurringKind.FIXED,
         Detected = detected,
+        Period = period,
     };
 
     private record DetectionRule(double Tolerance, int MinMonths);
@@ -76,17 +86,11 @@ public static class RecurringExpenseDetector
         : rules.IsBill(text) ? Bill
         : Unknown;
 
-    private static long MonthlyEquivalent(Transaction t) => t.Recurrence switch
+    public static long MonthlyEquivalent(Transaction t) => t.Recurrence switch
     {
         Recurrence.DAILY => t.AmountCents * 30,
         Recurrence.WEEKLY => t.AmountCents * 52 / 12,
         Recurrence.YEARLY => t.AmountCents / 12,
         _ => t.AmountCents,
     };
-
-    private static long Median(IEnumerable<long> values)
-    {
-        var sorted = values.Order().ToList();
-        return sorted[sorted.Count / 2];
-    }
 }

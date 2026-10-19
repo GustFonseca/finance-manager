@@ -47,8 +47,11 @@ public class RulesHandlersTests
         _me = _db.AddUser();
     }
 
-    private SaveRuleHandler Save => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider);
-    private SetRuleActiveHandler Toggle => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider);
+    private readonly FinanceManager.Infrastructure.Messaging.UnitOfWork _work = new();
+    private readonly CountingVersions _versions = new();
+
+    private SaveRuleHandler Save => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider, _work, _versions);
+    private SetRuleActiveHandler Toggle => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider, _work, _versions);
 
     private SaveRuleCommand Command(Guid? id = null, RuleType type = RuleType.SUPERFLUOUS, string pattern = @"\bbar\b", string? value = null, string? note = " Bares ") =>
         new(_me.Id, id, type, pattern, value, 5, note);
@@ -61,7 +64,9 @@ public class RulesHandlersTests
         var saved = Assert.Single(_db.ClassificationRules.Where(r => r.Id == dto!.Id));
         Assert.Equal((@"\bbar\b", "Bares", 5, true), (saved.Pattern, saved.Note, saved.Priority, saved.IsActive));
         Assert.False(dto!.IsDefault);
-        Assert.Equal(1, _provider.Invalidations);
+        Assert.Equal((0, 0), (_provider.Invalidations, _versions.All));
+        await _work.FlushAsync();
+        Assert.Equal((1, 1), (_provider.Invalidations, _versions.All));
         Assert.Contains(_db.ActivityLogs, a => a.Source == "Regras" && a.Description == @"Regra criada: SUPERFLUOUS ""\bbar\b""" && a.UserId == _me.Id);
     }
 
@@ -93,6 +98,7 @@ public class RulesHandlersTests
     public async Task Invalid_rules_are_rejected(RuleType type, string pattern, string? value, string? note)
     {
         await Assert.ThrowsAsync<BusinessRuleException>(() => Save.Handle(Command(type: type, pattern: pattern, value: value, note: note)));
+        await _work.FlushAsync();
         Assert.Equal(0, _provider.Invalidations);
     }
 
@@ -108,7 +114,8 @@ public class RulesHandlersTests
         Assert.False(off!.IsActive);
         Assert.False(again!.IsActive);
         Assert.True(on!.IsActive);
-        Assert.Equal(3, _provider.Invalidations);
+        await _work.FlushAsync();
+        Assert.Equal((3, 3), (_provider.Invalidations, _versions.All));
         Assert.Single(_db.ActivityLogs, a => a.Description.StartsWith("Regra desativada"));
         Assert.Single(_db.ActivityLogs, a => a.Description.StartsWith("Regra ativada"));
         Assert.Null(await Toggle.Handle(new SetRuleActiveCommand(_me.Id, Guid.NewGuid(), true)));
@@ -170,6 +177,14 @@ public class RulesHandlersTests
 
         Assert.False(result.Valid);
         Assert.Contains("demorou demais", result.Error);
+    }
+
+    private sealed class CountingVersions : FinanceManager.Aplication.Caching.IUserDataVersions
+    {
+        public int All { get; private set; }
+        public List<Guid> Users { get; } = [];
+        public void Bump(Guid userId) => Users.Add(userId);
+        public void BumpAll() => All++;
     }
 
     private sealed class CountingProvider : IClassificationRulesProvider
@@ -267,7 +282,6 @@ public class AdminAndRulesApiTests
 {
     private static readonly Guid Me = Guid.NewGuid();
     private readonly FakeMediator _mediator = new();
-    private readonly RecordingStore _store = new();
 
     private static IConfiguration Config(string? emails) => new ConfigurationBuilder()
         .AddInMemoryCollection(new Dictionary<string, string?> { ["Admin:Emails"] = emails }).Build();
@@ -300,10 +314,10 @@ public class AdminAndRulesApiTests
         Assert.Equal(allowed, context.HasSucceeded);
     }
 
-    private RulesController Rules => new RulesController(_mediator, _store).SignedIn(Me);
+    private RulesController Rules => new RulesController(_mediator).SignedIn(Me);
 
     [Fact]
-    public async Task Rule_changes_clear_every_cached_answer()
+    public async Task Rule_endpoints_forward_to_the_use_cases()
     {
         var dto = new RuleDto { Id = Guid.NewGuid() };
         var request = new SaveRuleRequest { Type = RuleType.BRAND, Pattern = "toru", Value = "Toru", Priority = 3, Note = "n" };
@@ -327,7 +341,6 @@ public class AdminAndRulesApiTests
         Assert.IsType<NotFoundResult>(toggleMissing.Result);
         Assert.IsType<OkObjectResult>(list.Result);
         Assert.True(Assert.IsType<RuleTestDto>(Assert.IsType<OkObjectResult>(test.Result).Value).Valid);
-        Assert.Equal(3, _store.Evicted.Count(t => t == UserDataCachePolicy.AllTag));
         var sent = _mediator.Sent.OfType<SaveRuleCommand>().First();
         Assert.Equal((Me, (Guid?)null, RuleType.BRAND, "toru", "Toru", 3, "n"), (sent.UserId, sent.RuleId, sent.Type, sent.Pattern, sent.Value, sent.Priority, sent.Note));
     }
@@ -351,7 +364,7 @@ public class AdminAndRulesApiTests
         Assert.Same(digest, Assert.IsType<OkObjectResult>(result.Result).Value);
         var digests = _mediator.Sent.OfType<GetDigestQuery>().ToList();
         Assert.Equal(new GetDigestQuery(Me, start, end, dayStart), digests[0]);
-        Assert.Equal(new DateTime(2025, 9, 30, 0, 0, 0, DateTimeKind.Utc), digests[1].DayStart);
+        Assert.Equal(new DateTime(2025, 9, 30, 3, 0, 0, DateTimeKind.Utc), digests[1].DayStart);
         Assert.Equal(end, digests[2].DayStart);
         Assert.Equal(new DismissInsightCommand(Me, "DUPLICATE:1"), _mediator.Sent.OfType<DismissInsightCommand>().Single());
         var choice = _mediator.Sent.OfType<SetSubscriptionChoiceCommand>().Single();
@@ -401,13 +414,5 @@ public class AdminAndRulesApiTests
             Requests.Add(request.RequestUri!);
             return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(Body, Encoding.UTF8, "application/json") });
         }
-    }
-
-    private sealed class RecordingStore : IOutputCacheStore
-    {
-        public List<string> Evicted { get; } = [];
-        public ValueTask EvictByTagAsync(string tag, CancellationToken cancellationToken) { Evicted.Add(tag); return ValueTask.CompletedTask; }
-        public ValueTask<byte[]?> GetAsync(string key, CancellationToken cancellationToken) => ValueTask.FromResult<byte[]?>(null);
-        public ValueTask SetAsync(string key, byte[] value, string[]? tags, TimeSpan validFor, CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 }

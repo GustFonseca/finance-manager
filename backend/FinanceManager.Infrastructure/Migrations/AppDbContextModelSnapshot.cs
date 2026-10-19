@@ -36,9 +36,14 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -90,14 +95,16 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<string>("Color")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -239,7 +246,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "As compras vêm da fatura do cartão",
-                            Pattern = "pagamento de fatura|pagamento recebido",
+                            Pattern = "pag(amento|to)? (de )?fatura|pgto (de )?fatura|^pagamento recebido$",
                             Priority = 20,
                             Type = "OWN_MONEY",
                             Value = "Fatura do cartão"
@@ -249,7 +256,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000003"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "aplicacao rdb|resgate rdb|nuinvest|caixinha|dinheiro guardado|guardar dinheiro|aplicacao|resgate cdb|tesouro direto",
+                            Pattern = "aplicacao rdb|resgate rdb|nuinvest|caixinha|dinheiro guardado|guardar dinheiro|aplicacao|\\baplic\\b|resgate (cdb|rdb|invest)|invest facil|cofrinho|tesouro direto",
                             Priority = 30,
                             Type = "OWN_MONEY",
                             Value = "Investimentos"
@@ -330,7 +337,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000011"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "mercado ?pago|^pix marketplace$|^mp\\b",
+                            Pattern = "^mercado ?pago$|^mercado ?pago (instituicao|ip|ltda)\\b|^pix marketplace$",
                             Priority = 110,
                             Type = "BRAND",
                             Value = "Mercado Pago"
@@ -340,7 +347,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000012"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\bamazon\\b|\\bamzn\\b",
+                            Pattern = "\\bamazon|\\bamzn\\b",
                             Priority = 120,
                             Type = "BRAND",
                             Value = "Amazon"
@@ -370,7 +377,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000015"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\bdisney\\b",
+                            Pattern = "\\bdisney",
                             Priority = 150,
                             Type = "BRAND",
                             Value = "Disney+"
@@ -410,7 +417,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000019"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\bpagseguro\\b|\\bpagbank\\b",
+                            Pattern = "^pagseguro( internet| ltda| sa)?$|\\bpagbank\\b",
                             Priority = 190,
                             Type = "BRAND",
                             Value = "PagBank"
@@ -420,7 +427,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000020"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\bpicpay\\b",
+                            Pattern = "^picpay( servicos| instituicao de pagamento)?( s a| sa| ltda)?$",
                             Priority = 200,
                             Type = "BRAND",
                             Value = "PicPay"
@@ -470,7 +477,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000025"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "ifd|mp|pg|pag|ec|pp|ppro|dl|htm|sumup|lpz|ebn|mlp|ebanx|paypal|pagar ?me",
+                            Pattern = "ifd|mp|pg|pag|ec|pp|ppro|dl|dlo|dm|iz|sq|htm|sumup|lpz|ebn|mlp|ebanx|paypal|pagar ?me|mercado ?pago|pagseguro|picpay|nupay|kiwify|hna",
                             Priority = 250,
                             Type = "GATEWAY_PREFIX"
                         },
@@ -479,7 +486,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000026"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\b(ltda|sa|servicos|comercio|loja|lojas|restaurante|bar|mercado|supermercado|padaria|panificadora|pizzaria|pizzeria|lanches|lanchonete|hamburgueria|food|ai|farmacia|drogaria|posto|auto|center|centro|store|shop|digital|tecnologia|pagamentos|instituicao|banco|bco|grupo|empresa|clinica|academia|escola|condominio|igreja|associacao)\\b",
+                            Pattern = "\\b(ltda|servicos|comercio|loja|lojas|restaurante|bar|mercado|supermercado|padaria|panificadora|pizzaria|pizzeria|lanches|lanchonete|hamburgueria|food|farmacia|drogaria|posto|auto|center|centro|store|shop|digital|tecnologia|pagamentos|instituicao|banco|bco|grupo|empresa|clinica|academia|escola|condominio|igreja|associacao|eireli|epp|mei)\\b",
                             Priority = 260,
                             Type = "BUSINESS_WORD"
                         },
@@ -488,7 +495,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000027"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "netflix|spotify|disney|hbo|\\bmax\\b|prime video|amazon prime|youtube|deezer|globoplay|paramount|crunchyroll|apple com|icloud|google one|microsoft|xbox|playstation|nintendo|adobe|canva|chatgpt|openai|gympass|wellhub|smart ?fit|totalpass|dropbox|notion|github",
+                            Pattern = "netflix|spotify|disney|hbo|\\bmax com\\b|^max$|prime video|amazon ?prime|youtube|deezer|globoplay|paramount|crunchyroll|telecine|\\bmubi\\b|kindle|audible|apple com|icloud|google one|microsoft|xbox|playstation|nintendo|adobe|canva|chatgpt|openai|claude ai|anthropic|duolingo|tinder|gympass|wellhub|smart ?fit|totalpass|dropbox|notion|github",
                             Priority = 270,
                             Type = "SUBSCRIPTION"
                         },
@@ -507,7 +514,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000029"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "aluguel|condominio|imobiliaria|energia|enel|\\blight\\b|cemig|copel|celesc|sabesp|\\bagua\\b|comgas|internet|fibra|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu|ipva|seguro|plano de saude|unimed|amil|sulamerica|escola|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo",
+                            Pattern = "aluguel|condominio|imobiliaria|(?<!vibra )energia|\\benel\\b|\\blight\\b|cemig|copel|celesc|sabesp|cedae|copasa|embasa|sanepar|caesb|compesa|cagece|casan|corsan|saneago|cpfl|energisa|equatorial|neoenergia|elektro|\\bagua\\b(?! (mineral|de coco))|comgas|naturgy|(?<!na )internet|fibra|\\bsky\\b|\\boi\\b|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu|ipva|(?<!pag)seguro|plano de saude|unimed|\\bamil\\b|hapvida|notredame|sulamerica|\\bescola\\b|colegio|faculdade|mensalidade|financiamento|consorcio|emprestimo",
                             Priority = 290,
                             Type = "BILL"
                         },
@@ -516,7 +523,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000030"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "supermercado|mercado(?! (pago|livre))|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao|acougue|padaria|feira|posto|combustivel|gasolina|shell|ipiranga|petrobras|farmacia|drogaria|drogasil|\\braia\\b|pague menos|uber|\\b99\\b|cabify|metro|onibus|bilhete unico|estacionamento",
+                            Pattern = "supermercado|\\bmercad(inho|o\\b)(?! ?(pago|livre|bitcoin))|mercearia|\\bhiper|\\bextra\\b|^dia\\b|sams club|savegnago|zaffari|muffato|condor|bistek|angeloni|\\bsonda\\b|atacad|assai|carrefour|pao de acucar|hortifruti|sacolao|acougue|padaria|feira|\\bposto\\b|combustive|gasolina|shell|ipiranga|petrobras|abastece|farmacia|\\bfarma|droga|panvel|pacheco|\\braia\\b|pague menos|\\buber\\b(?! ?eats)|^99\\b|\\b99 ?(app|pop|tecnologia)\\b|cabify|\\bmetro\\b|onibus|bilhete unico|estacionamento|sem parar|veloe|conectcar",
                             Priority = 300,
                             Type = "GROCERY"
                         },
@@ -525,7 +532,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000031"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "ifood|rappi|ze delivery|delivery|aiqfome|uber eats|restaurante|lanchonete|\\bbar\\b|choperia|pizza|burger|mcdonald|\\bbk\\b|subway|starbucks|cafeteria|doceria|sorveteria|cinema|ingresso|\\bshow\\b|teatro|steam|shein|shopee|aliexpress|mercado livre|magalu|amazon|renner|riachuelo|\\bzara\\b|centauro|netshoes|boticario|sephora|perfumaria|\\bbet\\b|blaze|aposta",
+                            Pattern = "ifood|rappi|ze delivery|delivery|aiqfome|uber ?eats|restaurante|lanchonete|\\bbar\\b|choperia|pizza|burger|mcdonald|\\bbk\\b|subway|starbucks|cafeteria|doceria|sorveteria|outback|habib|coco bambu|madero|giraffas|\\bkfc\\b|\\bbobs\\b|spoleto|cinema|ingresso|\\bshow\\b|teatro|steam|shein|shopee|aliexpress|mercado ?livre|magalu|magazine luiza|casas bahia|kabum|amazon|renner|riachuelo|\\bzara\\b|centauro|netshoes|boticario|sephora|perfumaria|\\bbet\\b|\\w+bet\\b|\\bbet ?\\d+|betano|betnacional|esportes da sorte|\\bkto\\b|blaze|aposta",
                             Priority = 310,
                             Type = "SUPERFLUOUS"
                         },
@@ -534,7 +541,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000032"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "ifood|rappi|restaurante|lanchonete|padaria|panificadora|supermercado|mercado(?! (pago|livre))|atacad|assai|carrefour|pao de acucar|hortifruti|acougue|pizza|burger|mcdonald|\\bbk\\b|subway|\\bcafe\\b|confeitaria",
+                            Pattern = "ifood|rappi|uber ?eats|ze delivery|aiqfome|restaurante|lanchonete|padaria|panificadora|supermercado|\\bmercad(inho|o\\b)(?! ?(pago|livre|bitcoin))|mercearia|\\bhiper|\\bextra\\b|^dia\\b|sams club|savegnago|zaffari|muffato|condor|atacad|assai|carrefour|pao de acucar|hortifruti|acougue|pizza|burger|mcdonald|\\bbk\\b|subway|starbucks|outback|habib|coco bambu|madero|giraffas|\\bkfc\\b|\\bbobs\\b|\\bcafe\\b|confeitaria",
                             Priority = 320,
                             Type = "CATEGORY_HINT",
                             Value = "Alimentação"
@@ -544,7 +551,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000033"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "uber|\\b99\\b|99app|cabify|posto|combustivel|gasolina|shell|ipiranga|petrobras|estacionamento|sem parar|veloe|conectcar|metro|onibus|bilhete unico",
+                            Pattern = "\\buber\\b|^99\\b|\\b99 ?(app|pop|tecnologia)\\b|cabify|\\bposto\\b|combustive|gasolina|shell|ipiranga|petrobras|abastece|estacionamento|sem parar|veloe|conectcar|\\bmetro\\b|onibus|bilhete unico",
                             Priority = 330,
                             Type = "CATEGORY_HINT",
                             Value = "Transporte"
@@ -554,7 +561,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000034"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "aluguel|condominio|energia|enel|\\blight\\b|cemig|copel|sabesp|\\bagua\\b|comgas|internet|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu",
+                            Pattern = "aluguel|condominio|(?<!vibra )energia|\\benel\\b|\\blight\\b|cemig|copel|sabesp|cedae|copasa|embasa|sanepar|cpfl|energisa|equatorial|neoenergia|\\bagua\\b(?! (mineral|de coco))|comgas|(?<!na )internet|fibra|\\bsky\\b|\\boi\\b|\\bvivo\\b|\\bclaro\\b|\\btim\\b|\\bnet\\b|iptu",
                             Priority = 340,
                             Type = "CATEGORY_HINT",
                             Value = "Moradia"
@@ -564,7 +571,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000035"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "farmacia|drogaria|drogasil|\\braia\\b|pague menos|hospital|clinica|laboratorio|unimed|amil|odonto|academia|smart ?fit",
+                            Pattern = "farmacia|\\bfarma|droga|panvel|pacheco|\\braia\\b|pague menos|hospital|clinica|laboratorio|unimed|\\bamil\\b|hapvida|odonto|academia|smart ?fit|gympass|wellhub|totalpass",
                             Priority = 350,
                             Type = "CATEGORY_HINT",
                             Value = "Saúde"
@@ -574,7 +581,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000036"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "escola|faculdade|universidade|curso|udemy|alura|coursera|livraria|material escolar",
+                            Pattern = "escola|colegio|faculdade|universidade|curso|udemy|alura|coursera|duolingo|livraria|material escolar",
                             Priority = 360,
                             Type = "CATEGORY_HINT",
                             Value = "Educação"
@@ -584,7 +591,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000037"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "netflix|spotify|disney|hbo|max com|prime video|youtube|cinema|ingresso|steam|playstation|xbox|nintendo|\\bshow\\b|teatro",
+                            Pattern = "netflix|spotify|disney|hbo|max com|^max$|prime video|amazon ?prime|youtube|globoplay|paramount|deezer|crunchyroll|telecine|\\bmubi\\b|cinema|ingresso|steam|playstation|xbox|nintendo|\\bshow\\b|teatro|\\bbet\\b|\\w+bet\\b|\\bbet ?\\d+|betano|esportes da sorte|blaze|aposta",
                             Priority = 370,
                             Type = "CATEGORY_HINT",
                             Value = "Lazer"
@@ -604,7 +611,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000039"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "rendimento|resgate|cdb|tesouro|dividendo|juros",
+                            Pattern = "rendimento|\\bcdb\\b|tesouro|dividendo|juros sobre capital|\\bjcp\\b",
                             Priority = 390,
                             Type = "CATEGORY_HINT",
                             Value = "Investimentos"
@@ -641,7 +648,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000043"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "netflix|disney|hbo|\\bmax\\b|prime video|amazon prime|globoplay|paramount|crunchyroll|apple tv|youtube premium|star plus|telecine",
+                            Pattern = "netflix|disney|hbo|\\bmax com\\b|^max$|prime video|amazon ?prime|globoplay|paramount|crunchyroll|apple tv|youtube ?premium|star ?plus|telecine|\\bmubi\\b",
                             Priority = 430,
                             Type = "SUBSCRIPTION_GROUP",
                             Value = "Streaming de vídeo"
@@ -724,7 +731,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "Atividade (CNAE)",
-                            Pattern = "energia eletrica|captacao tratamento e distribuicao de agua|telecomunicacoes|condominios|aluguel de imoveis|gas canalizado",
+                            Pattern = "energia eletrica|captacao tratamento e distribuicao de agua|telecomunicacoes|telefonia|comunicacao multimidia|televisao por assinatura|condominios|aluguel de imoveis|gas canalizado|gas liquefeito",
                             Priority = 510,
                             Type = "CATEGORY_HINT",
                             Value = "Moradia"
@@ -735,7 +742,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "Atividade (CNAE)",
-                            Pattern = "farmaceuticos|medic|odontolog|hospital|laboratorios clinicos|planos de saude|atividades de atencao a saude",
+                            Pattern = "farmaceuticos|medic|odontolog|hospital|laboratorios clinicos|planos de saude|atividades de atencao a saude|condicionamento fisico",
                             Priority = 520,
                             Type = "CATEGORY_HINT",
                             Value = "Saúde"
@@ -768,7 +775,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "Atividade (CNAE)",
-                            Pattern = "energia eletrica|telecomunicacoes|condominios|planos de saude|seguros|administracao publica|\\bensino\\b",
+                            Pattern = "energia eletrica|telecomunicacoes|telefonia|comunicacao multimidia|televisao por assinatura|condominios|planos de saude|seguros|administracao publica|\\bensino\\b(?! de (idiomas|esportes|arte))",
                             Priority = 550,
                             Type = "BILL"
                         },
@@ -797,7 +804,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000058"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\btarifa|pacote de servicos|cesta de servicos|manutencao de conta|taxa de saque|tarifa de saque",
+                            Pattern = "\\btarifa|\\btar\\b|pacote de servicos|cesta de servicos|manutencao de conta|taxa de saque|tarifa de saque",
                             Priority = 580,
                             Type = "FEE",
                             Value = "Tarifas bancárias"
@@ -827,7 +834,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             Id = new Guid("c1a55100-0000-0000-0000-000000000061"),
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Pattern = "\\bjuros|encargos|rotativo|\\bmora\\b|financiamento de fatura|parcelamento de fatura",
+                            Pattern = "\\bjuros|\\bencargos?\\b|rotativo|\\bmora\\b|financiamento de fatura|parcelamento de fatura",
                             Priority = 610,
                             Type = "FEE",
                             Value = "Juros e encargos"
@@ -898,7 +905,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "Despesas médicas dedutíveis no IR",
-                            Pattern = "\\bsaude\\b|medic|odontolog|dentista|hospital|clinica|laborator|psicolog|fisioterap|fonoaudiolog|terapia ocupacional|plano de saude|unimed|amil|bradesco saude|sulamerica saude|hapvida",
+                            Pattern = "\\bmedic(?!amento)(?!.*veterinari)|odontolog|dentista|hospital(?! veterinario)|clinica(?! (veterinaria|de estetica|estetica))|laborator|psicolog|fisioterap|fonoaudiolog|terapia ocupacional|plano de saude|unimed|\\bamil\\b|bradesco saude|sulamerica saude|hapvida",
                             Priority = 680,
                             Type = "TAX_DEDUCTIBLE",
                             Value = "Saúde"
@@ -909,7 +916,7 @@ namespace FinanceManager.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Note = "Educação dedutível no IR, com limite anual por pessoa",
-                            Pattern = "\\bensino\\b|educacao|escola|colegio|faculdade|universidade|pos graduacao|creche",
+                            Pattern = "\\bensino\\b(?! de (idiomas|esportes|arte))|educacao (infantil|superior|basica|profissional)|\\bescola\\b|colegio|faculdade|universidade|pos graduacao|creche",
                             Priority = 690,
                             Type = "TAX_DEDUCTIBLE",
                             Value = "Educação"
@@ -999,6 +1006,10 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex(new[] { "UserId" }, "IX_Folders_UserId_System")
+                        .IsUnique()
+                        .HasFilter("\"IsSystem\"");
+
                     b.ToTable("Folders");
                 });
 
@@ -1019,7 +1030,8 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1093,6 +1105,9 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<DateTime?>("EnrichedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EnrichmentAttempts")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Key")
                         .IsRequired()
@@ -1245,6 +1260,9 @@ namespace FinanceManager.Infrastructure.Migrations
 
                     b.Property<long>("AmountCents")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("CatalogAttemptedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");

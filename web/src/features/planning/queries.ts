@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateEmergencyFund } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { DateRange } from '@/features/transactions/types';
 import { planningApi } from './api';
@@ -29,6 +30,6 @@ export function useSetEmergencyFund() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: EmergencyFundInput) => planningApi.setEmergency(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.planning }),
+    onSuccess: () => invalidateEmergencyFund(qc),
   });
 }

@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.Exceptions;
+using FinanceManager.Aplication.Validation;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -9,11 +10,15 @@ public static class TransactionInput
 {
     public const int MaxDescriptionLength = 500;
 
-    public static void Validate(long amountCents, string description)
+    public static string Validate(long amountCents, string? description, TransactionType type, Recurrence recurrence = Recurrence.NONE)
     {
-        if (amountCents <= 0) throw new BusinessRuleException("O valor deve ser maior que zero.");
-        if (description.Length > MaxDescriptionLength)
+        Input.Positive(amountCents, "O valor deve ser maior que zero.");
+        Input.Defined(type, "Tipo de transação inválido.");
+        Input.Defined(recurrence, "Recorrência inválida.");
+        var text = description ?? string.Empty;
+        if (text.Length > MaxDescriptionLength)
             throw new BusinessRuleException($"A descrição pode ter no máximo {MaxDescriptionLength} caracteres.");
+        return text;
     }
 
     public static async Task<(Account Account, Category Category)> LoadReferencesAsync(

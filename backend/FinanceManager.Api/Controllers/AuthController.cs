@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.RateLimiting;
+using FinanceManager.Api.Security;
 using FinanceManager.Aplication.DTOs.Auth;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Auth.Commands.GoogleLogin;
+using FinanceManager.Aplication.UseCases.Auth.Queries.ValidateGoogleToken;
 using Microsoft.AspNetCore.Mvc;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -22,11 +25,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("google")]
+    [EnableRateLimiting(RateLimits.Login)]
     public async Task<ActionResult<LoginResponse>> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         try
         {
-            var response = await _mediator.Send(new GoogleLoginCommand(request.IdToken));
+            var identity = await _mediator.Send(new ValidateGoogleTokenQuery(request.IdToken, request.Nonce));
+            var response = await _mediator.Send(new GoogleLoginCommand(identity));
             return Ok(response);
         }
         catch (InvalidJwtException ex)

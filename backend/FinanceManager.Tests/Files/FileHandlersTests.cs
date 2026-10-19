@@ -170,11 +170,12 @@ public class FileHandlersTests
         await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new TrashFolderCommand(Me, trashedFolder.Id));
         loose.DeletedAt = DateTime.UtcNow;
 
-        var removed = await new EmptyTrashHandler(_store.FolderRepository, _store.FileRepository, _store.Storage)
+        var removed = await new EmptyTrashHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Work)
             .Handle(new EmptyTrashCommand(Me));
 
         Assert.Equal(2, removed);
         Assert.DoesNotContain(trashedFolder, _store.Folders);
+        await _store.Work.FlushAsync();
         Assert.Equal([kept.StorageKey], _store.StoredKeys);
         Assert.Contains(kept, _store.Files);
     }

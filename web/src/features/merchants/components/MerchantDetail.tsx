@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, ColumnChart, Modal, MoneyText, StatTile } from '@/components/ui';
 import { useTransactions } from '@/features/transactions/queries';
 import { DateRange } from '@/features/transactions/types';
-import { longMonthOf, shortMonthOf } from '@/lib/periods';
+import { formatDay, longMonthOf, shortMonthOf } from '@/lib/periods';
 import { formatCents, formatCentsCompact } from '@/lib/money';
 import { chart, colors, fontSize, spacing } from '@/theme';
 import { useMerchantHistory } from '../queries';
@@ -77,7 +77,7 @@ export function MerchantDetail({ merchantId, range, rangeLabel, onClose, onEdit 
             <View key={t.id} style={styles.txnRow}>
               <View style={styles.txnInfo}>
                 <Text style={styles.txnDate}>
-                  {new Date(t.date).toLocaleDateString('pt-BR')} · {t.categoryName} · {t.accountName}
+                  {formatDay(t.date)} · {t.categoryName} · {t.accountName}
                 </Text>
                 <Text style={styles.txnDesc} numberOfLines={1}>
                   {t.description}

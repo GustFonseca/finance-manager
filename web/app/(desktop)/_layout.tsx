@@ -6,9 +6,10 @@ import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { FileDesktop } from '@/features/files/FileDesktop';
 import { HELP } from '@/features/help/content';
 import { presentHelp } from '@/features/help/HelpWizard';
+import { lazyWithRetry } from '@/lib/lazyImport';
 
 function lazyScreen(load: () => Promise<React.ComponentType>) {
-  return React.lazy(() => load().then((Screen) => ({ default: Screen })));
+  return lazyWithRetry(load);
 }
 
 const SCREENS: ProgramScreens = {

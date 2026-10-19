@@ -50,4 +50,16 @@ jobs:
           EOF
 
       - name: Build the production Docker image
-        run: docker build --tag finance-manager-api:ci .
+        run: docker build --build-arg BUILD_COMMIT=${{ github.sha }} --tag finance-manager-api:ci .
+
+      - name: Deploy the API on Render
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK is not set; create it from the Render deploy hook URL"
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST "${RENDER_DEPLOY_HOOK}&ref=${GITHUB_SHA}" > /dev/null
+          echo "Render deploy requested for ${GITHUB_SHA}"

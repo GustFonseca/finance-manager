@@ -5,11 +5,13 @@ import { Button, ErrorState, Modal, MoneyText, useDialog } from '@/components/ui
 import { filesApi } from '@/features/files/api';
 import { formatBytes } from '@/features/files/format';
 import { getErrorMessage } from '@/lib/http';
+import { formatDay } from '@/lib/periods';
 import { queryKeys } from '@/lib/queryKeys';
 import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 import { TransactionDto } from '../types';
 
 export const RECEIPT_VIEW_STALE_MS = 60_000;
+export const RECEIPT_VIEW_GC_MS = 100_000;
 
 const RECURRENCE_LABELS: Record<string, string> = {
   DAILY: 'Diária',
@@ -31,7 +33,9 @@ export function ReceiptViewer({ transaction, onClose }: Props) {
     queryFn: () => filesApi.view(fileId!),
     enabled: !!fileId,
     staleTime: RECEIPT_VIEW_STALE_MS,
+    gcTime: RECEIPT_VIEW_GC_MS,
   });
+  const file = view.data && Date.now() - view.dataUpdatedAt < RECEIPT_VIEW_GC_MS ? view.data : undefined;
 
   async function download() {
     try {
@@ -45,7 +49,7 @@ export function ReceiptViewer({ transaction, onClose }: Props) {
 
   const expense = transaction.type === 'EXPENSE';
   const rows: [string, string][] = [
-    ['Data', new Date(transaction.date).toLocaleDateString('pt-BR')],
+    ['Data', formatDay(transaction.date)],
     ['Estabelecimento', transaction.merchantName],
     ['Categoria', transaction.categoryName],
     ['Conta', transaction.accountName],
@@ -71,9 +75,9 @@ export function ReceiptViewer({ transaction, onClose }: Props) {
                 <Text style={styles.value}>{value}</Text>
               </View>
             ))}
-          {view.data ? (
+          {file ? (
             <Text style={styles.file}>
-              {view.data.name} · {formatBytes(view.data.sizeBytes)}
+              {file.name} · {formatBytes(file.sizeBytes)}
             </Text>
           ) : null}
         </View>
@@ -81,17 +85,17 @@ export function ReceiptViewer({ transaction, onClose }: Props) {
         <View style={styles.preview}>
           {view.error ? (
             <ErrorState error={view.error} fallback="Não foi possível abrir o comprovante" onRetry={() => view.refetch()} />
-          ) : !view.data ? (
+          ) : !file ? (
             <Text style={styles.hint}>Carregando comprovante...</Text>
-          ) : view.data.contentType.startsWith('image/') ? (
+          ) : file.contentType.startsWith('image/') ? (
             <Image
-              source={{ uri: view.data.url }}
+              source={{ uri: file.url }}
               resizeMode="contain"
-              accessibilityLabel={`Foto do comprovante ${view.data.name}`}
+              accessibilityLabel={`Foto do comprovante ${file.name}`}
               style={styles.image}
             />
-          ) : view.data.contentType === 'application/pdf' ? (
-            <iframe title={`Comprovante ${view.data.name}`} src={view.data.url} style={pdfStyle} />
+          ) : file.contentType === 'application/pdf' ? (
+            <iframe title={`Comprovante ${file.name}`} src={file.url} style={pdfStyle} />
           ) : (
             <Text style={styles.hint}>Não dá para mostrar este tipo de arquivo aqui. Use "Baixar".</Text>
           )}

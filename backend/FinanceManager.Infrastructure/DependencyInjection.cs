@@ -17,6 +17,8 @@ using FinanceManager.Aplication.Companies;
 using FinanceManager.Infrastructure.Companies;
 using FinanceManager.Aplication.Auth;
 using FinanceManager.Infrastructure.Auth;
+using FinanceManager.Aplication.Caching;
+using FinanceManager.Infrastructure.Caching;
 
 namespace FinanceManager.Infrastructure;
 
@@ -30,6 +32,8 @@ public static class DependencyInjection
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+        services.AddScoped<UnitOfWork>();
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
         services.AddScoped<IMediator, Mediator>();
 
         services.AddScoped<IAccountRepository, AccountRepository>();
@@ -53,6 +57,8 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddSingleton<IClassificationRulesProvider, ClassificationRulesProvider>();
+        services.AddSingleton<UserDataVersions>();
+        services.AddSingleton<IUserDataVersions>(sp => sp.GetRequiredService<UserDataVersions>());
 
         services.AddHttpClient<IFileStorage, SupabaseFileStorage>();
         services.AddHttpClient<IInterestRateProvider, BcbInterestRateProvider>(client => client.Timeout = TimeSpan.FromSeconds(3));

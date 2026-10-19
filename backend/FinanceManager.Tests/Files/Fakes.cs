@@ -18,6 +18,7 @@ public class FakeStore
     public FakeFolderRepository FolderRepository => new(this);
     public FakeFileRepository FileRepository => new(this);
     public FakeFileStorage Storage => new(this);
+    public FinanceManager.Infrastructure.Messaging.UnitOfWork Work { get; } = new();
 
     public Folder AddFolder(Guid userId, string name = "Pasta", bool isSystem = false)
     {
@@ -65,6 +66,9 @@ public class FakeFileRepository(FakeStore store) : IStoredFileRepository
 
     public Task<List<StoredFile>> GetByFolderIdAsync(Guid folderId) =>
         Task.FromResult(store.Files.Where(f => f.FolderId == folderId).ToList());
+
+    public Task<List<StoredFile>> GetByFolderIdsAsync(IReadOnlyCollection<Guid> folderIds) =>
+        Task.FromResult(store.Files.Where(f => folderIds.Contains(f.FolderId)).ToList());
 
     public Task<List<StoredFile>> GetTrashedAsync(Guid userId) =>
         Task.FromResult(store.Files

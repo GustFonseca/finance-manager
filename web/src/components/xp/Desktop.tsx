@@ -5,8 +5,10 @@ import { colors, gradients, webStyle } from '@/theme';
 import { onContextMenu, useContextMenu } from './ContextMenu';
 import { DesktopProvider, useDesktop } from './DesktopContext';
 import { DesktopIcon } from './DesktopIcon';
+import { PROGRAMS } from './programs';
 import type { MenuEntry } from './MenuBar';
 import { useDesktopPrograms } from './useVisiblePrograms';
+import { WindowErrorBoundary } from './WindowErrorBoundary';
 import { useWindowManager, WindowIdProvider } from './WindowManager';
 
 export type ProgramScreens = Record<string, React.ComponentType>;
@@ -26,7 +28,7 @@ export function Desktop(props: Props) {
 }
 
 function DesktopSurface({ screens, extras, children }: Props) {
-  const { open, openWindows } = useWindowManager();
+  const { open, close, openWindows, zIndexOf } = useWindowManager();
   const desktop = useDesktop();
   const contextMenu = useContextMenu();
   const programs = useDesktopPrograms();
@@ -62,9 +64,14 @@ function DesktopSurface({ screens, extras, children }: Props) {
         const Screen = screens[id];
         return Screen ? (
           <WindowIdProvider key={id} value={id}>
-            <React.Suspense fallback={null}>
-              <Screen />
-            </React.Suspense>
+            <WindowErrorBoundary
+              title={PROGRAMS.find((program) => program.route === id)?.title ?? 'Finance Manager'}
+              zIndex={zIndexOf(id)}
+              onClose={() => close(id)}>
+              <React.Suspense fallback={null}>
+                <Screen />
+              </React.Suspense>
+            </WindowErrorBoundary>
           </WindowIdProvider>
         ) : null;
       })}

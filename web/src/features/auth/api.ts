@@ -7,6 +7,6 @@ export type GoogleLoginResponse = {
 };
 
 export const authApi = {
-  googleLogin: (idToken: string) =>
-    http.post<GoogleLoginResponse>('/auth/google', { idToken }),
+  googleLogin: (idToken: string, nonce: string) =>
+    http.post<GoogleLoginResponse>('/auth/google', { idToken, nonce }),
 };

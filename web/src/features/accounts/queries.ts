@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateMoney } from '@/features/transactions/queries';
+import { invalidateMoney } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { accountsApi } from './api';
 

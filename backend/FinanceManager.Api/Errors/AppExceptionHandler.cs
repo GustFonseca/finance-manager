@@ -12,6 +12,7 @@ public sealed class AppExceptionHandler(IProblemDetailsService problemDetails) :
         {
             NotFoundException => StatusCodes.Status404NotFound,
             BusinessRuleException => StatusCodes.Status400BadRequest,
+            ConflictException => StatusCodes.Status409Conflict,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             _ => 0,
         };

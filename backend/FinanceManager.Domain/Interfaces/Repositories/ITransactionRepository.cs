@@ -6,7 +6,7 @@ public interface ITransactionRepository : IRepository<Transaction>
 {
     Task<List<Transaction>> GetByUserIdAsync(Guid userId, DateTime? start, DateTime? end, Guid? accountId = null, Guid? merchantId = null);
     Task<List<Transaction>> SearchAsync(Guid userId, TransactionFilter filter);
-    Task<List<Transaction>> GetUncataloguedAsync();
+    Task<List<Transaction>> GetUncataloguedAsync(int max);
     Task<List<Transaction>> GetByMerchantIdAsync(Guid merchantId);
     Task UpdateRangeAsync(IEnumerable<Transaction> transactions);
     Task CreateRangeAsync(IEnumerable<Transaction> transactions);

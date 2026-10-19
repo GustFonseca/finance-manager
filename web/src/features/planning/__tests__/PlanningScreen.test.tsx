@@ -121,7 +121,9 @@ describe('PlanningScreen', () => {
     await waitFor(() => expect(api.setEmergency).toHaveBeenCalledWith({ months: 6, goalId: 'g2' }));
     fireEvent.change(selectOf('Meta usada como reserva:'), { target: { value: 'none' } });
     await waitFor(() => expect(api.setEmergency).toHaveBeenCalledWith({ months: 6, goalId: null }));
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary', 'planning'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['goals'] });
   });
 
   it('alerts when saving the reserve fails', async () => {

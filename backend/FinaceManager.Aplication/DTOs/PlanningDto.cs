@@ -29,6 +29,7 @@ public class SeasonalExpenseDto
 {
     public string Label { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string Key { get; set; } = string.Empty;
     public DateTime LastDate { get; set; }
     public long LastCents { get; set; }
     public DateTime NextDate { get; set; }

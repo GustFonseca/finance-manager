@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.Analysis;
+using FinanceManager.Aplication.Caching;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Enuns;
@@ -12,13 +13,19 @@ public class ApplyMerchantActivityHandler : IRequestHandler<ApplyMerchantActivit
     private readonly ICategoryRepository _categoryRepository;
     private readonly ITransactionRepository _transactionRepository;
     private readonly IClassificationRulesProvider _rulesProvider;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserDataVersions _versions;
 
     public ApplyMerchantActivityHandler(
         IMerchantRepository merchantRepository,
         ICategoryRepository categoryRepository,
         ITransactionRepository transactionRepository,
-        IClassificationRulesProvider rulesProvider)
+        IClassificationRulesProvider rulesProvider,
+        IUnitOfWork unitOfWork,
+        IUserDataVersions versions)
     {
+        _unitOfWork = unitOfWork;
+        _versions = versions;
         _merchantRepository = merchantRepository;
         _categoryRepository = categoryRepository;
         _transactionRepository = transactionRepository;
@@ -54,6 +61,12 @@ public class ApplyMerchantActivityHandler : IRequestHandler<ApplyMerchantActivit
         }
 
         await _merchantRepository.UpdateAsync(merchant);
+        var userId = merchant.UserId;
+        _unitOfWork.OnCommitted(() =>
+        {
+            _versions.Bump(userId);
+            return Task.CompletedTask;
+        });
         return moved;
     }
 }

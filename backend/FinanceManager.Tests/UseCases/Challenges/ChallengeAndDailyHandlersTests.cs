@@ -244,7 +244,7 @@ public class ChallengeAndDailyControllerTests
     }
 
     [Fact]
-    public async Task GetDaily_uses_the_local_day_start_and_defaults_to_the_utc_day()
+    public async Task GetDaily_uses_the_local_day_start_and_defaults_to_the_local_day_of_the_period()
     {
         var dto = new DailyBudgetDto();
         _mediator.Returns<GetDailyBudgetQuery>(_ => dto);
@@ -257,7 +257,7 @@ public class ChallengeAndDailyControllerTests
         Assert.Same(dto, Assert.IsType<OkObjectResult>(result.Result).Value);
         var sent = _mediator.Sent.Cast<GetDailyBudgetQuery>().ToList();
         Assert.Equal(new GetDailyBudgetQuery(Me, Start, End, dayStart), sent[0]);
-        Assert.Equal(new DateTime(2025, 9, 30, 0, 0, 0, DateTimeKind.Utc), sent[1].DayStart);
+        Assert.Equal(new DateTime(2025, 9, 30, 3, 0, 0, DateTimeKind.Utc), sent[1].DayStart);
         Assert.Equal(End, sent[2].DayStart);
     }
 

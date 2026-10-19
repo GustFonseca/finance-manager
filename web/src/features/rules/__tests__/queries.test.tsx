@@ -29,7 +29,7 @@ describe('rules queries', () => {
     expect(client.getQueryData(['rules'])).toEqual([rule()]);
   });
 
-  it('creates a new rule and refreshes every query, since rules change every analysis', async () => {
+  it('creates a new rule and refreshes every analysis query, since rules change every analysis', async () => {
     jest.mocked(rulesApi.create).mockResolvedValue(rule());
     const { invalidate, wrapper } = setup();
     const { result } = renderHook(() => useSaveRule(), { wrapper });
@@ -38,7 +38,10 @@ describe('rules queries', () => {
 
     expect(rulesApi.create).toHaveBeenCalledWith(input);
     expect(rulesApi.update).not.toHaveBeenCalled();
-    expect(invalidate).toHaveBeenCalledWith();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['rules'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['profile'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['files'] });
   });
 
   it('updates an existing rule', async () => {
@@ -50,10 +53,13 @@ describe('rules queries', () => {
 
     expect(rulesApi.update).toHaveBeenCalledWith('r1', input);
     expect(rulesApi.create).not.toHaveBeenCalled();
-    expect(invalidate).toHaveBeenCalledWith();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['rules'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['profile'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['files'] });
   });
 
-  it('turns a rule off and refreshes every query', async () => {
+  it('turns a rule off and refreshes every analysis query', async () => {
     jest.mocked(rulesApi.setActive).mockResolvedValue(rule({ isActive: false }));
     const { invalidate, wrapper } = setup();
     const { result } = renderHook(() => useSetRuleActive(), { wrapper });
@@ -61,7 +67,10 @@ describe('rules queries', () => {
     await act(() => result.current.mutateAsync({ id: 'r1', isActive: false }));
 
     expect(rulesApi.setActive).toHaveBeenCalledWith('r1', false);
-    expect(invalidate).toHaveBeenCalledWith();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['transactions'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['rules'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['profile'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['files'] });
   });
 
   it('tests a pattern without touching the cache', async () => {

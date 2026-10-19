@@ -10,7 +10,7 @@ public static class DebtPlanner
 
     public static DebtPlanDto Plan(IReadOnlyList<Debt> debts, long extraCents)
     {
-        var budget = debts.Sum(d => d.MinimumPaymentCents) + Math.Max(0, extraCents);
+        var budget = debts.Where(d => d.BalanceCents > 0).Sum(d => d.MinimumPaymentCents) + Math.Max(0, extraCents);
         var avalanche = Simulate(debts, budget, list => list.OrderByDescending(d => d.Rate).ThenBy(d => d.Balance));
         var snowball = Simulate(debts, budget, list => list.OrderBy(d => d.Balance).ThenByDescending(d => d.Rate));
         return new DebtPlanDto

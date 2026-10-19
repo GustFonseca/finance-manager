@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,6 +53,45 @@ jobs:
         working-directory: web
         env:
           EXPO_PUBLIC_API_URL: https://finance-manager-api-c79r.onrender.com/api
+
+      - name: Stamp the service worker with the build version
+        run: |
+          sed -i "s/__BUILD_VERSION__/${GITHUB_SHA}/g" dist/sw.js
+          grep -q "${GITHUB_SHA}" dist/sw.js
+        working-directory: web
+
+      - name: Wait for the API this web version needs
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          HEALTH_URL: https://finance-manager-api-c79r.onrender.com/health
+        run: |
+          if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" -- backend | head -n 1)
+          else
+            changed=$(git show --name-only --format= "$GITHUB_SHA" -- backend | head -n 1)
+          fi
+          needed=$(git log -1 --format=%H "$GITHUB_SHA" -- backend)
+          echo "Waiting for the API to run a build that contains $needed"
+          deadline=$(( $(date +%s) + 30 * 60 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            deployed=$(curl --silent --max-time 20 "$HEALTH_URL" | jq -r '.commit // empty' 2>/dev/null || true)
+            if [ -z "$changed" ] && [ -z "$deployed" ]; then
+              echo "No backend changes in this push; deploying the web now."
+              exit 0
+            fi
+            if [ -n "$deployed" ]; then
+              git cat-file -e "${deployed}^{commit}" 2>/dev/null || git fetch --quiet origin main || true
+              if git merge-base --is-ancestor "$needed" "$deployed" 2>/dev/null; then
+                echo "API is live at $deployed"
+                exit 0
+              fi
+            fi
+            echo "API reports '${deployed:-unknown}'; checking again in 30s"
+            sleep 30
+          done
+          echo "::error::The API did not go live with $needed within 30 minutes; not deploying the web."
+          exit 1
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

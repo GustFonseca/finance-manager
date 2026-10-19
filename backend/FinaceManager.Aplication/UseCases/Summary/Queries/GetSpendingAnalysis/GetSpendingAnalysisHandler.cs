@@ -19,7 +19,7 @@ public class GetSpendingAnalysisHandler : IRequestHandler<GetSpendingAnalysisQue
 
     public async Task<SpendingAnalysisDto> Handle(GetSpendingAnalysisQuery request, CancellationToken cancellationToken = default)
     {
-        var since = request.MonthStart.AddMonths(-(SpendingAnalyzer.TrendMonths - 1));
+        var since = request.MonthStart.AddMonths(-Math.Max(SpendingAnalyzer.TrendMonths - 1, AvoidableSpendingAnalyzer.LookbackMonths));
         var transactions = await _transactionRepository.GetByUserIdAsync(request.UserId, since, request.Now, request.AccountId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
         return SpendingAnalyzer.Analyze(transactions, request.MonthStart, request.Now, rules);

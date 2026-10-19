@@ -68,3 +68,12 @@ export function todayStartIso(): string {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 }
+
+export function formatDay(iso: string, options: { utc?: boolean; year?: boolean } = {}): string {
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    ...(options.year === false ? {} : { year: 'numeric' }),
+    ...(options.utc ? { timeZone: 'UTC' } : {}),
+  });
+}

@@ -46,11 +46,14 @@ const ACCESS_KEY = /(?:^|\D)(\d{44})(?!\d)/;
 const AMOUNT = /(^|[^\d.,/])(\d{1,3}(?:[.,]\d{3})+|\d+)[.,](\d{2})(?!\d|[.,/]\d)/g;
 const DATE = /(^|\D)(\d{2})[/.-](\d{2})[/.-](\d{4}|\d{2})(?!\d)/g;
 const TIME = /(^|\D)([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?!\d)/;
-const CNPJ = /(^|\D)(\d{2})[.,\s]{0,2}(\d{3})[.,\s]{0,2}(\d{3})[/\s]{0,2}(\d{4})[-.\s]{0,2}(\d{2})(?!\d)/g;
+const CNPJ =
+  /(^|[^0-9A-Z])([0-9A-Z]{2})[.,\s]{0,2}([0-9A-Z]{3})[.,\s]{0,2}([0-9A-Z]{3})[/\s]{0,2}([0-9A-Z]{4})[-.\s]{0,2}(\d{2})(?!\d)/g;
 
-const TOTAL_LABELS = [/\bVALOR A PAGAR\b/, /\bVALOR TOTAL\b/, /\bTOTAL R\$/, /\bTOTAL A PAGAR\b/, /\bTOTAL\b/];
+const TOTAL_LABELS = [/\bVALOR A PAGAR\b/, /\bTOTAL A PAGAR\b/, /\bTOTAL ?R\$/, /\bVALOR TOTAL\b/, /\bTOTAL\b/];
 const NOT_TOTAL = /ITENS|TRIBUT|IMPOSTO|DESCONTO|TROCO|ACRESCIMO/;
 const DATE_LABEL = /EMISSAO|DATA/;
+const NOT_PURCHASE_DATE = /\b(LOTE|LT|VAL|VALIDADE|VENC|VENCIMENTO|FAB|FABRICACAO)\b/;
+const TAGLINE = /\b(BEM[- ]VINDO|VOLTE SEMPRE|OBRIGAD[OA]|SEJA BEM|AGRADECE)/;
 const NOT_NAME =
   /\b(CNPJ|IE|I\.E|INSC|CPF|ENDERECO|END|RUA|R|AV|AVENIDA|ROD|CEP|TEL|FONE|BAIRRO|DOCUMENTO|DANFE|NFC|NF|NOTA|CUPOM|EXTRATO|SAT|CONSUMIDOR|FISCAL)\b/;
 const PAYMENTS: [RegExp, PaymentMethod][] = [
@@ -62,7 +65,7 @@ const PAYMENTS: [RegExp, PaymentMethod][] = [
 const LOWER_WORDS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 const UPPER_WORDS = new Set(['SA', 'S/A', 'ME', 'EPP', 'EIRELI']);
 const NAME_SCAN_WITHOUT_CNPJ = 3;
-const MAX_DIGITS_IN_LINE = 30;
+const MAX_DIGITS_IN_LINE = 44;
 
 const onlyDigits = (text: string) => text.replace(/\D/g, '');
 
@@ -77,11 +80,13 @@ export function accessKeyCheckDigit(first43: string): number {
   return rest < 2 ? 0 : 11 - rest;
 }
 
-function cnpjDigit(digits: string, length: number): number {
+const cnpjChars = (text: string) => text.toUpperCase().replace(/[^0-9A-Z]/g, '');
+
+function cnpjDigit(chars: string, length: number): number {
   let sum = 0;
   let weight = length - 7;
   for (let index = 0; index < length; index++) {
-    sum += Number(digits[index]) * weight;
+    sum += (chars.charCodeAt(index) - 48) * weight;
     weight = weight === 2 ? 9 : weight - 1;
   }
   const rest = sum % 11;
@@ -89,13 +94,13 @@ function cnpjDigit(digits: string, length: number): number {
 }
 
 export function isValidCnpj(value: string): boolean {
-  const digits = onlyDigits(value);
-  if (digits.length !== 14 || /^(\d)\1+$/.test(digits)) return false;
-  return cnpjDigit(digits, 12) === Number(digits[12]) && cnpjDigit(digits, 13) === Number(digits[13]);
+  const chars = cnpjChars(value);
+  if (!/^[0-9A-Z]{12}\d{2}$/.test(chars) || /^(.)\1+$/.test(chars)) return false;
+  return cnpjDigit(chars, 12) === Number(chars[12]) && cnpjDigit(chars, 13) === Number(chars[13]);
 }
 
 export function formatCnpj(cnpj: string): string {
-  const d = onlyDigits(cnpj);
+  const d = cnpjChars(cnpj);
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
 }
 
@@ -140,29 +145,37 @@ export function amountsOf(text: string): number[] {
   return Array.from(text.matchAll(AMOUNT), (match) => Number(match[2].replace(/[.,]/g, '')) * 100 + Number(match[3]));
 }
 
+function firstAmountAfter(text: string, from: number): { cents: number; at: number } | null {
+  for (const match of text.slice(from).matchAll(AMOUNT)) {
+    const cents = Number(match[2].replace(/[.,]/g, '')) * 100 + Number(match[3]);
+    if (cents > 0) return { cents, at: from + match.index! + match[1].length };
+  }
+  return null;
+}
+
 function totalNear(lines: Line[], index: number, labelEnd: number): number | null {
-  const [onLine] = amountsOf(lines[index].text.slice(labelEnd));
-  if (onLine) return onLine;
+  const text = lines[index].text;
+  const onLine = firstAmountAfter(text, labelEnd);
+  if (onLine) return NOT_TOTAL.test(text.slice(0, onLine.at)) ? null : onLine.cents;
+  if (NOT_TOTAL.test(text)) return null;
   const next = lines[index + 1]?.text;
   if (!next || /[A-Z]{3,}/.test(next)) return null;
   const [below] = amountsOf(next);
   return below || null;
 }
 
-function findTotal(lines: Line[]): number | null {
+type Total = { cents: number; index: number };
+
+function findTotal(lines: Line[]): Total | null {
   for (const label of TOTAL_LABELS) {
     for (let index = 0; index < lines.length; index++) {
       const match = label.exec(lines[index].text);
-      if (!match || NOT_TOTAL.test(lines[index].text)) continue;
-      const total = totalNear(lines, index, match.index + match[0].length);
-      if (total) return total;
+      if (!match) continue;
+      const cents = totalNear(lines, index, match.index + match[0].length);
+      if (cents) return { cents, index };
     }
   }
-  const amounts = lines
-    .filter((line) => line.text.includes('TOTAL') && !NOT_TOTAL.test(line.text))
-    .flatMap((line) => amountsOf(line.text));
-  const largest = Math.max(0, ...amounts);
-  return largest > 0 ? largest : null;
+  return null;
 }
 
 type Dated = { day: string; index: number };
@@ -178,7 +191,12 @@ function findDate(lines: Line[], today: string): Dated | null {
       candidates.push({ day, index, labeled });
     }
   });
-  const chosen = candidates.find((candidate) => candidate.labeled) ?? candidates[0];
+  const purchase = candidates.filter((candidate) => !NOT_PURCHASE_DATE.test(lines[candidate.index].text));
+  const chosen =
+    candidates.find((candidate) => candidate.labeled) ??
+    purchase.find((candidate) => timeOf(lines[candidate.index].text)) ??
+    purchase[0] ??
+    candidates[0];
   return chosen ? { day: chosen.day, index: chosen.index } : null;
 }
 
@@ -201,9 +219,10 @@ type Located = { cnpj: string; index: number };
 
 function cnpjIn(text: string): string | null {
   if (onlyDigits(text).length >= MAX_DIGITS_IN_LINE) return null;
+  const labeled = text.includes('CNPJ');
   for (const match of text.matchAll(CNPJ)) {
-    const digits = match.slice(2, 7).join('');
-    if (isValidCnpj(digits)) return digits;
+    const chars = match.slice(2, 7).join('');
+    if ((labeled || /^\d+$/.test(chars)) && isValidCnpj(chars)) return chars;
   }
   return null;
 }
@@ -223,7 +242,9 @@ function findCnpj(lines: Line[]): Located | null {
 function looksLikeName(text: string): boolean {
   const letters = (text.match(/[A-Z]/g) ?? []).length;
   const visible = text.replace(/\s/g, '').length;
-  return letters >= 3 && letters / visible >= 0.7 && /[A-Z]{2,}/.test(text) && !NOT_NAME.test(text);
+  return (
+    letters >= 3 && letters / visible >= 0.7 && /[A-Z]{2,}/.test(text) && !NOT_NAME.test(text) && !TAGLINE.test(text)
+  );
 }
 
 export function titleCase(name: string): string {
@@ -247,10 +268,19 @@ function findName(lines: Line[], cnpj: Located | null): string | null {
   return line ? titleCase(line.raw) : null;
 }
 
-function findPayment(lines: Line[]): PaymentMethod | null {
-  const text = lines.map((line) => line.text).join('\n');
+function paymentIn(text: string): PaymentMethod | null {
   const hits = PAYMENTS.map(([pattern, method]) => ({ method, at: text.search(pattern) })).filter((hit) => hit.at >= 0);
   hits.sort((a, b) => a.at - b.at);
+  return hits[0]?.method ?? null;
+}
+
+function findPayment(lines: Line[], total: Total | null): PaymentMethod | null {
+  const hits = lines
+    .map((line, index) => ({ method: paymentIn(line.text), index }))
+    .filter((hit): hit is { method: PaymentMethod; index: number } => hit.method !== null);
+  if (!total) return hits[0]?.method ?? null;
+  const distance = (index: number) => (index >= total.index ? index - total.index : lines.length + total.index - index);
+  hits.sort((a, b) => distance(a.index) - distance(b.index));
   return hits[0]?.method ?? null;
 }
 
@@ -270,13 +300,14 @@ export function parseReceiptText(ocrText: string, now: Date = new Date()): Recei
   const lines = linesOf(ocrText);
   const dated = findDate(lines, isoToDay(now.toISOString()));
   const cnpj = findCnpj(lines);
+  const total = findTotal(lines);
   return summarize({
-    totalCents: findTotal(lines),
+    totalCents: total?.cents ?? null,
     day: dated?.day ?? null,
     time: findTime(lines, dated),
     cnpj: cnpj?.cnpj ?? null,
     merchantName: findName(lines, cnpj),
-    payment: findPayment(lines),
+    payment: findPayment(lines, total),
   });
 }
 

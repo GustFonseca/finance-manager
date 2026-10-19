@@ -254,13 +254,15 @@ describe('ImportWizard', () => {
     expect(isDisabled('Cancelar')).toBe(true);
     fireEvent.click(screen.getByLabelText('Fechar'));
     expect(onClose).not.toHaveBeenCalled();
-    expect(transactions.importMany).toHaveBeenCalledWith({
-      accountId: 'a1',
-      lines: [
-        { date: dayToIso('2026-10-05'), description: 'Pagamento recebido', amountCents: 120000, type: 'INCOME', categoryId: 'pay' },
-        { date: dayToIso('2026-10-06'), description: 'Posto Shell', amountCents: 8000, type: 'EXPENSE', categoryId: 'car' },
-      ],
-    });
+    await waitFor(() =>
+      expect(transactions.importMany).toHaveBeenCalledWith({
+        accountId: 'a1',
+        lines: [
+          { date: dayToIso('2026-10-05'), description: 'Pagamento recebido', amountCents: 120000, type: 'INCOME', categoryId: 'pay' },
+          { date: dayToIso('2026-10-06'), description: 'Posto Shell', amountCents: 8000, type: 'EXPENSE', categoryId: 'car' },
+        ],
+      })
+    );
 
     await act(async () => finish(2));
 
@@ -271,6 +273,8 @@ describe('ImportWizard', () => {
     expect(folders.upload.mock.calls[0][1][0].name).toBe('fatura.csv');
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['transactions'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['folders'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['wishlist'] });
+    expect(client.getMutationCache().getAll().map((mutation) => mutation.state.status)).toEqual(['success', 'success']);
 
     fireEvent.click(screen.getByText('Concluir'));
     expect(onClose).toHaveBeenCalled();

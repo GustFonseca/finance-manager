@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -94,6 +95,8 @@ public sealed class OutputCacheTests : IAsyncDisposable
 
     private readonly IHost _host;
     private readonly HttpClient _client;
+    private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _calls;
 
     public OutputCacheTests()
@@ -107,9 +110,18 @@ public sealed class OutputCacheTests : IAsyncDisposable
                     services.AddAuthentication("test").AddScheme<AuthenticationSchemeOptions, HeaderAuth>("test", _ => { });
                     services.AddAuthorization();
                     services.AddOutputCache(options => options.AddPolicy(UserDataCachePolicy.Name, new UserDataCachePolicy()));
+                    services.AddMemoryCache();
+                    services.AddSingleton<FinanceManager.Infrastructure.Caching.UserDataVersions>();
+                    services.AddResponseCompression(options =>
+                    {
+                        options.EnableForHttps = true;
+                        options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+                        options.MimeTypes = ["application/json"];
+                    });
                 })
                 .Configure(app =>
                 {
+                    app.UseResponseCompression();
                     app.UseRouting();
                     app.UseAuthentication();
                     app.UseAuthorization();
@@ -119,6 +131,14 @@ public sealed class OutputCacheTests : IAsyncDisposable
                     {
                         endpoints.MapGet("/data", () => Results.Ok(Interlocked.Increment(ref _calls))).CacheOutput(UserDataCachePolicy.Name);
                         endpoints.MapGet("/missing", () => { Interlocked.Increment(ref _calls); return Results.NotFound(); }).CacheOutput(UserDataCachePolicy.Name);
+                        endpoints.MapGet("/slow", async () =>
+                        {
+                            var call = Interlocked.Increment(ref _calls);
+                            _entered.TrySetResult();
+                            await _release.Task;
+                            return Results.Ok(call);
+                        }).CacheOutput(UserDataCachePolicy.Name);
+                        endpoints.MapGet("/big", () => Results.Ok(new string('x', 2000) + Interlocked.Increment(ref _calls))).CacheOutput(UserDataCachePolicy.Name);
                         endpoints.MapPost("/data", () => Results.NoContent());
                         endpoints.MapPost("/fail", () => Results.BadRequest());
                     });
@@ -173,6 +193,62 @@ public sealed class OutputCacheTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task A_read_that_started_before_a_change_never_serves_its_stale_answer_afterwards()
+    {
+        var inFlight = Get("ana", "/slow");
+        await _entered.Task;
+        Assert.Equal(HttpStatusCode.NoContent, await Post("ana", "/data"));
+        _release.SetResult();
+
+        Assert.Equal("1", await inFlight);
+        Assert.Equal("2", await Get("ana", "/slow"));
+        Assert.Equal("2", await Get("ana", "/slow"));
+    }
+
+    [Fact]
+    public async Task Changing_the_rules_refreshes_every_users_answers()
+    {
+        await Get("ana");
+        await Get("bia");
+
+        _host.Services.GetRequiredService<FinanceManager.Infrastructure.Caching.UserDataVersions>().BumpAll();
+
+        Assert.Equal("3", await Get("ana"));
+        Assert.Equal("4", await Get("bia"));
+    }
+
+    [Fact]
+    public async Task Background_changes_refresh_only_the_affected_user()
+    {
+        await Get("ana");
+        await Get("bia");
+        var versions = _host.Services.GetRequiredService<FinanceManager.Infrastructure.Caching.UserDataVersions>();
+        var ana = Guid.NewGuid();
+
+        var before = versions.Current(ana.ToString());
+        versions.Bump(ana);
+
+        Assert.NotEqual(before, versions.Current(ana.ToString()));
+        Assert.Equal("2", await Get("bia"));
+    }
+
+    [Fact]
+    public async Task Cached_answers_are_still_compressed()
+    {
+        async Task<(string? Encoding, int Calls)> Fetch()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "/big");
+            request.Headers.Add(UserHeader, "ana");
+            request.Headers.AcceptEncoding.ParseAdd("gzip");
+            var response = await _client.SendAsync(request);
+            return (response.Content.Headers.ContentEncoding.SingleOrDefault(), _calls);
+        }
+
+        Assert.Equal(("gzip", 1), await Fetch());
+        Assert.Equal(("gzip", 1), await Fetch());
+    }
+
+    [Fact]
     public async Task Anonymous_requests_and_errors_are_never_cached()
     {
         await Get("");
@@ -200,8 +276,24 @@ public class HealthTests
     [Fact]
     public void Health_answers_ok_without_touching_anything()
     {
-        var result = Assert.IsType<OkObjectResult>(new HealthController().Get());
+        var result = Assert.IsType<OkObjectResult>(new HealthController(Config()).Get());
 
         Assert.Equal("ok", result.Value!.GetType().GetProperty("status")!.GetValue(result.Value));
+        Assert.Null(result.Value!.GetType().GetProperty("commit")!.GetValue(result.Value));
     }
+
+    [Theory]
+    [InlineData("abc123", "def456", "abc123")]
+    [InlineData("", "def456", "def456")]
+    [InlineData(null, "def456", "def456")]
+    [InlineData(" ", " ", null)]
+    public void Health_reports_the_deployed_commit(string? build, string? render, string? expected)
+    {
+        Assert.Equal(expected, HealthController.Commit(Config(("BUILD_COMMIT", build), ("RENDER_GIT_COMMIT", render))));
+    }
+
+    private static Microsoft.Extensions.Configuration.IConfiguration Config(params (string Key, string? Value)[] values) =>
+        new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(values.Select(v => new KeyValuePair<string, string?>(v.Key, v.Value)))
+            .Build();
 }

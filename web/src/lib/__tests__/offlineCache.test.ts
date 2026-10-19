@@ -1,18 +1,34 @@
 import { QueryClient } from '@tanstack/react-query';
 import {
   clearOfflineCache,
-  OFFLINE_CACHE_KEY,
+  isPersistedKey,
+  OFFLINE_CACHE_MAX_AGE_MS,
   OFFLINE_CACHE_MAX_CHARS,
+  OFFLINE_CACHE_PREFIX,
+  OFFLINE_CACHE_WRITE_DELAY_MS,
+  offlineCacheKey,
   persistOfflineCache,
   restoreOfflineCache,
 } from '../offlineCache';
+import { monthKeyOf, monthRange } from '../periods';
 
-function stored() {
-  return JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) ?? 'null');
+const EMAIL = 'g@x.com';
+const KEY = offlineCacheKey(EMAIL);
+
+function currentMonth() {
+  return monthRange(monthKeyOf(new Date()));
 }
 
-function store(value: unknown) {
-  localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(value));
+function stored() {
+  return JSON.parse(localStorage.getItem(KEY) ?? 'null');
+}
+
+function store(value: unknown, key = KEY) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function storedKeys() {
+  return stored().map((entry: { key: unknown }) => entry.key);
 }
 
 let client: QueryClient;
@@ -22,107 +38,229 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  clearOfflineCache();
   client.clear();
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
+describe('offlineCacheKey', () => {
+  it('versions the key and scopes it to the user', () => {
+    expect(offlineCacheKey(' G@X.com ')).toBe(`${OFFLINE_CACHE_PREFIX}:v2:g@x.com`);
+  });
+});
+
+describe('isPersistedKey', () => {
+  it('keeps only the base summary, forecast and daily budget of the current month', () => {
+    const month = currentMonth();
+    expect(isPersistedKey(['summary', month])).toBe(true);
+    expect(isPersistedKey(['summary', { ...month, accountId: undefined }])).toBe(true);
+    expect(isPersistedKey(['summary', 'forecast', month])).toBe(true);
+    expect(isPersistedKey(['summary', 'daily', month, 'day'])).toBe(true);
+
+    expect(isPersistedKey(['summary', { ...month, accountId: 'a1' }])).toBe(false);
+    expect(isPersistedKey(['summary', monthRange('2020-01')])).toBe(false);
+    expect(isPersistedKey(['summary', 'daily', month, 5])).toBe(false);
+    expect(isPersistedKey(['summary', 'recurring', month])).toBe(false);
+    expect(isPersistedKey(['summary', 'avoidable', month])).toBe(false);
+    expect(isPersistedKey(['summary', 'planning', 'tax', 2026])).toBe(false);
+    expect(isPersistedKey(['summary', null])).toBe(false);
+    expect(isPersistedKey(['summary', [month]])).toBe(false);
+    expect(isPersistedKey(['transactions', month])).toBe(false);
+  });
+});
+
 describe('restoreOfflineCache', () => {
-  it('puts the saved summary data back with its original age', () => {
+  it('puts the saved data back with its original age', () => {
+    const month = currentMonth();
+    const now = Date.now();
     store([
-      { key: ['summary', { start: 's' }], data: { balanceCents: 10 }, updatedAt: 1000 },
-      { key: ['transactions'], data: ['x'], updatedAt: 1000 },
+      { key: ['summary', month], data: { balanceCents: 10 }, updatedAt: now - 1000 },
+      { key: ['summary', 'forecast', month], data: 'velho', updatedAt: now - OFFLINE_CACHE_MAX_AGE_MS - 1 },
+      { key: ['summary', 'recurring', month], data: ['x'], updatedAt: now },
       { key: 'summary', data: 1, updatedAt: 1 },
-      { key: ['summary', 'daily'], data: 2, updatedAt: 'old' },
+      { key: ['summary', 'daily', month, 'd'], data: 2, updatedAt: 'old' },
       null,
     ]);
 
-    restoreOfflineCache(client);
+    restoreOfflineCache(client, EMAIL);
 
-    expect(client.getQueryData(['summary', { start: 's' }])).toEqual({ balanceCents: 10 });
-    expect(client.getQueryState(['summary', { start: 's' }])?.dataUpdatedAt).toBe(1000);
-    expect(client.getQueryData(['transactions'])).toBeUndefined();
-    expect(client.getQueryData(['summary', 'daily'])).toBeUndefined();
+    expect(client.getQueryData(['summary', month])).toEqual({ balanceCents: 10 });
+    expect(client.getQueryState(['summary', month])?.dataUpdatedAt).toBe(now - 1000);
+    expect(client.getQueryData(['summary', 'forecast', month])).toBeUndefined();
+    expect(client.getQueryData(['summary', 'recurring', month])).toBeUndefined();
+    expect(client.getQueryData(['summary', 'daily', month, 'd'])).toBeUndefined();
   });
 
   it('keeps fresher data already in memory', () => {
-    client.setQueryData(['summary', 'x'], 'novo');
-    store([{ key: ['summary', 'x'], data: 'velho', updatedAt: 1 }]);
+    const month = currentMonth();
+    client.setQueryData(['summary', month], 'novo');
+    store([{ key: ['summary', month], data: 'velho', updatedAt: Date.now() }]);
 
-    restoreOfflineCache(client);
+    restoreOfflineCache(client, EMAIL);
 
-    expect(client.getQueryData(['summary', 'x'])).toBe('novo');
+    expect(client.getQueryData(['summary', month])).toBe('novo');
+  });
+
+  it('removes copies left by other users, older versions and the legacy key', () => {
+    const month = currentMonth();
+    store([{ key: ['summary', month], data: 'outro', updatedAt: Date.now() }], offlineCacheKey('outra@x.com'));
+    store([], `${OFFLINE_CACHE_PREFIX}:v1:${EMAIL}`);
+    store([], 'fm_offline_summary');
+    localStorage.setItem('jwt_token', 'tok');
+
+    restoreOfflineCache(client, EMAIL);
+
+    expect(client.getQueryData(['summary', month])).toBeUndefined();
+    expect(localStorage.getItem(offlineCacheKey('outra@x.com'))).toBeNull();
+    expect(localStorage.getItem(`${OFFLINE_CACHE_PREFIX}:v1:${EMAIL}`)).toBeNull();
+    expect(localStorage.getItem('fm_offline_summary')).toBeNull();
+    expect(localStorage.getItem('jwt_token')).toBe('tok');
   });
 
   it('ignores missing, broken or unexpected storage', () => {
-    restoreOfflineCache(client);
-    localStorage.setItem(OFFLINE_CACHE_KEY, '{broken');
-    restoreOfflineCache(client);
+    restoreOfflineCache(client, EMAIL);
+    localStorage.setItem(KEY, '{broken');
+    restoreOfflineCache(client, EMAIL);
     store({ key: ['summary'] });
-    restoreOfflineCache(client);
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    restoreOfflineCache(client, EMAIL);
+    jest.spyOn(Storage.prototype, 'key').mockImplementation(() => {
       throw new Error('blocked');
     });
-    restoreOfflineCache(client);
+    restoreOfflineCache(client, EMAIL);
 
     expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 });
 
 describe('persistOfflineCache', () => {
-  it('saves successful summary queries, newest first, replacing older copies', async () => {
-    const stop = persistOfflineCache(client);
-    await client.fetchQuery({ queryKey: ['summary', 'a'], queryFn: async () => 1 });
-    await client.fetchQuery({ queryKey: ['transactions'], queryFn: async () => 'ignorado' });
-    await client.fetchQuery({ queryKey: ['summary', 'b'], queryFn: async () => 2 });
-    await client.fetchQuery({ queryKey: ['summary', 'a'], queryFn: async () => 3, staleTime: 0 });
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick', 'setImmediate'] });
+  });
 
-    const entries = stored();
-    expect(entries.map((e: { key: unknown; data: unknown }) => [e.key, e.data])).toEqual([
-      [['summary', 'a'], 3],
-      [['summary', 'b'], 2],
-    ]);
-    expect(typeof entries[0].updatedAt).toBe('number');
+  async function fetch(key: unknown[], data: unknown, options: { staleTime?: number } = {}) {
+    await client.fetchQuery({ queryKey: key, queryFn: async () => data, ...options });
+  }
+
+  it('waits for writes to settle before saving the allowed queries, newest first', async () => {
+    const month = currentMonth();
+    restoreOfflineCache(client, EMAIL);
+    const stop = persistOfflineCache(client);
+    const base = Date.now();
+    jest.setSystemTime(base + 1_000);
+    await fetch(['summary', month], 1);
+    await fetch(['transactions'], 'ignorado');
+    await fetch(['summary', 'recurring', month], 'ignorado');
+    jest.setSystemTime(base + 2_000);
+    await fetch(['summary', 'forecast', month], 2);
+    expect(stored()).toBeNull();
+
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
+    expect(storedKeys()).toEqual([['summary', 'forecast', month], ['summary', month]]);
+
+    jest.setSystemTime(base + 3_000);
+    await fetch(['summary', month], 3, { staleTime: 0 });
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
+    expect(stored().map((e: { data: unknown }) => e.data)).toEqual([3, 2]);
 
     stop();
-    await client.fetchQuery({ queryKey: ['summary', 'c'], queryFn: async () => 4 });
+    await fetch(['summary', 'daily', month, 'd'], 4);
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
     expect(stored()).toHaveLength(2);
   });
 
+  it('saves a pending write when it stops', async () => {
+    const month = currentMonth();
+    restoreOfflineCache(client, EMAIL);
+    const stop = persistOfflineCache(client);
+    await fetch(['summary', month], 1);
+
+    stop();
+
+    expect(storedKeys()).toEqual([['summary', month]]);
+  });
+
+  it('does not save anything while nobody is signed in', async () => {
+    const stop = persistOfflineCache(client);
+    await fetch(['summary', currentMonth()], 1);
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
+    stop();
+
+    expect(localStorage.length).toBe(0);
+  });
+
   it('ignores failed queries', async () => {
+    restoreOfflineCache(client, EMAIL);
     persistOfflineCache(client);
-    await expect(client.fetchQuery({ queryKey: ['summary', 'x'], queryFn: () => Promise.reject(new Error('x')) })).rejects.toThrow();
+    await expect(
+      client.fetchQuery({ queryKey: ['summary', currentMonth()], queryFn: () => Promise.reject(new Error('x')) })
+    ).rejects.toThrow();
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
     expect(stored()).toBeNull();
   });
 
   it('drops the oldest entries to stay under the size limit', async () => {
+    const month = currentMonth();
     const big = 'x'.repeat(OFFLINE_CACHE_MAX_CHARS / 2);
-    const now = jest.spyOn(Date, 'now');
+    restoreOfflineCache(client, EMAIL);
     persistOfflineCache(client);
-    now.mockReturnValue(1);
-    await client.fetchQuery({ queryKey: ['summary', 'old'], queryFn: async () => big });
-    now.mockReturnValue(2);
-    await client.fetchQuery({ queryKey: ['summary', 'new'], queryFn: async () => big });
+    jest.setSystemTime(Date.now());
+    await fetch(['summary', month], big);
+    jest.setSystemTime(Date.now() + 1);
+    await fetch(['summary', 'forecast', month], big);
+    jest.setSystemTime(Date.now() + 1);
+    await fetch(['summary', 'daily', month, 'd'], 'pequeno');
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
 
-    expect(stored().map((e: { key: unknown }) => e.key)).toEqual([['summary', 'new']]);
+    expect(storedKeys()).toEqual([['summary', 'daily', month, 'd'], ['summary', 'forecast', month]]);
+  });
+
+  it('drops entries older than a week when saving', async () => {
+    const month = currentMonth();
+    store([{ key: ['summary', month], data: 1, updatedAt: Date.now() }]);
+    restoreOfflineCache(client, EMAIL);
+    persistOfflineCache(client);
+    jest.setSystemTime(Date.now() + OFFLINE_CACHE_MAX_AGE_MS + 1);
+    await fetch(['summary', 'forecast', month], 2);
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
+
+    expect(storedKeys()).toEqual([['summary', 'forecast', month]]);
   });
 
   it('keeps working when the storage refuses to save', async () => {
     jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');
     });
+    restoreOfflineCache(client, EMAIL);
     persistOfflineCache(client);
 
-    await expect(client.fetchQuery({ queryKey: ['summary', 'x'], queryFn: async () => 1 })).resolves.toBe(1);
+    await expect(client.fetchQuery({ queryKey: ['summary', currentMonth()], queryFn: async () => 1 })).resolves.toBe(1);
+    expect(() => jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS)).not.toThrow();
+  });
+
+  it('cancels a pending write when the user signs out', async () => {
+    restoreOfflineCache(client, EMAIL);
+    persistOfflineCache(client);
+    await fetch(['summary', currentMonth()], 1);
+
+    clearOfflineCache();
+    jest.advanceTimersByTime(OFFLINE_CACHE_WRITE_DELAY_MS);
+
+    expect(stored()).toBeNull();
   });
 });
 
 describe('clearOfflineCache', () => {
-  it('forgets the saved data and tolerates blocked storage', () => {
+  it('forgets every saved copy and tolerates blocked storage', () => {
     store([]);
+    store([], 'fm_offline_summary');
+    localStorage.setItem('jwt_token', 'tok');
     clearOfflineCache();
-    expect(localStorage.getItem(OFFLINE_CACHE_KEY)).toBeNull();
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(localStorage.getItem('fm_offline_summary')).toBeNull();
+    expect(localStorage.getItem('jwt_token')).toBe('tok');
 
-    jest.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+    jest.spyOn(Storage.prototype, 'key').mockImplementation(() => {
       throw new Error('blocked');
     });
     expect(() => clearOfflineCache()).not.toThrow();

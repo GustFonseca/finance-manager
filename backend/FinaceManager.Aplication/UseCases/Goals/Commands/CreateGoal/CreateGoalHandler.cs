@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -20,10 +21,11 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, GoalDto>
 
     public async Task<GoalDto> Handle(CreateGoalCommand request, CancellationToken cancellationToken = default)
     {
+        Input.Positive(request.TargetCents, "O valor da meta deve ser maior que zero.");
         var goal = new Goal
         {
             UserId = request.UserId,
-            Name = request.Name,
+            Name = Input.Name(request.Name),
             TargetCents = request.TargetCents,
             Deadline = request.Deadline,
             Status = GoalStatus.ACTIVE

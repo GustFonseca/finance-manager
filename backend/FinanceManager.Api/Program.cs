@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.RateLimiting;
 using FinanceManager.Aplication;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.CatalogTransactions;
@@ -18,6 +17,7 @@ using Serilog.Formatting.Compact;
 using FinanceManager.Api.Authorization;
 using FinanceManager.Api.Caching;
 using FinanceManager.Api.Errors;
+using FinanceManager.Api.Security;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authorization;
 
@@ -46,13 +46,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("client-logs", http => RateLimitPartition.GetFixedWindowLimiter(
-        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
-});
+builder.Services.AddRateLimiter(RateLimits.Configure);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -130,11 +124,12 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var corsOrigins = new CorsOrigins(builder.Configuration);
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().WithExposedHeaders("X-Trace-Id");
+        policy.SetIsOriginAllowed(corsOrigins.IsAllowed).AllowAnyMethod().AllowAnyHeader().WithExposedHeaders("X-Trace-Id");
     });
 });
 
@@ -167,12 +162,22 @@ app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-
-    var catalogued = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CatalogTransactionsCommand());
-    if (catalogued > 0) app.Logger.LogInformation("Catalogued {Count} transactions under their merchants", catalogued);
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
+
+app.Lifetime.ApplicationStarted.Register(() => _ = Task.Run(async () =>
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var catalogued = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CatalogTransactionsCommand(), app.Lifetime.ApplicationStopping);
+        if (catalogued > 0) app.Logger.LogInformation("Catalogued {Count} transactions under their merchants", catalogued);
+    }
+    catch (Exception ex) when (!app.Lifetime.ApplicationStopping.IsCancellationRequested)
+    {
+        app.Logger.LogWarning(ex, "Cataloguing transactions at startup failed");
+    }
+}));
 
 if (app.Environment.IsDevelopment())
 {

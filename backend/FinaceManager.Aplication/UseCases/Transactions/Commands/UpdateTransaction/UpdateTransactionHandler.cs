@@ -43,14 +43,14 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
         if (transaction == null || transaction.UserId != request.UserId)
             throw new NotFoundException("Transação não encontrada.");
 
-        TransactionInput.Validate(request.AmountCents, request.Description);
+        var description = TransactionInput.Validate(request.AmountCents, request.Description, request.Type, request.Recurrence);
         var (account, category) = await TransactionInput.LoadReferencesAsync(
             _accountRepository, _categoryRepository, request.UserId, request.AccountId, request.CategoryId, request.Type);
 
         var rules = await _rulesProvider.GetAsync(cancellationToken);
         var owner = await _userRepository.GetByIdAsync(request.UserId);
         var merchant = await MerchantCatalog.FileAsync(
-            _merchantRepository, rules, request.UserId, request.Description, owner?.Name, category,
+            _merchantRepository, rules, request.UserId, description, owner?.Name, category,
             learnCategory: transaction.CategoryId != category.Id);
 
         var previousAccount = await _accountRepository.GetByIdAsync(transaction.AccountId)
@@ -64,7 +64,7 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
         transaction.Category = category;
         transaction.Type = request.Type;
         transaction.AmountCents = request.AmountCents;
-        transaction.Description = request.Description;
+        transaction.Description = description;
         transaction.Date = TransactionInput.ToUtc(request.Date);
         transaction.Recurrence = request.Recurrence;
         transaction.MerchantId = merchant?.Id;

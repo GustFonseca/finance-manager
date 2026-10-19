@@ -76,7 +76,7 @@ public sealed class RepositoryTests : IDisposable
         Assert.Equal([loose.Id], byAccount.Select(t => t.Id));
         Assert.Equal([catalogued.Id], byMerchant.Select(t => t.Id));
         Assert.Equal([catalogued.Id], (await repository.GetByMerchantIdAsync(merchant.Id)).Select(t => t.Id));
-        Assert.Equal(2, (await repository.GetUncataloguedAsync()).Count);
+        Assert.Equal(2, (await repository.GetUncataloguedAsync(10)).Count);
         Assert.True(await repository.ExistsForAccountAsync(itau.Id));
         Assert.False(await repository.ExistsForAccountAsync(Guid.NewGuid()));
         Assert.True(await repository.ExistsForCategoryAsync(lazer.Id));

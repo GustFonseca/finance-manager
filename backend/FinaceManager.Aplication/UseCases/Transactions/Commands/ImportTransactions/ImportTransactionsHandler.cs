@@ -51,13 +51,13 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
         {
             try
             {
-                TransactionInput.Validate(line.AmountCents, line.Description);
+                var description = TransactionInput.Validate(line.AmountCents, line.Description, line.Type);
                 var category = categories.GetValueOrDefault(line.CategoryId)
                     ?? throw new BusinessRuleException("Categoria não encontrada.");
                 TransactionInput.EnsureCategoryFits(category, line.Type);
 
                 var merchant = await MerchantCatalog.FileAsync(
-                    _merchantRepository, rules, request.UserId, line.Description, owner?.Name, category, cache: merchants);
+                    _merchantRepository, rules, request.UserId, description, owner?.Name, category, cache: merchants);
 
                 transactions.Add(new Transaction
                 {
@@ -66,7 +66,7 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
                     CategoryId = category.Id,
                     Type = line.Type,
                     AmountCents = line.AmountCents,
-                    Description = line.Description,
+                    Description = description,
                     Date = TransactionInput.ToUtc(line.Date),
                     MerchantId = merchant?.Id,
                 });

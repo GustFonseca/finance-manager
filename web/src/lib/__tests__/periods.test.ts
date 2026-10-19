@@ -1,5 +1,6 @@
 import {
   dayToIso,
+  formatDay,
   isCurrentMonth,
   isoToDay,
   longMonthOf,
@@ -97,5 +98,19 @@ describe('todayStartIso', () => {
   it('gives the start of the local day as an ISO string', () => {
     jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 21, 45));
     expect(todayStartIso()).toBe(new Date(2026, 9, 18).toISOString());
+  });
+});
+
+describe('formatDay', () => {
+  it('formats a local date as dd/mm/yyyy', () => {
+    expect(formatDay(new Date(2026, 9, 5, 12).toISOString())).toBe('05/10/2026');
+  });
+
+  it('reads UTC-midnight days in UTC so they do not shift to the previous day', () => {
+    expect(formatDay('2026-10-05T00:00:00Z', { utc: true })).toBe('05/10/2026');
+  });
+
+  it('can leave the year out', () => {
+    expect(formatDay('2026-10-05T00:00:00Z', { utc: true, year: false })).toBe('05/10');
   });
 });

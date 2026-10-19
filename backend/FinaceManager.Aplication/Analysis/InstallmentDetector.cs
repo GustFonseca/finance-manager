@@ -14,10 +14,11 @@ public static partial class InstallmentDetector
 
     public static Installment? Parse(Transaction transaction)
     {
-        var match = Pattern().Match(transaction.Description);
+        var match = Pattern().Match(transaction.Description ?? string.Empty);
         if (!match.Success) return null;
         var number = int.Parse(match.Groups["n"].Value);
         var total = int.Parse(match.Groups["total"].Value);
+        if (match.Groups["bare"].Success && number == transaction.Date.Day && total == transaction.Date.Month) return null;
         return total >= 2 && number >= 1 && number <= total ? new Installment(transaction, number, total) : null;
     }
 
@@ -55,6 +56,6 @@ public static partial class InstallmentDetector
         };
     }
 
-    [GeneratedRegex(@"parcela\s*(?<n>\d{1,3})\s*(?:/|de)\s*(?<total>\d{1,3})|\s(?<n>\d{1,2})/(?<total>\d{1,2})\s*$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bparc(?:ela)?\.?\s*(?<n>\d{1,3})\s*(?:/|de)\s*(?<total>\d{1,3})|\s(?<n>\d{1,2})\s+de\s+(?<total>\d{1,2})\s*$|\s(?<bare>(?<n>\d{1,2})/(?<total>\d{1,2}))\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex Pattern();
 }

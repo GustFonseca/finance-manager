@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using FinanceManager.Aplication.Validation;
+using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -24,7 +25,7 @@ public class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand, Accoun
             return null;
         }
 
-        account.UpdateName(request.newName);
+        account.UpdateName(Input.Name(request.newName));
 
         await _accountRepository.UpdateAsync(account);
 

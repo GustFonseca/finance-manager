@@ -70,10 +70,10 @@ describe('LoginScreen', () => {
 });
 
 describe('authApi', () => {
-  it('posts the Google id token', async () => {
+  it('posts the Google id token with the nonce it was requested with', async () => {
     const post = jest.spyOn(http, 'post').mockResolvedValue(httpResponse({ token: 't' }));
-    await expect(authApi.googleLogin('id-tok')).resolves.toEqual(httpResponse({ token: 't' }));
-    expect(post).toHaveBeenCalledWith('/auth/google', { idToken: 'id-tok' });
+    await expect(authApi.googleLogin('id-tok', 'abc123')).resolves.toEqual(httpResponse({ token: 't' }));
+    expect(post).toHaveBeenCalledWith('/auth/google', { idToken: 'id-tok', nonce: 'abc123' });
     post.mockRestore();
   });
 });

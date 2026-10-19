@@ -4,6 +4,7 @@ import { Button, Card, MoneyText, ProgressBar } from '@/components/ui';
 import { formatCents } from '@/lib/money';
 import { colors, fontSize, palette, spacing } from '@/theme';
 import { ChallengeDto, ChallengeStatus } from '../types';
+import { formatDay } from '@/lib/periods';
 
 const STATUS: Record<ChallengeStatus, { label: string; color: string }> = {
   ACTIVE: { label: 'Em andamento', color: palette.navy },
@@ -11,7 +12,7 @@ const STATUS: Record<ChallengeStatus, { label: string; color: string }> = {
   LOST: { label: 'Limite estourado', color: colors.expense },
 };
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
+const lastDayOf = (endsOn: string) => formatDay(new Date(new Date(endsOn).getTime() - 1).toISOString());
 
 type Props = {
   challenge: ChallengeDto;
@@ -26,7 +27,7 @@ export function ChallengeCard({ challenge: c, onDelete }: Props) {
     <Card title={c.name} style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.meta}>
-          {c.targetName} · {c.daysElapsed} de {c.days} dias · até {date(c.endsOn)}
+          {c.targetName} · {c.daysElapsed} de {c.days} dias · até {lastDayOf(c.endsOn)}
         </Text>
         <Text style={[styles.status, { color: status.color }]}>{status.label}</Text>
       </View>

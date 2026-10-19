@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ListItem, MoneyText } from '@/components/ui';
 import { colors, fontSize, spacing, webStyle } from '@/theme';
 import { TransactionDto } from '../types';
+import { formatDay } from '@/lib/periods';
 
 type Props = {
   transaction: TransactionDto;
@@ -27,7 +28,7 @@ export function TransactionListItem({ transaction, onPress, onOpenReceipt }: Pro
           {transaction.merchantName || transaction.description || transaction.categoryName}
         </Text>
         <Text style={styles.meta}>
-          {new Date(transaction.date).toLocaleDateString('pt-BR')} · {transaction.categoryName} ·{' '}
+          {formatDay(transaction.date)} · {transaction.categoryName} ·{' '}
           {transaction.accountName}
         </Text>
         {transaction.merchantName ? (

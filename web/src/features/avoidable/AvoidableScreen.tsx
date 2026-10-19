@@ -10,14 +10,13 @@ import { MerchantDto, UpdateMerchantInput } from '@/features/merchants/types';
 import { SpendingClass } from '@/features/spending/types';
 import { getErrorMessage } from '@/lib/http';
 import { formatCents } from '@/lib/money';
-import { monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/periods';
+import { formatDay, monthKeyOf, monthLabel, monthRange, twelveMonthsUntil } from '@/lib/periods';
 import { workHoursOf } from '@/lib/workHours';
 import { colors, fontSize, palette, spacing } from '@/theme';
 import { AvoidableRow, RowAction } from './components/AvoidableRow';
 import { useAvoidableSpending, useDismissInsight, useSetSubscriptionChoice } from './queries';
 import { SubscriptionAuditDto, SubscriptionChoice } from './types';
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
 export function formatRate(percent: number) {
   return `${percent.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
@@ -89,7 +88,7 @@ export function AvoidableScreen() {
 
   function choiceNote(subscription: SubscriptionAuditDto): string | null {
     if (subscription.chargedAfterCancel) {
-      return `Cobrou depois de você marcar como cancelada (em ${day(subscription.lastDate)}). Confira com o serviço.`;
+      return `Cobrou depois de você marcar como cancelada (em ${formatDay(subscription.lastDate)}). Confira com o serviço.`;
     }
     if (subscription.choice === 'CANCEL') return 'Marcada como cancelada';
     if (subscription.choice === 'KEEP') return 'Marcada para manter';
@@ -173,7 +172,7 @@ export function AvoidableScreen() {
                     <AvoidableRow
                       key={d.key}
                       title={d.name}
-                      detail={`Cobrado em ${day(d.firstDate)} e de novo em ${day(d.secondDate)}`}
+                      detail={`Cobrado em ${formatDay(d.firstDate)} e de novo em ${formatDay(d.secondDate)}`}
                       value={formatCents(d.amountCents)}
                       actions={[{ label: 'Está certo', onPress: () => dismiss(d.key, d.name) }, ...actions(d.merchantId, d.name)]}
                     />
@@ -210,7 +209,7 @@ export function AvoidableScreen() {
                     <AvoidableRow
                       key={f.label}
                       title={f.label}
-                      detail={`${f.count} cobrança(s) em 12 meses · última em ${day(f.lastDate)}`}
+                      detail={`${f.count} cobrança(s) em 12 meses · última em ${formatDay(f.lastDate)}`}
                       highlight={workHoursOf(f.yearCents, data.hourValueCents) ?? undefined}
                       value={`${formatCents(f.yearCents)} em 12 meses`}
                     />
@@ -230,12 +229,12 @@ export function AvoidableScreen() {
                     <AvoidableRow
                       key={s.key}
                       title={s.name}
-                      detail={`${s.group ?? 'Assinatura'} · ${formatCents(s.yearlyCents)} por ano · última cobrança em ${day(s.lastDate)} · investido: ${formatCents(s.investedIn12MonthsCents)} em 12 meses`}
+                      detail={`${s.group ?? 'Assinatura'} · ${formatCents(s.yearlyCents)} por ano · última cobrança em ${formatDay(s.lastDate)} · investido: ${formatCents(s.investedIn12MonthsCents)} em 12 meses`}
                       highlight={[
                         s.priceIncreased && s.previousCents !== null
                           ? `Preço subiu de ${formatCents(s.previousCents)} para ${formatCents(s.monthlyCents)}`
                           : null,
-                        s.resumedAfter ? `Voltou a cobrar depois de uma pausa (cobrança anterior em ${day(s.resumedAfter)})` : null,
+                        s.resumedAfter ? `Voltou a cobrar depois de uma pausa (cobrança anterior em ${formatDay(s.resumedAfter)})` : null,
                         choiceNote(s),
                       ]
                         .filter(Boolean)
@@ -286,7 +285,7 @@ export function AvoidableScreen() {
                     <AvoidableRow
                       key={p.transactionId}
                       title={p.name}
-                      detail={`${day(p.date)} · nenhuma compra neste lugar nos 12 meses anteriores`}
+                      detail={`${formatDay(p.date)} · nenhuma compra neste lugar nos 12 meses anteriores`}
                       value={formatCents(p.cents)}
                       actions={actions(p.merchantId, p.name, p.class === 'SUPERFLUOUS' ? undefined : 'SUPERFLUOUS')}
                     />

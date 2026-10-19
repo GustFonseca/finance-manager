@@ -5,6 +5,7 @@ import { Card, MoneyText } from '@/components/ui';
 import { formatCents } from '@/lib/money';
 import { colors, fontSize, palette, radius, spacing } from '@/theme';
 import { CashFlowForecastDto, ForecastItemKind } from '../types';
+import { formatDay } from '@/lib/periods';
 
 const MAX_UPCOMING = 6;
 
@@ -14,8 +15,7 @@ const KINDS: Record<ForecastItemKind, { label: string; color: string }> = {
   INSTALLMENT: { label: 'Parcela', color: palette.plum },
 };
 
-const shortDay = (iso: string) =>
-  new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+const shortDay = (iso: string) => formatDay(iso, { utc: true, year: false });
 
 export function ForecastCard({ forecast }: { forecast: CashFlowForecastDto }) {
   if (!forecast.isCurrentMonth) return null;

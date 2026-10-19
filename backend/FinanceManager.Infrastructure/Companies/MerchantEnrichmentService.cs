@@ -1,6 +1,7 @@
 using FinanceManager.Aplication.Companies;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.ApplyMerchantActivity;
+using FinanceManager.Aplication.UseCases.Merchants.Commands.RecordEnrichmentFailure;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantsPendingEnrichment;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,7 @@ public sealed class MerchantEnrichmentService : BackgroundService
             {
                 idle = (await RunBatchAsync(stoppingToken)).Pending == 0;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogWarning(ex, "Merchant enrichment failed; will retry");
             }
@@ -58,14 +59,21 @@ public sealed class MerchantEnrichmentService : BackgroundService
         var enriched = 0;
         foreach (var merchant in pending)
         {
+            if (merchant.Cnpj == null)
+            {
+                await mediator.Send(new ApplyMerchantActivityCommand(merchant.MerchantId, null, DateTime.UtcNow), cancellationToken);
+                continue;
+            }
+
             CompanyInfo? company;
             try
             {
                 company = await registry.LookupAsync(merchant.Cnpj, cancellationToken);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (IsUnavailable(ex, cancellationToken))
             {
-                _logger.LogWarning(ex, "Company registry unavailable; stopping this batch");
+                _logger.LogWarning(ex, "Company registry unavailable for {Cnpj}; stopping this batch", merchant.Cnpj);
+                await mediator.Send(new RecordEnrichmentFailureCommand(merchant.MerchantId, DateTime.UtcNow), cancellationToken);
                 break;
             }
             await mediator.Send(new ApplyMerchantActivityCommand(merchant.MerchantId, company, DateTime.UtcNow), cancellationToken);
@@ -75,4 +83,7 @@ public sealed class MerchantEnrichmentService : BackgroundService
         if (enriched > 0) _logger.LogInformation("Enriched {Count} merchants with their economic activity", enriched);
         return (pending.Count, enriched);
     }
+
+    private static bool IsUnavailable(Exception exception, CancellationToken cancellationToken) =>
+        exception is HttpRequestException || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested);
 }

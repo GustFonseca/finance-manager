@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using FinanceManager.Aplication.Auth;
 using FinanceManager.Aplication.UseCases.Auth.Commands.GoogleLogin;
+using FinanceManager.Aplication.UseCases.Auth.Queries.ValidateGoogleToken;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 using FinanceManager.Infrastructure.Context;
@@ -16,7 +17,6 @@ namespace FinanceManager.Tests.UseCases.Auth;
 public class GoogleLoginHandlerTests
 {
     private readonly AppDbContext _db = TestDb.InMemory();
-    private readonly FakeGoogle _google = new();
 
     private readonly IConfiguration _config = new ConfigurationBuilder()
         .AddInMemoryCollection(new Dictionary<string, string?>
@@ -29,7 +29,7 @@ public class GoogleLoginHandlerTests
         .Build();
 
     private GoogleLoginHandler Handler => new(
-        new UserRepository(_db), new AccountRepository(_db), new CategoryRepository(_db), new ActivityLogRepository(_db), _google, _config,
+        new UserRepository(_db), new AccountRepository(_db), new CategoryRepository(_db), new ActivityLogRepository(_db), _config,
         new FinanceManager.Infrastructure.Auth.ConfigAdminDirectory(_config));
 
     private ClaimsPrincipal Validate(string token) => new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
@@ -42,13 +42,10 @@ public class GoogleLoginHandlerTests
     [Fact]
     public async Task A_first_login_creates_the_user_with_a_default_account_and_categories()
     {
-        _google.Identity = new GoogleIdentity("google-1", "ana@gmail.com", "Ana");
-
-        var response = await Handler.Handle(new GoogleLoginCommand("token-da-ana"));
+        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-1", "ana@gmail.com", "Ana", true, "n1")));
 
         var user = Assert.Single(_db.Users);
         Assert.Equal(("google-1", "ana@gmail.com", "Ana"), (user.GoogleId, user.Email, user.Name));
-        Assert.Equal("token-da-ana", _google.ReceivedToken);
         Assert.Equal("Conta Principal", Assert.Single(_db.Accounts).Name);
         Assert.Equal(3, _db.Categories.Count(c => c.UserId == user.Id && c.Type == CategoryType.INCOME));
         Assert.Equal(7, _db.Categories.Count(c => c.UserId == user.Id && c.Type == CategoryType.EXPENSE));
@@ -69,9 +66,7 @@ public class GoogleLoginHandlerTests
         var existing = new User { GoogleId = "google-2", Email = "bia@gmail.com", Name = "" };
         _db.Users.Add(existing);
         _db.SaveChanges();
-        _google.Identity = new GoogleIdentity("google-2", "outro@gmail.com", "Outro nome");
-
-        var response = await Handler.Handle(new GoogleLoginCommand("token"));
+        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-2", "outro@gmail.com", "Outro nome", true, "n2")));
 
         Assert.Single(_db.Users);
         Assert.Empty(_db.Accounts);
@@ -82,18 +77,44 @@ public class GoogleLoginHandlerTests
     }
 
     [Fact]
+    public async Task A_valid_token_with_the_session_nonce_and_a_verified_email_is_accepted()
+    {
+        var google = new FakeGoogle { Identity = new GoogleIdentity("sub", "e@x.com", "E", true, "nonce-1") };
+
+        var identity = await new ValidateGoogleTokenHandler(google).Handle(new ValidateGoogleTokenQuery("token", "nonce-1"));
+
+        Assert.Equal("sub", identity.Subject);
+        Assert.Equal("token", google.ReceivedToken);
+    }
+
+    [Theory]
+    [InlineData(null, "nonce-1", true, ValidateGoogleTokenHandler.MissingNonce)]
+    [InlineData(" ", "nonce-1", true, ValidateGoogleTokenHandler.MissingNonce)]
+    [InlineData("outro", "nonce-1", true, ValidateGoogleTokenHandler.WrongNonce)]
+    [InlineData("nonce-1", null, true, ValidateGoogleTokenHandler.WrongNonce)]
+    [InlineData("nonce-1", "nonce-1", false, ValidateGoogleTokenHandler.UnverifiedEmail)]
+    public async Task Tokens_from_another_session_or_with_unverified_email_are_rejected(string? sent, string? inToken, bool verified, string message)
+    {
+        var google = new FakeGoogle { Identity = new GoogleIdentity("sub", "e@x.com", "E", verified, inToken) };
+
+        var error = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => new ValidateGoogleTokenHandler(google).Handle(new ValidateGoogleTokenQuery("token", sent)));
+
+        Assert.Equal(message, error.Message);
+    }
+
+    [Fact]
     public async Task An_invalid_google_token_stops_the_login()
     {
-        _google.Error = new InvalidOperationException("token inválido");
+        var google = new FakeGoogle { Error = new InvalidOperationException("token inválido") };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Handler.Handle(new GoogleLoginCommand("ruim")));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new ValidateGoogleTokenHandler(google).Handle(new ValidateGoogleTokenQuery("ruim", "n")));
 
         Assert.Empty(_db.Users);
     }
 
     private sealed class FakeGoogle : IGoogleTokenValidator
     {
-        public GoogleIdentity Identity { get; set; } = new("sub", "e@x.com", "E");
+        public GoogleIdentity Identity { get; set; } = new("sub", "e@x.com", "E", true, null);
         public Exception? Error { get; set; }
         public string? ReceivedToken { get; private set; }
 

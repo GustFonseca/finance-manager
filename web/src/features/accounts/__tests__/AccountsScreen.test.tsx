@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 import { AccountsScreen } from '../AccountsScreen';
+import { ACCOUNT_NAME_REQUIRED, ACCOUNT_NAME_TOO_LONG } from '../components/AccountForm';
 import { accountsApi } from '../api';
 import { apiError } from '@/test/http';
 
@@ -44,6 +45,12 @@ describe('AccountsScreen', () => {
     expect(screen.getByText('Nova Conta')).toBeTruthy();
     fireEvent.click(screen.getByText('Salvar'));
     expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByText(ACCOUNT_NAME_REQUIRED)).toBeTruthy();
+
+    fireEvent.change(inputOf('Nome:'), { target: { value: 'x'.repeat(101) } });
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByText(ACCOUNT_NAME_TOO_LONG)).toBeTruthy();
 
     fireEvent.change(inputOf('Nome:'), { target: { value: '  Nubank  ' } });
     fireEvent.click(screen.getByText('Salvar'));

@@ -4,8 +4,8 @@ import { Card, MoneyText } from '@/components/ui';
 import { formatCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { SeasonalExpensesDto } from '../types';
+import { formatDay } from '@/lib/periods';
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
 export function monthsLeftText(months: number): string {
   if (months <= 0) return 'vence este mês';
@@ -28,8 +28,8 @@ export function SeasonalCard({ seasonal }: { seasonal: SeasonalExpensesDto }) {
                   {item.label} · {item.name}
                 </Text>
                 <Text style={styles.meta}>
-                  Próxima em {day(item.nextDate)} ({monthsLeftText(item.monthsLeft)}) · última de{' '}
-                  {formatCents(item.lastCents)} em {day(item.lastDate)}
+                  Próxima em {formatDay(item.nextDate)} ({monthsLeftText(item.monthsLeft)}) · última de{' '}
+                  {formatCents(item.lastCents)} em {formatDay(item.lastDate)}
                 </Text>
               </View>
               <Text style={styles.value}>{formatCents(item.monthlyReserveCents)}/mês</Text>

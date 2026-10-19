@@ -27,8 +27,9 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
     public async Task<int> Handle(CatalogTransactionsCommand request, CancellationToken cancellationToken = default)
     {
         var rules = await _rulesProvider.GetAsync(cancellationToken);
-        var filed = new List<Transaction>();
-        foreach (var userTransactions in (await _transactionRepository.GetUncataloguedAsync()).GroupBy(t => t.UserId))
+        var filed = 0;
+        var attempted = await _transactionRepository.GetUncataloguedAsync(request.Max);
+        foreach (var userTransactions in attempted.GroupBy(t => t.UserId))
         {
             var owner = await _userRepository.GetByIdAsync(userTransactions.Key);
             var cache = new Dictionary<string, Merchant>();
@@ -36,9 +37,10 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
             {
                 var merchant = await MerchantCatalog.ResolveAsync(
                     _merchantRepository, rules, userTransactions.Key, transaction.Description, owner?.Name, cache);
+                transaction.CatalogAttemptedAt = DateTime.UtcNow;
                 if (merchant == null) continue;
                 transaction.MerchantId = merchant.Id;
-                filed.Add(transaction);
+                filed++;
             }
 
             foreach (var merchant in cache.Values.Where(m => m.CategoryId == null))
@@ -50,11 +52,10 @@ public class CatalogTransactionsHandler : IRequestHandler<CatalogTransactionsCom
                     .First().First().Category;
                 if (usual == null || !MerchantCatalog.ShouldLearn(merchant, usual, rules)) continue;
                 merchant.CategoryId = usual.Id;
-                await _merchantRepository.UpdateAsync(merchant);
             }
         }
 
-        if (filed.Count > 0) await _transactionRepository.UpdateRangeAsync(filed);
-        return filed.Count;
+        if (attempted.Count > 0) await _transactionRepository.UpdateRangeAsync(attempted);
+        return filed;
     }
 }

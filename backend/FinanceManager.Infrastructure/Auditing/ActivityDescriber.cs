@@ -37,7 +37,10 @@ public static class ActivityDescriber
         Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações importadas de uma vez");
 
     public static ActivityLog BulkDelete(IReadOnlyCollection<Transaction> transactions) =>
-        Log(transactions.First().UserId, "Transações", $"{transactions.Count} transações excluídas de uma vez", ActivityType.WARNING);
+        BulkDelete(transactions.First().UserId, transactions.Count);
+
+    public static ActivityLog BulkDelete(Guid userId, int count) =>
+        Log(userId, "Transações", count == 1 ? "1 transação excluída" : $"{count} transações excluídas de uma vez", ActivityType.WARNING);
 
     private static IEnumerable<ActivityLog> DescribeTransaction(EntityEntry entry, Transaction t)
     {

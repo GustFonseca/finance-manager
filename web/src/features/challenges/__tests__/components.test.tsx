@@ -47,13 +47,19 @@ function alertText() {
 }
 
 describe('ChallengeCard', () => {
+  it('shows the last day of the challenge, since the end date is exclusive', () => {
+    const endsOn = new Date(2026, 10, 9).toISOString();
+    renderWithProviders(<ChallengeCard challenge={challenge({ endsOn })} onDelete={jest.fn()} />);
+    expect(screen.getByText(/até 08\/11\/2026$/)).toBeTruthy();
+  });
+
   it('shows an active challenge with its limit, progress and estimated savings', () => {
     const onDelete = jest.fn();
     const item = challenge();
     render(<ChallengeCard challenge={item} onDelete={onDelete} />);
 
     expect(screen.getByText('30 dias sem delivery')).toBeTruthy();
-    expect(screen.getByText(`Delivery · 9 de 30 dias · até ${day('2026-11-09T03:00:00Z')}`)).toBeTruthy();
+    expect(screen.getByText(`Delivery · 9 de 30 dias · até ${day('2026-11-08T03:00:00Z')}`)).toBeTruthy();
     expect(screen.getByText('Em andamento')).toBeTruthy();
     expect(screen.getByText(`Gasto no desafio (limite de ${money(10000)})`)).toBeTruthy();
     expect(screen.getByText(money(4000))).toBeTruthy();
@@ -187,6 +193,12 @@ describe('ChallengeForm', () => {
     fireEvent.change(inputOf(LIMIT_LABEL), { target: { value: 'abc' } });
     fireEvent.click(screen.getByText('Começar'));
     expect(alertText()).toBe(INVALID_AMOUNT_MESSAGE);
+
+    for (const value of ['-10,00', '1e3', '12.5.0']) {
+      fireEvent.change(inputOf(LIMIT_LABEL), { target: { value } });
+      fireEvent.click(screen.getByText('Começar'));
+      expect(alertText()).toBe(INVALID_AMOUNT_MESSAGE);
+    }
 
     fireEvent.change(inputOf(LIMIT_LABEL), { target: { value: '0' } });
     for (const value of ['', '0', String(MAX_CHALLENGE_DAYS + 1), '1.5', 'abc']) {

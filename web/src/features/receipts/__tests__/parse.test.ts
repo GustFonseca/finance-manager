@@ -234,8 +234,9 @@ describe('parseReceiptText', () => {
     expect(parseReceiptText('TOTAL 99,00\nVALOR TOTAL 50,00', NOW).totalCents).toBe(5000);
   });
 
-  it('falls back to the largest amount on a TOTAL line', () => {
-    expect(parseReceiptText('SUBTOTAL 12,00 3,00\nITEM 99,00', NOW).totalCents).toBe(1200);
+  it('takes the first amount on a TOTAL line, never a SUBTOTAL', () => {
+    expect(parseReceiptText('TOTALIZADOR\nTOTAL: 12,00 3,00\nITEM 99,00', NOW).totalCents).toBe(1200);
+    expect(parseReceiptText('SUBTOTAL 12,00 3,00\nITEM 99,00', NOW).totalCents).toBeNull();
   });
 
   it('does not guess the total from random numbers', () => {

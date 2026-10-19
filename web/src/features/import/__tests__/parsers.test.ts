@@ -158,8 +158,11 @@ describe('more statement formats', () => {
     expect(() => parseStatement('x\nData;Descrição;Valor\n31/02/2026;A;1,00')).toThrow('Linha 3 inválida: data "31/02/2026"');
     expect(() => parseStatement('Data;Descrição;Valor\nontem;A;1,00')).toThrow('Linha 2 inválida: data "ontem"');
     expect(() => parseStatement('Data;Descrição;Valor\n03/10/2026;A;abc')).toThrow('Linha 2 inválida: valor "abc"');
-    expect(() => parseStatement('Data;Descrição;Valor\n03/10/2026;A')).toThrow('Linha 2 inválida: valor ""');
-    expect(() => parseStatement('Valor;Descrição;Data\n1,00')).toThrow('Linha 2 inválida: data ""');
+  });
+
+  it('skips lines without a date or an amount', () => {
+    expect(parseStatement('Data;Descrição;Valor\n03/10/2026;A').rows).toEqual([]);
+    expect(parseStatement('Valor;Descrição;Data\n1,00').rows).toEqual([]);
   });
 
   it('only looks for the header in the first lines', () => {

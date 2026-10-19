@@ -6,6 +6,7 @@ import { Window } from '@/components/xp';
 import { colors, fontSize, palette, spacing } from '@/theme';
 import { useActivity } from './queries';
 import { ActivityLogDto, ActivityType } from './types';
+import { formatDay } from '@/lib/periods';
 
 const ALL_SOURCES = '';
 
@@ -14,7 +15,6 @@ const TYPES: Record<ActivityType, { label: string; icon: 'info-circle' | 'exclam
   WARNING: { label: 'Aviso', icon: 'exclamation-triangle', color: palette.amber },
 };
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 const time = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR');
 
 export function ActivityScreen() {
@@ -35,7 +35,7 @@ export function ActivityScreen() {
     alert({
       title: 'Propriedades do evento',
       message:
-        `Data: ${date(entry.createdAt)}   Hora: ${time(entry.createdAt)}\n` +
+        `Data: ${formatDay(entry.createdAt)}   Hora: ${time(entry.createdAt)}\n` +
         `Tipo: ${TYPES[entry.type].label}   Origem: ${entry.source}\n\n${entry.description}`,
     });
   }
@@ -76,7 +76,7 @@ export function ActivityScreen() {
                 <FontAwesome name={type.icon} size={14} color={type.color} />
                 <Text style={styles.td}>{type.label}</Text>
               </View>
-              <Text style={[styles.colDate, styles.td]}>{date(item.createdAt)}</Text>
+              <Text style={[styles.colDate, styles.td]}>{formatDay(item.createdAt)}</Text>
               <Text style={[styles.colTime, styles.td]}>{time(item.createdAt)}</Text>
               <Text style={[styles.colSource, styles.td]}>{item.source}</Text>
               <Text style={[styles.colDescription, styles.td]} numberOfLines={1}>

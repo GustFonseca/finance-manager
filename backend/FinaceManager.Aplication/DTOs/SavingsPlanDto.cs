@@ -13,6 +13,7 @@ public class RecurringExpenseDto
     public RecurringKind Kind { get; set; }
     public string Key { get; set; } = string.Empty;
     public bool Detected { get; set; }
+    public Recurrence Period { get; set; } = Recurrence.MONTHLY;
 }
 
 public class SavingsPlanDto

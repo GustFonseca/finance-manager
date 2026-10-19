@@ -284,10 +284,12 @@ public class FileAndTrashHandlersTests
         var file = _store.AddFile(_store.AddFolder(Me));
         file.DeletedAt = DateTime.UtcNow;
 
-        var deleted = await new DeleteFileForeverHandler(_store.FileRepository, _store.Storage).Handle(new DeleteFileForeverCommand(Me, file.Id));
+        var deleted = await new DeleteFileForeverHandler(_store.FileRepository, _store.Storage, _store.Work).Handle(new DeleteFileForeverCommand(Me, file.Id));
 
         Assert.True(deleted);
         Assert.Empty(_store.Files);
+        Assert.Single(_store.StoredKeys);
+        await _store.Work.FlushAsync();
         Assert.Empty(_store.StoredKeys);
     }
 
@@ -297,7 +299,7 @@ public class FileAndTrashHandlersTests
         var active = _store.AddFile(_store.AddFolder(Me));
         var foreign = _store.AddFile(_store.AddFolder(SomeoneElse));
         foreign.DeletedAt = DateTime.UtcNow;
-        var handler = new DeleteFileForeverHandler(_store.FileRepository, _store.Storage);
+        var handler = new DeleteFileForeverHandler(_store.FileRepository, _store.Storage, _store.Work);
 
         Assert.False(await handler.Handle(new DeleteFileForeverCommand(Me, active.Id)));
         Assert.False(await handler.Handle(new DeleteFileForeverCommand(Me, foreign.Id)));
@@ -315,12 +317,14 @@ public class FileAndTrashHandlersTests
         _store.AddFile(folder, "b.pdf");
         await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new TrashFolderCommand(Me, folder.Id));
 
-        var deleted = await new DeleteFolderForeverHandler(_store.FolderRepository, _store.FileRepository, _store.Storage)
+        var deleted = await new DeleteFolderForeverHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Work)
             .Handle(new DeleteFolderForeverCommand(Me, folder.Id));
 
         Assert.True(deleted);
         Assert.DoesNotContain(folder, _store.Folders);
         Assert.Equal([kept], _store.Files);
+        Assert.Equal(3, _store.StoredKeys.Count);
+        await _store.Work.FlushAsync();
         Assert.Equal([kept.StorageKey], _store.StoredKeys);
     }
 
@@ -330,12 +334,13 @@ public class FileAndTrashHandlersTests
         var active = _store.AddFolder(Me);
         var foreign = _store.AddFolder(SomeoneElse);
         foreign.DeletedAt = DateTime.UtcNow;
-        var handler = new DeleteFolderForeverHandler(_store.FolderRepository, _store.FileRepository, _store.Storage);
+        var handler = new DeleteFolderForeverHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Work);
 
         Assert.False(await handler.Handle(new DeleteFolderForeverCommand(Me, active.Id)));
         Assert.False(await handler.Handle(new DeleteFolderForeverCommand(Me, foreign.Id)));
         Assert.False(await handler.Handle(new DeleteFolderForeverCommand(Me, Guid.NewGuid())));
         Assert.Equal(2, _store.Folders.Count);
+        Assert.Equal(0, _store.Work.Pending);
     }
 
     private sealed class FailingFileRepository(FakeStore store) : IStoredFileRepository
@@ -347,6 +352,7 @@ public class FileAndTrashHandlersTests
         public Task<StoredFile> UpdateAsync(StoredFile entity) => _inner.UpdateAsync(entity);
         public Task DeleteAsync(StoredFile entity) => _inner.DeleteAsync(entity);
         public Task<List<StoredFile>> GetByFolderIdAsync(Guid folderId) => _inner.GetByFolderIdAsync(folderId);
+        public Task<List<StoredFile>> GetByFolderIdsAsync(IReadOnlyCollection<Guid> folderIds) => _inner.GetByFolderIdsAsync(folderIds);
         public Task<List<StoredFile>> GetTrashedAsync(Guid userId) => _inner.GetTrashedAsync(userId);
         public Task<Dictionary<Guid, int>> CountActiveByFolderAsync(Guid userId) => _inner.CountActiveByFolderAsync(userId);
         public Task UpdateRangeAsync(IEnumerable<StoredFile> files) => _inner.UpdateRangeAsync(files);

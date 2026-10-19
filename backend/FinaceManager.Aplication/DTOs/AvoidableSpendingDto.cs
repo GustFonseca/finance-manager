@@ -43,6 +43,7 @@ public class SubscriptionAuditDto
     public string? Group { get; set; }
     public long MonthlyCents { get; set; }
     public long YearlyCents { get; set; }
+    public bool Yearly { get; set; }
     public long? PreviousCents { get; set; }
     public bool PriceIncreased { get; set; }
     public DateTime LastDate { get; set; }

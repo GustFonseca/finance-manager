@@ -19,10 +19,13 @@ public class MerchantRepository : Repository<Merchant>, IMerchantRepository, IRe
     {
         return await _dbSet
             .Where(m => m.EnrichedAt == null && m.Kind == MerchantKind.BUSINESS && m.Document != null && m.Document.Contains("/"))
-            .OrderBy(m => m.CreatedAt)
+            .OrderBy(m => m.EnrichmentAttempts)
+            .ThenBy(m => m.CreatedAt)
             .Take(max)
             .ToListAsync();
     }
+
+    public void Stage(Merchant merchant) => _dbSet.Add(merchant);
 
     public async Task<Merchant?> GetByKeyAsync(Guid userId, string key)
     {

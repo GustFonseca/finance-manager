@@ -13,7 +13,7 @@ public static class TaxReportBuilder
         var incomes = Parties(moves.Where(t => t.Type == TransactionType.INCOME), rules);
         var deductibles = moves
             .Where(t => t.Type == TransactionType.EXPENSE)
-            .Select(t => (Tx: t, Label: rules.TaxDeductible($"{t.Category?.Name} {t.MerchantName(rules)} {t.Merchant?.Activity} {t.Description}")))
+            .Select(t => (Tx: t, Label: rules.TaxDeductible($"{t.MerchantName(rules)} {t.Merchant?.Activity} {t.Description}")))
             .Where(d => d.Label != null)
             .GroupBy(d => d.Label!)
             .Select(g => new TaxDeductibleGroupDto

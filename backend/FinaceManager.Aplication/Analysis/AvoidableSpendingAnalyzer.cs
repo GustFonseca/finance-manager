@@ -20,6 +20,8 @@ public static class AvoidableSpendingAnalyzer
     public const double PriceIncreaseTolerance = 0.02;
     public const int ActiveWithinDays = 45;
     public const int ResumedGapDays = 45;
+    public const int YearlyGapDays = 300;
+    public const int YearlyActiveWithinDays = 400;
 
     private sealed record Expense(Transaction Tx, SpendingClass Class, string Key, string Name);
 
@@ -105,15 +107,18 @@ public static class AvoidableSpendingAnalyzer
             .Where(e => rules.IsSubscription($"{e.Name} {e.Tx.Description}"))
             .GroupBy(e => e.Key)
             .Select(g => g.OrderBy(e => e.Tx.Date).ToList())
-            .Where(charges => (now - charges[^1].Tx.Date).TotalDays <= ActiveWithinDays)
-            .Select(charges =>
+            .Select(charges => (Charges: charges, Yearly: IsYearly(charges.Select(e => e.Tx).ToList())))
+            .Where(s => (now - s.Charges[^1].Tx.Date).TotalDays <= (s.Yearly ? YearlyActiveWithinDays : ActiveWithinDays))
+            .Select(s =>
             {
+                var charges = s.Charges;
                 var latest = charges[^1];
                 var previous = charges.Take(charges.Count - 1).LastOrDefault(e => e.Tx.AmountCents != latest.Tx.AmountCents);
-                var resumed = charges.Count > 1 && (latest.Tx.Date - charges[^2].Tx.Date).TotalDays > ResumedGapDays
+                var resumed = !s.Yearly && charges.Count > 1 && (latest.Tx.Date - charges[^2].Tx.Date).TotalDays > ResumedGapDays
                     ? charges[^2].Tx.Date
                     : (DateTime?)null;
                 var decision = decisions.GetValueOrDefault(latest.Key);
+                var monthly = s.Yearly ? latest.Tx.AmountCents / 12 : latest.Tx.AmountCents;
                 return new SubscriptionAuditDto
                 {
                     Key = latest.Key,
@@ -123,13 +128,14 @@ public static class AvoidableSpendingAnalyzer
                     MerchantId = latest.Tx.MerchantId,
                     Name = latest.Name,
                     Group = rules.SubscriptionGroup(latest.Name) ?? rules.SubscriptionGroup(latest.Tx.Description),
-                    MonthlyCents = latest.Tx.AmountCents,
-                    YearlyCents = latest.Tx.AmountCents * 12,
+                    MonthlyCents = monthly,
+                    YearlyCents = s.Yearly ? latest.Tx.AmountCents : latest.Tx.AmountCents * 12,
+                    Yearly = s.Yearly,
                     PreviousCents = previous?.Tx.AmountCents,
                     PriceIncreased = previous != null && latest.Tx.AmountCents > previous.Tx.AmountCents * (1 + PriceIncreaseTolerance),
                     LastDate = latest.Tx.Date,
                     ResumedAfter = resumed,
-                    InvestedIn12MonthsCents = Invested(latest.Tx.AmountCents, monthlyRate),
+                    InvestedIn12MonthsCents = Invested(monthly, monthlyRate),
                 };
             })
             .OrderByDescending(s => s.MonthlyCents)
@@ -251,6 +257,18 @@ public static class AvoidableSpendingAnalyzer
         var robust = median + (long)Math.Ceiling(SpikeDeviations * 1.4826 * deviation);
         return Math.Max(robust, (long)Math.Ceiling(Math.Max(median, average) * SpikeRatio));
     }
+
+    public static bool IsYearly(IReadOnlyList<Transaction> chargesByDate) =>
+        chargesByDate.Count > 0
+        && (chargesByDate[^1].Recurrence == Recurrence.YEARLY
+            || (chargesByDate.Count > 1 && (chargesByDate[^1].Date - chargesByDate[^2].Date).TotalDays >= YearlyGapDays));
+
+    public static IReadOnlySet<string> YearlyKeys(IEnumerable<Transaction> expenses, ClassificationRules rules) =>
+        expenses
+            .GroupBy(t => t.MerchantKey(rules))
+            .Where(g => IsYearly(g.OrderBy(t => t.Date).ToList()))
+            .Select(g => g.Key)
+            .ToHashSet();
 
     public static long Median(IReadOnlyList<long> values)
     {

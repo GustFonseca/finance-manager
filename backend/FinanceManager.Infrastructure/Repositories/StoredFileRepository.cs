@@ -14,6 +14,12 @@ public class StoredFileRepository : Repository<StoredFile>, IStoredFileRepositor
         return await _dbSet.Where(f => f.FolderId == folderId).OrderBy(f => f.Name).ToListAsync();
     }
 
+    public async Task<List<StoredFile>> GetByFolderIdsAsync(IReadOnlyCollection<Guid> folderIds)
+    {
+        if (folderIds.Count == 0) return [];
+        return await _dbSet.Where(f => folderIds.Contains(f.FolderId)).ToListAsync();
+    }
+
     public async Task<List<StoredFile>> GetTrashedAsync(Guid userId)
     {
         return await _dbSet

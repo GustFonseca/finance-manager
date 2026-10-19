@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PixelIcon } from './PixelIcon';
 import { colors, spacing, fontSize } from '@/theme';
@@ -98,8 +98,10 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     setState(null);
   }, [settlePending]);
 
+  const api = useMemo(() => ({ confirm, alert, menu }), [confirm, alert, menu]);
+
   return (
-    <DialogContext.Provider value={{ confirm, alert, menu }}>
+    <DialogContext.Provider value={api}>
       {children}
       <Modal visible={!!state} onClose={close} title={state?.options.title}>
         {state?.kind === 'confirm' && (

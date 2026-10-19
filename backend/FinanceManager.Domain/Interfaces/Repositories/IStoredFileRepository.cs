@@ -5,6 +5,7 @@ namespace FinanceManager.Domain.Interfaces.Repositories;
 public interface IStoredFileRepository : IRepository<StoredFile>
 {
     Task<List<StoredFile>> GetByFolderIdAsync(Guid folderId);
+    Task<List<StoredFile>> GetByFolderIdsAsync(IReadOnlyCollection<Guid> folderIds);
     Task<List<StoredFile>> GetTrashedAsync(Guid userId);
     Task<Dictionary<Guid, int>> CountActiveByFolderAsync(Guid userId);
     Task UpdateRangeAsync(IEnumerable<StoredFile> files);

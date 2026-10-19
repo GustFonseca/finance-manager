@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, ErrorState, Input, MoneyText, MonthSelect, Select, StatTile, YearSelect, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
@@ -14,7 +14,7 @@ import { MerchantForm } from './components/MerchantForm';
 import { MerchantTable } from './components/MerchantTable';
 import { OrganizeMerchants } from './components/OrganizeMerchants';
 import { useMerchantSpending, useUnsortedMerchants, useUpdateMerchant } from './queries';
-import { MerchantDto, UpdateMerchantInput } from './types';
+import { MerchantDto, MerchantSpendingDto, UpdateMerchantInput } from './types';
 
 type Grouping = 'month' | 'year';
 
@@ -46,8 +46,16 @@ export function MerchantsScreen() {
   const periodName = grouping === 'month' ? monthLabel(monthKey) : String(year);
   const accountName = accounts.find((a) => a.id === accountId)?.name ?? 'todas as contas';
 
+  const searchable = useMemo(
+    () => (data?.merchants ?? []).map((merchant) => ({ merchant, name: normalizeText(merchant.name) })),
+    [data]
+  );
   const query = normalizeText(search.trim());
-  const merchants = (data?.merchants ?? []).filter((m) => !query || normalizeText(m.name).includes(query));
+  const merchants = useMemo(
+    () => (query ? searchable.filter((row) => row.name.includes(query)) : searchable).map((row) => row.merchant),
+    [searchable, query]
+  );
+  const openMerchant = useCallback((merchant: MerchantSpendingDto) => setOpenId(merchant.merchantId), []);
   const top = data?.merchants[0];
 
   async function handleSave(input: UpdateMerchantInput) {
@@ -133,7 +141,7 @@ export function MerchantsScreen() {
 
               <Card title="Gastos por estabelecimento">
                 <Input placeholder="Procurar estabelecimento..." value={search} onChangeText={setSearch} />
-                <MerchantTable merchants={merchants} onOpen={(m) => setOpenId(m.merchantId)} />
+                <MerchantTable merchants={merchants} onOpen={openMerchant} />
               </Card>
             </>
           ) : null}

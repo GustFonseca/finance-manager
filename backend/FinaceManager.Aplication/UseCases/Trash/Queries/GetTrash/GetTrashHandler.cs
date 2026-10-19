@@ -22,10 +22,12 @@ public class GetTrashHandler : IRequestHandler<GetTrashQuery, TrashDto>
     {
         var trash = new TrashDto();
 
-        foreach (var folder in await _folderRepository.GetByUserIdAsync(request.UserId, deleted: true))
+        var folders = await _folderRepository.GetByUserIdAsync(request.UserId, deleted: true);
+        var files = (await _fileRepository.GetByFolderIdsAsync(folders.Select(f => f.Id).ToList())).ToLookup(f => f.FolderId);
+        foreach (var folder in folders)
         {
             var dto = _mapper.Map<TrashFolderDto>(folder);
-            dto.FileCount = (await _fileRepository.GetByFolderIdAsync(folder.Id)).Count(f => f.DeletedAt == folder.DeletedAt);
+            dto.FileCount = files[folder.Id].Count(f => f.DeletedAt == folder.DeletedAt);
             trash.Folders.Add(dto);
         }
 

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FinanceManager.Infrastructure.Caching;
 using Microsoft.AspNetCore.OutputCaching;
 
 namespace FinanceManager.Api.Caching;
@@ -6,10 +7,7 @@ namespace FinanceManager.Api.Caching;
 public sealed class UserDataCachePolicy : IOutputCachePolicy
 {
     public const string Name = "user-data";
-    public const string AllTag = "user-data";
     public static readonly TimeSpan Duration = TimeSpan.FromMinutes(5);
-
-    public static string TagOf(string userId) => $"user:{userId}";
 
     public ValueTask CacheRequestAsync(OutputCacheContext context, CancellationToken cancellation)
     {
@@ -25,8 +23,7 @@ public sealed class UserDataCachePolicy : IOutputCachePolicy
 
         context.CacheVaryByRules.QueryKeys = "*";
         context.CacheVaryByRules.VaryByValues["user"] = userId!;
-        context.Tags.Add(TagOf(userId!));
-        context.Tags.Add(AllTag);
+        context.CacheVaryByRules.VaryByValues["version"] = http.RequestServices.GetRequiredService<UserDataVersions>().Current(userId!);
         context.ResponseExpirationTimeSpan = Duration;
         return ValueTask.CompletedTask;
     }

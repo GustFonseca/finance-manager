@@ -118,6 +118,15 @@ describe('DebtsScreen', () => {
     fireEvent.change(extra, { target: { value: '0,00' } });
     fireEvent.click(screen.getByText('Simular'));
     await waitFor(() => expect(screen.getByText(/Pagando/)).toBeTruthy());
+
+    fireEvent.change(extra, { target: { value: '-50,00' } });
+    fireEvent.click(screen.getByText('Simular'));
+    expect(screen.getByText(INVALID_AMOUNT_MESSAGE)).toBeTruthy();
+
+    fireEvent.change(extra, { target: { value: '   ' } });
+    fireEvent.click(screen.getByText('Simular'));
+    expect(screen.queryByText(INVALID_AMOUNT_MESSAGE)).toBeNull();
+    await waitFor(() => expect(api.plan).toHaveBeenLastCalledWith(0));
   });
 
   it('shows simulation errors that can be retried', async () => {

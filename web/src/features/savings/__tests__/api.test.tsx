@@ -94,8 +94,9 @@ describe('savings queries', () => {
       await expect(apply.result.current.mutateAsync({ start: 's', end: 'e' })).resolves.toBe(2);
     });
 
-    expect(invalidate).toHaveBeenCalledTimes(8);
+    expect(invalidate).toHaveBeenCalledTimes(12);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['savings'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['wishlist'] });
   });
 });

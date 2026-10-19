@@ -1,4 +1,5 @@
-const CACHE = 'finance-manager-v1';
+const BUILD_VERSION = '__BUILD_VERSION__';
+const CACHE = `finance-manager-${BUILD_VERSION}`;
 const SHELL = ['/', '/manifest.json', '/icon.png', '/favicon.png'];
 const STATIC_FILES = ['/manifest.json', '/icon.png', '/favicon.png', '/favicon.ico'];
 
@@ -24,12 +25,12 @@ function isApi(url) {
   return url.origin !== self.location.origin || url.pathname.includes('/api/');
 }
 
-function isStatic(url) {
-  return (
-    url.pathname.startsWith('/_expo/static/') ||
-    url.pathname.startsWith('/assets/') ||
-    STATIC_FILES.includes(url.pathname)
-  );
+function isHashedAsset(url) {
+  return url.pathname.startsWith('/_expo/static/') || url.pathname.startsWith('/assets/');
+}
+
+function isStaticFile(url) {
+  return STATIC_FILES.includes(url.pathname);
 }
 
 async function store(request, response) {
@@ -44,6 +45,18 @@ async function cacheFirst(request) {
   const response = await fetch(request);
   await store(request, response);
   return response;
+}
+
+async function staleWhileRevalidate(event) {
+  const request = event.request;
+  const cached = await caches.match(request);
+  const refresh = fetch(request).then(async (response) => {
+    await store(request, response);
+    return response;
+  });
+  if (!cached) return refresh;
+  event.waitUntil(refresh.catch(() => undefined));
+  return cached;
 }
 
 async function networkFirst(request) {
@@ -69,5 +82,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirst(request));
     return;
   }
-  if (isStatic(url)) event.respondWith(cacheFirst(request));
+  if (isHashedAsset(url)) event.respondWith(cacheFirst(request));
+  else if (isStaticFile(url)) event.respondWith(staleWhileRevalidate(event));
 });

@@ -19,7 +19,7 @@ public static class DigestAnalyzer
         return new DigestDto
         {
             Week = Period(moves, weekStart, now, weekStart.AddDays(-WeekDays), weekStart, rules),
-            Month = Period(moves, monthStart, now, previousMonth, previousMonth + elapsed, rules),
+            Month = Period(moves, monthStart, now, previousMonth, Min(previousMonth + elapsed, monthStart), rules),
             Goals = goals
                 .Where(g => g.Status == GoalStatus.ACTIVE && g.TargetCents > 0)
                 .Select(g => new GoalProgressDto
@@ -64,6 +64,8 @@ public static class DigestAnalyzer
             TopIncrease = increase,
         };
     }
+
+    private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;
 
     private static IEnumerable<Transaction> Expenses(IEnumerable<Transaction> moves) => moves.Where(t => t.Type == TransactionType.EXPENSE);
 

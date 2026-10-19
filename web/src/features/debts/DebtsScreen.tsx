@@ -3,18 +3,12 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 import { Button, Card, EmptyState, ErrorState, FormError, Input, MoneyText, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
-import { formatCents, INVALID_AMOUNT_MESSAGE, parseToCents } from '@/lib/money';
+import { formatCents, INVALID_AMOUNT_MESSAGE, parseAmountToCents } from '@/lib/money';
 import { colors, fontSize, spacing } from '@/theme';
 import { DebtForm, formatRate } from './components/DebtForm';
 import { StrategyCard } from './components/StrategyCard';
 import { useDebtPlan, useDebts, useDeleteDebt, useSaveDebt } from './queries';
 import { DebtDto, DebtInput } from './types';
-
-function parseExtra(text: string): number | null {
-  const trimmed = text.trim();
-  if (trimmed === '' || /^0+([.,]0+)?$/.test(trimmed)) return 0;
-  return parseToCents(trimmed);
-}
 
 export function DebtsScreen() {
   const { confirm, alert } = useDialog();
@@ -65,7 +59,7 @@ export function DebtsScreen() {
   }
 
   function simulate() {
-    const cents = parseExtra(extraText);
+    const cents = extraText.trim() === '' ? 0 : parseAmountToCents(extraText);
     setExtraError(cents === null ? INVALID_AMOUNT_MESSAGE : null);
     if (cents !== null) setExtraCents(cents);
   }

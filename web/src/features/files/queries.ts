@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateFiles } from '@/lib/invalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { filesApi, foldersApi, trashApi } from './api';
 import { UpdateFileInput } from './types';
-
-export function invalidateFiles(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: queryKeys.folders });
-  qc.invalidateQueries({ queryKey: queryKeys.files });
-  qc.invalidateQueries({ queryKey: queryKeys.trash });
-}
 
 export function useFolders() {
   return useQuery({ queryKey: queryKeys.folders, queryFn: foldersApi.getAll });

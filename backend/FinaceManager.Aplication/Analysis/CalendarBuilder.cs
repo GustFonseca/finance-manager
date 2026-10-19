@@ -15,7 +15,9 @@ public static class CalendarBuilder
         var items = new List<(DateTime Day, CalendarItemDto Item)>();
         DateTime DayOf(DateTime instant) => (instant + offset).Date;
 
-        foreach (var t in transactions.Where(t => t.Date >= monthStart && t.Date < monthEnd && t.Date <= now && !t.IsOwnMoney(rules)))
+        var current = transactions.Where(t => t.Date >= monthStart && t.Date < monthEnd && t.Date <= now && !t.IsOwnMoney(rules)).ToList();
+        var chargedKeys = current.Where(t => t.Type == TransactionType.EXPENSE).Select(t => t.MerchantKey(rules)).ToHashSet();
+        foreach (var t in current)
             items.Add((DayOf(t.Date), new CalendarItemDto
             {
                 Kind = t.Type == TransactionType.INCOME ? CalendarItemKind.INCOME : CalendarItemKind.EXPENSE,
@@ -25,7 +27,7 @@ public static class CalendarBuilder
 
         var forecast = CashFlowForecaster.Forecast(transactions, monthStart, now, rules);
         foreach (var expected in forecast.Upcoming)
-            items.Add((expected.ExpectedDate.Date, new CalendarItemDto
+            items.Add((DayOf(expected.ExpectedDate), new CalendarItemDto
             {
                 Kind = expected.Kind switch
                 {
@@ -38,7 +40,7 @@ public static class CalendarBuilder
             }));
 
         foreach (var seasonal in PlanningAnalyzer.Seasonal(transactions, monthStart.AddYears(-1), monthStart, rules).Items
-                     .Where(s => s.NextDate >= monthStart && s.NextDate < monthEnd && s.NextDate > now))
+                     .Where(s => s.NextDate >= monthStart && s.NextDate < monthEnd && s.NextDate > now && !chargedKeys.Contains(s.Key)))
             items.Add((DayOf(seasonal.NextDate), new CalendarItemDto { Kind = CalendarItemKind.SEASONAL, Name = seasonal.Name, AmountCents = seasonal.LastCents }));
 
         var firstDay = DayOf(monthStart);

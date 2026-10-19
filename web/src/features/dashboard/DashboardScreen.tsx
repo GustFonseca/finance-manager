@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, ErrorState, MoneyText, MonthSelect, ProgressBar } from '@/components/ui';
-import { monthKeyOf, monthLabel, monthRange } from '@/lib/periods';
+import { formatDay, monthKeyOf, monthLabel, monthRange } from '@/lib/periods';
 import { Window } from '@/components/xp';
 import { colors, spacing, fontSize } from '@/theme';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
@@ -126,7 +126,7 @@ export function DashboardScreen() {
                 <View style={styles.txnInfo}>
                   <Text style={styles.txnDesc}>{txn.description || txn.categoryName}</Text>
                   <Text style={styles.txnDate}>
-                    {new Date(txn.date).toLocaleDateString('pt-BR')} · {txn.accountName}
+                    {formatDay(txn.date)} · {txn.accountName}
                   </Text>
                 </View>
                 <MoneyText

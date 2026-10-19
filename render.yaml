@@ -7,7 +7,7 @@ services:
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: "off"
     buildFilter:
       paths:
         - backend/**

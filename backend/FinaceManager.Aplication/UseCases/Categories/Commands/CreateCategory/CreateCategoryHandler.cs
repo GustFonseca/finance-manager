@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -19,12 +20,13 @@ public class CreateCategoryHandler : IRequestHandler<CreateCategoryCommand, Cate
 
     public async Task<CategoryDto> Handle(CreateCategoryCommand request, CancellationToken cancellationToken = default)
     {
+        Input.Defined(request.Type, "Tipo de categoria inválido.");
         var category = new Category
         {
             UserId = request.UserId,
-            Name = request.Name,
+            Name = Input.Name(request.Name),
             Type = request.Type,
-            Color = request.Color
+            Color = Input.Color(request.Color)
         };
 
         await _categoryRepository.CreateAsync(category);

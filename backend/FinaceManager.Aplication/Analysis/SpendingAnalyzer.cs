@@ -30,7 +30,8 @@ public static class SpendingAnalyzer
         var monthTotal = current.Sum(e => e.Tx.AmountCents);
         double ShareOf(long cents) => monthTotal > 0 ? (double)cents / monthTotal : 0;
 
-        var reducible = Reducible(history.Count > 0 ? history : current, history.Count > 0 ? historyMonths : 1, rules);
+        var yearlyKeys = AvoidableSpendingAnalyzer.YearlyKeys(expenses.Select(e => e.Tx), rules);
+        var reducible = Reducible(history.Count > 0 ? history : current, history.Count > 0 ? historyMonths : 1, rules, yearlyKeys);
 
         return new SpendingAnalysisDto
         {
@@ -95,18 +96,20 @@ public static class SpendingAnalyzer
         Reducible(
             history.Where(t => t.Type == TransactionType.EXPENSE && !t.IsOwnMoney(rules)).Select(t => ToExpense(t, rules)).ToList(),
             Math.Max(1, months),
-            rules);
+            rules,
+            new HashSet<string>());
 
-    private static List<ReducibleExpenseDto> Reducible(List<Expense> source, int months, ClassificationRules rules) =>
+    private static List<ReducibleExpenseDto> Reducible(List<Expense> source, int months, ClassificationRules rules, IReadOnlySet<string> yearlyKeys) =>
         source
             .Where(e => e.Class != SpendingClass.ESSENTIAL && e.Merchant.Length > 0)
             .GroupBy(e => e.Merchant)
             .Select(g =>
             {
                 var latest = g.MaxBy(e => e.Tx.Date)!;
-                var monthly = g.Sum(e => e.Tx.AmountCents) / months;
-                var times = (double)g.Count() / months;
                 var subscription = rules.IsSubscription($"{latest.Tx.MerchantName(rules)} {latest.Tx.Description}");
+                var yearly = subscription && yearlyKeys.Contains(g.Key);
+                var monthly = yearly ? latest.Tx.AmountCents / 12 : g.Sum(e => e.Tx.AmountCents) / months;
+                var times = yearly ? 1.0 / 12 : (double)g.Count() / months;
                 var potential = subscription ? monthly
                     : latest.Class == SpendingClass.SUPERFLUOUS ? (long)(monthly * SuperfluousCut)
                     : (long)(monthly * VariableCut);

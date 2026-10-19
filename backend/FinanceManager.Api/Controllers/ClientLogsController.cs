@@ -1,3 +1,4 @@
+using FinanceManager.Api.Security;
 using System.Security.Claims;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -11,7 +12,7 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/client-logs")]
 [AllowAnonymous]
-[EnableRateLimiting("client-logs")]
+[EnableRateLimiting(RateLimits.ClientLogs)]
 public class ClientLogsController : ControllerBase
 {
     private readonly IMediator _mediator;
