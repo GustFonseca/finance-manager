@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: { width: 10, height: 10 },
   info: { flex: 1 },
   name: { fontSize: fontSize.md, color: colors.textPrimary },
   kind: { fontSize: fontSize.xs, color: colors.textSecondary },

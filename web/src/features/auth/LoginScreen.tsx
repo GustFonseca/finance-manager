@@ -1,5 +1,5 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { RetroMark, TitleBar, WAKE_MESSAGE } from '@/components/xp';
 import { useServerWaking } from '@/lib/serverWake';
@@ -47,12 +47,12 @@ export function LoginScreen() {
                 <Text style={styles.userName}>Entrar com Google</Text>
                 <Text style={styles.userHint}>Use sua conta Google</Text>
               </View>
-              <FontAwesome name="chevron-right" size={12} color={colors.textSecondary} />
+              <PixelIcon name="chevron-right" size={12} color={colors.textSecondary} />
             </Pressable>
 
             {error ? (
               <View style={[styles.toast, styles.toastError]}>
-                <FontAwesome name="exclamation-triangle" size={16} color={palette.amber} />
+                <PixelIcon name="exclamation-triangle" size={16} color={palette.amber} />
                 <Text style={styles.toastText} accessibilityRole="alert">
                   {error}
                 </Text>
@@ -60,7 +60,7 @@ export function LoginScreen() {
             ) : null}
             {waking ? (
               <View style={styles.toast}>
-                <FontAwesome name="info-circle" size={16} color={palette.teal} />
+                <PixelIcon name="info-circle" size={16} color={palette.teal} />
                 <Text style={styles.toastText}>{WAKE_MESSAGE}</Text>
               </View>
             ) : null}
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.buttonDefault, cursor: 'pointer' }),
   },
   tileHover: webStyle({ boxShadow: bevels.buttonHover }),
-  tilePressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
+  tilePressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.buttonPressed }),
   avatar: {
     width: 44,
     height: 44,

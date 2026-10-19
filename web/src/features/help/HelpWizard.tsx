@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button, Modal } from '@/components/ui';
 import type { HelpTopic } from '@/components/xp';
@@ -25,7 +25,7 @@ export function HelpWizard({ topic, onClose }: Props) {
             {step ? `Passo ${page} de ${topic.steps.length}` : topic.title}
           </Text>
         </View>
-        <FontAwesome name={topic.icon} size={30} color={colors.primary} />
+        <PixelIcon name={topic.icon} size={30} color={colors.primary} />
       </View>
 
       <View style={styles.body}>
@@ -48,7 +48,7 @@ export function HelpWizard({ topic, onClose }: Props) {
             <Text style={styles.section}>Dicas</Text>
             {topic.tips.map((tip) => (
               <View key={tip} style={styles.bullet}>
-                <FontAwesome name="lightbulb-o" size={14} color={palette.amber} style={styles.tipIcon} />
+                <PixelIcon name="lightbulb-o" size={14} color={palette.amber} style={styles.tipIcon} />
                 <Text style={styles.bulletText}>{tip}</Text>
               </View>
             ))}

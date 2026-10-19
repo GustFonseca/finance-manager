@@ -61,58 +61,113 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 3,
-  md: 4,
-  lg: 8,
-  pill: 999,
+  sm: 0,
+  md: 0,
+  lg: 0,
+  pill: 0,
 } as const;
 
 export const fontSize = {
-  xs: 11,
-  sm: 12,
-  md: 13,
-  lg: 14,
-  xl: 16,
-  xxl: 22,
+  xs: 12,
+  sm: 13,
+  md: 14,
+  lg: 15,
+  xl: 17,
+  xxl: 23,
 } as const;
+
+const PIXEL_STACK = '"Pixel Digits", "Pixelify Sans", "Trebuchet MS", Tahoma, sans-serif';
 
 export const fonts = {
-  body: 'Tahoma, "Segoe UI", Verdana, sans-serif',
-  title: '"Trebuchet MS", Tahoma, sans-serif',
-  pixel: '"Pixelify Sans", "Trebuchet MS", Tahoma, sans-serif',
+  body: PIXEL_STACK,
+  title: PIXEL_STACK,
+  pixel: PIXEL_STACK,
 } as const;
+
+export const pixelFilters = {
+  small: 'pixelate',
+  large: 'pixelate-lg',
+  largeFrom: 28,
+} as const;
+
+function svgTile(size: number, cells: [number, number][], fill: string): string {
+  const rects = cells.map(([x, y]) => `%3Crect x='${x}' y='${y}' width='2' height='2' fill='${fill}'/%3E`).join('');
+  return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'%3E${rects}%3C/svg%3E")`;
+}
+
+function dither(fill: string): string {
+  return svgTile(4, [[0, 0], [2, 2]], fill);
+}
+
+function flat(color: string): string {
+  return `linear-gradient(${color}, ${color})`;
+}
+
+function dithered(color: string, fill: string): string {
+  return `${dither(fill)}, ${flat(color)}`;
+}
 
 export const gradients = {
-  titleBar: 'linear-gradient(to bottom, #3E6B69 0%, #315655 45%, #284847 100%)',
-  titleBarInactive: 'linear-gradient(to bottom, #8E9C97 0%, #7F8D88 50%, #74817C 100%)',
-  taskbar: 'linear-gradient(to bottom, #D9CFBD 0%, #CCC3B2 8%, #C2B8A5 92%, #A99F8C 100%)',
-  tray: 'linear-gradient(to bottom, #C2B8A5 0%, #B8AE9A 100%)',
-  startButton: 'linear-gradient(to bottom, #3E7A6B 0%, #357263 45%, #2A5F52 100%)',
-  startButtonHover: 'linear-gradient(to bottom, #4A8A7A 0%, #3F8070 45%, #326B5D 100%)',
-  taskButton: 'linear-gradient(to bottom, #E9E2D2 0%, #DED5C3 100%)',
-  taskButtonActive: 'linear-gradient(to bottom, #C9BFAC 0%, #D3CAB8 100%)',
-  startMenuHeader: 'linear-gradient(to bottom, #3E6B69 0%, #315655 60%, #284847 100%)',
-  startMenuFooter: 'linear-gradient(to bottom, #CCC3B2 0%, #BDB3A0 100%)',
-  button: 'linear-gradient(to bottom, #F4EEE2 0%, #E6DECE 86%, #D6CDBA 100%)',
-  buttonPressed: 'linear-gradient(to bottom, #CFC6B4 0%, #DED6C5 10%, #E2DACA 100%)',
-  progress:
-    'repeating-linear-gradient(to right, transparent 0px, transparent 9px, #E9E2D2 9px, #E9E2D2 11px), linear-gradient(to bottom, #4E8B7A 0%, #357263 50%, #2C6355 100%)',
-  wallpaper: [
-    'repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px)',
-    'radial-gradient(ellipse 80% 60% at 50% 35%, #3A7473 0%, #306666 55%, #264F4F 100%)',
-  ].join(', '),
+  titleBar: dithered(palette.teal, 'rgba(0,0,0,0.12)'),
+  titleBarInactive: dithered('#7F8D88', 'rgba(0,0,0,0.10)'),
+  taskbar: dithered(palette.stone, 'rgba(0,0,0,0.05)'),
+  tray: flat('#C2B8A5'),
+  startButton: dithered(palette.green, 'rgba(0,0,0,0.12)'),
+  startButtonHover: dithered('#3F8070', 'rgba(0,0,0,0.10)'),
+  taskButton: flat('#E6DECE'),
+  taskButtonActive: dithered('#D3CAB8', 'rgba(255,255,255,0.55)'),
+  startMenuHeader: dithered(palette.teal, 'rgba(0,0,0,0.12)'),
+  startMenuFooter: dithered(palette.stone, 'rgba(0,0,0,0.06)'),
+  button: flat('#E6DECE'),
+  buttonPressed: dithered('#D6CDBA', 'rgba(0,0,0,0.06)'),
+  progress: `repeating-linear-gradient(to right, ${palette.green} 0px, ${palette.green} 8px, transparent 8px, transparent 10px)`,
+  overlay: dither('rgba(28,50,49,0.35)'),
+  wallpaper: `${svgTile(8, [[0, 0], [4, 4]], 'rgba(255,255,255,0.05)')}, ${flat(palette.tealScreen)}`,
 } as const;
 
+function outline(color: string, step = 2): string {
+  return `0 -${step}px 0 0 ${color}, 0 ${step}px 0 0 ${color}, -${step}px 0 0 0 ${color}, ${step}px 0 0 0 ${color}`;
+}
+
+function raised(light: string, shade: string): string {
+  return `inset -2px -2px 0 0 ${shade}, inset 2px 2px 0 0 ${light}`;
+}
+
+function sunk(shade: string, light: string): string {
+  return `inset 2px 2px 0 0 ${shade}, inset -2px -2px 0 0 ${light}`;
+}
+
+function drop(offset: number, color = 'rgba(28,50,49,0.4)'): string {
+  return `${offset}px ${offset}px 0 0 ${color}`;
+}
+
+const INK = palette.tealDark;
+
 export const bevels = {
-  button: 'inset -1px -1px #8F887A, inset 1px 1px #FFFFFF, inset -2px -2px #B8AF9E, inset 2px 2px #F3EEE4',
-  buttonHover: 'inset -1px -1px #8F887A, inset 1px 1px #FFFFFF, inset -2px -2px #6E9C8F, inset 2px 2px #CFE3DC',
-  buttonDefault: 'inset -1px -1px #1C3231, inset 1px 1px #FFFFFF, inset -2px -2px #8F887A, inset 2px 2px #F3EEE4',
-  window: '3px 3px 0 rgba(28,50,49,0.35), 0 0 0 1px #1C3231',
-  menu: '2px 2px 0 rgba(28,50,49,0.35)',
-  sunken: 'inset 1px 1px #9F9A8C, inset -1px -1px #FFFFFF',
-  startButton: 'inset -1px -1px #1C3231, inset 1px 1px #8CC2B2, inset -2px -2px #2A5F52',
-  startButtonPressed: 'inset 1px 1px #1C3231, inset -1px -1px #8CC2B2, inset 2px 2px #2A5F52',
-  taskbar: 'inset 0 1px #F3EEE4, inset 0 2px #E9E2D2',
+  button: `${outline(INK)}, ${raised(palette.white, palette.stoneDark)}`,
+  buttonHover: `${outline(INK)}, ${raised('#CFE3DC', palette.greenLight)}`,
+  buttonDefault: `${outline(INK)}, inset -2px -2px 0 0 #5C6B66, inset 2px 2px 0 0 ${palette.white}, inset -4px -4px 0 0 #B8AF9E`,
+  buttonPressed: `${outline(INK)}, ${sunk(palette.stoneDark, palette.sandLight)}`,
+  buttonDisabled: outline(palette.stoneDark),
+  caption: `${outline(INK)}, ${raised(palette.white, palette.stoneDark)}`,
+  window: `${outline(INK)}, ${raised(palette.paper, palette.stoneDark)}, ${drop(4)}`,
+  menu: `${outline(INK)}, ${drop(4)}`,
+  sunken: sunk(palette.stoneDark, palette.white),
+  field: `${outline('#4A5E58')}, inset 2px 2px 0 0 ${palette.sand}`,
+  fieldFocus: `${outline(palette.teal)}, inset 2px 2px 0 0 ${palette.sand}`,
+  card: `${outline(palette.stoneDark)}, ${drop(4, 'rgba(28,50,49,0.12)')}`,
+  tile: `${outline(palette.stoneDark)}, inset 0 4px 0 0 ${palette.teal}, ${drop(4, 'rgba(28,50,49,0.12)')}`,
+  iconTile: `${outline(INK)}, ${raised(palette.white, palette.stoneDark)}, ${drop(4, 'rgba(28,50,49,0.55)')}`,
+  radio: `${outline(INK)}, inset 2px 2px 0 0 ${palette.stone}`,
+  radioDot: outline(palette.teal, 1),
+  progress: `${outline('#4A5E58')}, inset 2px 2px 0 0 ${palette.sand}`,
+  startButton: `${outline(INK)}, ${raised('#8CC2B2', '#2A5F52')}`,
+  startButtonPressed: `${outline(INK)}, ${sunk(INK, palette.greenLight)}`,
+  taskbar: `0 -2px 0 0 ${INK}, inset 0 2px 0 0 #F3EEE4`,
+} as const;
+
+export const glyphs = {
+  check: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' shape-rendering='crispEdges'%3E%3Cpath fill='%231C3231' d='M8 2h1v1h-1zM7 3h2v1h-2zM2 4h1v1h-1zM6 4h3v1h-3zM2 5h2v1h-2zM5 5h3v1h-3zM2 6h5v1h-5zM3 7h3v1h-3zM4 8h1v1h-1z'/%3E%3C/svg%3E")`,
 } as const;
 
 export function webStyle(style: Record<string, string | number>): ViewStyle & TextStyle {

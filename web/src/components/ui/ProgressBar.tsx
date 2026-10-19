@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { bevels, colors, gradients, palette, webStyle } from '@/theme';
+import { bevels, colors, gradients, webStyle } from '@/theme';
 
 type Props = {
   percent: number;
@@ -19,11 +19,9 @@ export function ProgressBar({ percent, height = 14 }: Props) {
 const styles = StyleSheet.create({
   track: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: palette.stoneDark,
-    padding: 1,
+    padding: 3,
     overflow: 'hidden',
-    ...webStyle({ boxShadow: bevels.sunken }),
+    ...webStyle({ boxShadow: bevels.progress }),
   },
   fill: { height: '100%', ...webStyle({ backgroundImage: gradients.progress }) },
 });

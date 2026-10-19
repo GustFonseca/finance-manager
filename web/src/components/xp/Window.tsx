@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.inputBorder,
     margin: 2,
     overflow: 'hidden',

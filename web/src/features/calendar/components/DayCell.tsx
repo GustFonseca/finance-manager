@@ -60,5 +60,5 @@ const styles = StyleSheet.create({
   income: { color: colors.income },
   expected: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic' },
   dots: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, marginTop: spacing.xs },
-  dot: { width: 7, height: 7, borderRadius: 4 },
+  dot: { width: 7, height: 7 },
 });

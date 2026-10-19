@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { bevels, glyphs } from '@/theme';
 import { Checkbox } from '../Checkbox';
 import { DateInput } from '../DateInput';
 import { FormError } from '../FormError';
@@ -44,6 +45,15 @@ describe('Checkbox', () => {
 
     expect(onChange).toHaveBeenCalledWith(false);
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('draws a pixel checkmark only when checked', () => {
+    const styleOf = (checked: boolean) =>
+      (Checkbox({ checked, onChange: jest.fn() }) as React.ReactElement<{ style: React.CSSProperties }>).props.style;
+
+    expect(styleOf(true).backgroundImage).toBe(glyphs.check);
+    expect(styleOf(false).backgroundImage).toBeUndefined();
+    expect(styleOf(false).boxShadow).toBe(bevels.radio);
   });
 });
 

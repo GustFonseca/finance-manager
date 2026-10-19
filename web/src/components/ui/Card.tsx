@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewProps } from 'react-native';
-import { colors, fonts, fontSize, palette, spacing } from '@/theme';
+import { bevels, colors, fonts, fontSize, palette, spacing, webStyle } from '@/theme';
 
 type Props = ViewProps & {
   title?: string;
@@ -22,9 +22,8 @@ export function Card({ title, style, children, ...rest }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: palette.stoneDark,
     padding: spacing.md,
+    ...webStyle({ boxShadow: bevels.card }),
   },
   group: { paddingTop: 0 },
   header: {
@@ -33,7 +32,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 5,
     backgroundColor: palette.teal,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: palette.tealDark,
   },
   caption: {

@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  swatch: { width: 10, height: 10, borderRadius: 2, marginTop: 4 },
+  swatch: { width: 10, height: 10, marginTop: 4 },
   info: { flex: 1 },
   name: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
   kind: { fontSize: fontSize.sm, fontWeight: '400', color: colors.textSecondary },

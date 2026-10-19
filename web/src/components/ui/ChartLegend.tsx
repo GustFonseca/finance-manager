@@ -21,7 +21,7 @@ export function ChartLegend({ items }: { items: LegendItem[] }) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginVertical: spacing.xs },
   item: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  swatch: { width: 10, height: 10, borderRadius: 2 },
+  swatch: { width: 10, height: 10 },
   label: { fontSize: fontSize.sm, color: colors.textPrimary },
   value: { fontSize: fontSize.sm, color: colors.textSecondary },
 });

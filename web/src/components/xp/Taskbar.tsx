@@ -1,5 +1,5 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bevels, colors, fonts, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 import { Clock } from './Clock';
@@ -55,7 +55,7 @@ export function Taskbar({ startOpen, onToggleStart }: Props) {
                 webStyle({ backgroundImage: active ? gradients.taskButtonActive : gradients.taskButton }),
                 active ? styles.taskActive : (state as PressState).hovered && styles.taskHover,
               ]}>
-              <FontAwesome name={meta.icon} size={13} color={colors.primary} />
+              <PixelIcon name={meta.icon} size={13} color={colors.primary} />
               <Text style={[styles.taskLabel, active && styles.taskLabelActive]} numberOfLines={1}>
                 {meta.title}
               </Text>
@@ -77,13 +77,13 @@ const styles = StyleSheet.create({
     height: TASKBAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 3,
+    gap: 6,
+    paddingHorizontal: 4,
     backgroundColor: palette.stone,
     ...webStyle({ backgroundImage: gradients.taskbar, boxShadow: bevels.taskbar, userSelect: 'none' }),
   },
   start: {
-    height: 24,
+    height: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
@@ -103,27 +103,28 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 6,
     paddingHorizontal: spacing.xs,
+    alignSelf: 'stretch',
     overflow: 'hidden',
   },
   task: {
     flexShrink: 1,
     width: 160,
     minWidth: 40,
-    height: 24,
+    height: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.sm,
     ...webStyle({ boxShadow: bevels.button, cursor: 'pointer' }),
   },
-  taskActive: webStyle({ boxShadow: bevels.sunken }),
+  taskActive: webStyle({ boxShadow: bevels.buttonPressed }),
   taskHover: webStyle({ boxShadow: bevels.buttonHover }),
   taskLabel: { flex: 1, color: colors.textPrimary, fontSize: fontSize.xs },
   taskLabelActive: { fontWeight: '700' },
   tray: {
-    height: 24,
+    height: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

@@ -1,12 +1,12 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { StyleSheet, View } from 'react-native';
 import { bevels, palette, webStyle } from '@/theme';
 
 export function RetroMark({ size = 18 }: { size?: number }) {
   return (
     <View style={[styles.tile, { width: size, height: size }]}>
-      <FontAwesome name="desktop" size={Math.round(size * 0.62)} color={palette.teal} />
+      <PixelIcon name="desktop" size={Math.round(size * 0.62)} color={palette.teal} />
     </View>
   );
 }

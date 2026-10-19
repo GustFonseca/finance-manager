@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, spacing } from '@/theme';
+import { bevels, colors, fontSize, spacing } from '@/theme';
 
 type Props = {
   label: string;
@@ -24,9 +24,10 @@ export function DateInput({ label, value, onChange }: Props) {
 }
 
 const inputStyle: React.CSSProperties = {
-  border: `1px solid ${colors.inputBorder}`,
+  border: 'none',
+  boxShadow: bevels.field,
   backgroundColor: colors.surface,
-  padding: '3px 4px',
+  padding: '4px 5px',
   fontSize: fontSize.sm,
   color: colors.textPrimary,
   borderRadius: 0,

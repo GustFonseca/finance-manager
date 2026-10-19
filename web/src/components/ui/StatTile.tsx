@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, palette, spacing, webStyle } from '@/theme';
+import { bevels, colors, fontSize, spacing, webStyle } from '@/theme';
 
 type Props = {
   label: string;
@@ -23,13 +23,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 160,
     padding: spacing.md,
+    paddingTop: spacing.md + 4,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: palette.stoneDark,
-    borderTopWidth: 3,
-    borderTopColor: palette.teal,
     gap: 2,
-    ...webStyle({ boxShadow: `1px 1px 0 ${palette.stone}` }),
+    ...webStyle({ boxShadow: bevels.tile }),
   },
   label: { fontSize: fontSize.xs, color: colors.heading, fontWeight: '700' },
   value: { fontSize: fontSize.xxl - 2, fontWeight: '700', color: colors.textPrimary },

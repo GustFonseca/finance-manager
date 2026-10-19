@@ -1,5 +1,5 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { StyleSheet, Text, View } from 'react-native';
 import { useServerWaking } from '@/lib/serverWake';
 import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
@@ -14,7 +14,7 @@ export function WakeBalloon() {
   return (
     <View style={styles.balloon} accessibilityRole="alert">
       <View style={styles.header}>
-        <FontAwesome name="info-circle" size={16} color={colors.primary} />
+        <PixelIcon name="info-circle" size={16} color={colors.primary} />
         <Text style={styles.title}>{WAKE_TITLE}</Text>
       </View>
       <Text style={styles.message}>{WAKE_MESSAGE}</Text>

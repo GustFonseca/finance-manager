@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { reportError } from '@/lib/logger';
@@ -25,7 +25,7 @@ export function CrashDialog({ error, retry }: Props) {
             O Finance Manager encontrou um problema e precisa ser fechado.
           </Text>
           <Text style={styles.text}>Lamentamos o inconveniente.</Text>
-          <FontAwesome name="times-circle" size={32} color={colors.expense} style={styles.icon} />
+          <PixelIcon name="times-circle" size={32} color={colors.expense} style={styles.icon} />
         </View>
         <View style={styles.body}>
           <Text style={styles.text}>

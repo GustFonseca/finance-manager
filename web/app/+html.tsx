@@ -1,5 +1,6 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
-import { colors } from '@/theme';
+import { PixelFilters } from '@/components/ui/PixelIcon';
+import { colors, fonts } from '@/theme';
 
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
@@ -19,15 +20,31 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
         <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <PixelFilters />
+        {children}
+      </body>
     </html>
   );
 }
 
 const globalStyles = `
+@font-face {
+  font-family: "Pixel Digits";
+  src: url(https://fonts.gstatic.com/s/vt323/v18/pxiKyp0ihIEF2isfFJU.woff2) format("woff2");
+  unicode-range: U+0030-0039;
+  size-adjust: 125%;
+  font-display: swap;
+}
 body {
   background-color: ${colors.desktop};
 }
-html body [dir], html body input, html body textarea, html body select {
-  font-family: Tahoma, "Segoe UI", Verdana, sans-serif;
+html, body, html body [dir], html body input, html body textarea, html body select, html body button {
+  font-family: ${fonts.body};
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+}
+img, canvas, svg, [role="img"] {
+  image-rendering: pixelated;
 }`;

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { PointerEvent as RNPointerEvent, StyleSheet, Text, TextInput, View } from 'react-native';
 import { bevels, colors, fontSize, palette, webStyle } from '@/theme';
 import { onContextMenu, useContextMenu } from './ContextMenu';
@@ -98,7 +98,7 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
         dragPosition && styles.dragging,
       ]}>
       <View style={[styles.tile, compact && styles.homeTile, selected && styles.tileSelected]}>
-        <FontAwesome name={icon} size={compact ? 30 : 24} color={color} />
+        <PixelIcon name={icon} size={compact ? 30 : 24} color={color} />
       </View>
       {renaming ? (
         <RenameInput
@@ -114,10 +114,9 @@ export function DesktopIcon({ id, label, icon, color, slot, onOpen, menu, onRena
           style={[
             styles.label,
             compact && styles.homeLabel,
-            compact && label.length > LONG_LABEL && styles.homeLabelLong,
+            label.length > LONG_LABEL && (compact ? styles.homeLabelLong : styles.labelLong),
             selected && styles.labelSelected,
-          ]}
-          numberOfLines={compact ? undefined : 2}>
+          ]}>
           {label}
         </Text>
       )}
@@ -167,13 +166,12 @@ const styles = StyleSheet.create({
   tile: {
     width: 40,
     height: 40,
-    borderRadius: 4,
     backgroundColor: palette.sandLight,
     alignItems: 'center',
     justifyContent: 'center',
-    ...webStyle({ boxShadow: `${bevels.button}, ${bevels.menu}` }),
+    ...webStyle({ boxShadow: bevels.iconTile }),
   },
-  homeTile: { width: 56, height: 56, borderRadius: 12 },
+  homeTile: { width: 56, height: 56 },
   tileSelected: { backgroundColor: palette.greenLight },
   label: {
     color: palette.paper,
@@ -183,12 +181,13 @@ const styles = StyleSheet.create({
     textShadowColor: palette.tealDark,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 0,
-    width: '130%',
+    width: '120%',
     alignSelf: 'center',
     ...webStyle({ overflowWrap: 'normal', wordBreak: 'normal', hyphens: 'none' }),
   },
+  labelLong: { fontSize: fontSize.xs - 1, letterSpacing: -0.3 },
   homeLabel: { fontSize: fontSize.sm, marginTop: 2, width: HOME_LABEL_WIDTH },
-  homeLabelLong: { fontSize: fontSize.xs, letterSpacing: -0.2 },
+  homeLabelLong: { fontSize: fontSize.xs - 1, letterSpacing: -0.2, width: HOME_LABEL_WIDTH - 12 },
   labelSelected: { backgroundColor: palette.teal, textShadowColor: 'transparent' },
   renameInput: {
     width: ICON_CELL.width - 8,

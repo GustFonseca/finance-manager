@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 import { useSound } from './sound/SoundProvider';
@@ -18,7 +18,7 @@ export function VolumeControl() {
         accessibilityRole="button"
         accessibilityLabel={`Volume: ${muted ? 'sem áudio' : `${volume}%`}`}
         style={styles.icon}>
-        <FontAwesome name={icon} size={14} color={colors.textPrimary} />
+        <PixelIcon name={icon} size={14} color={colors.textPrimary} />
       </Pressable>
 
       {open ? (

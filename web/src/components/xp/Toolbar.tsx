@@ -1,5 +1,5 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { bevels, colors, fontSize, gradients, palette, PressState, spacing, webStyle } from '@/theme';
 import type { IconName } from './TitleBar';
@@ -23,7 +23,7 @@ export function Toolbar({ buttons }: { buttons: ToolbarButton[] }) {
             const { hovered, pressed } = state as PressState;
             return [styles.button, hovered && styles.hovered, pressed && styles.pressed];
           }}>
-          <FontAwesome name={button.icon} size={16} color={button.color ?? colors.primary} />
+          <PixelIcon name={button.icon} size={16} color={button.color ?? colors.primary} />
           <Text style={styles.label}>{button.label}</Text>
         </Pressable>
       ))}
@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 2,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 3,
+    gap: 6,
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 4,
     backgroundColor: colors.background,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: palette.stone,
   },
   button: {
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     ...webStyle({ cursor: 'pointer' }),
   },
   hovered: webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button }),
-  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
+  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.buttonPressed }),
   label: { fontSize: fontSize.sm, color: colors.textPrimary },
 });

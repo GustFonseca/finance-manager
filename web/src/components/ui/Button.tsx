@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
   base: {
     minWidth: 75,
     minHeight: 23,
+    marginHorizontal: 2,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
@@ -82,10 +83,10 @@ const styles = StyleSheet.create({
   sm: { minWidth: 0, paddingHorizontal: spacing.sm, minHeight: 21 },
   default: webStyle({ boxShadow: bevels.buttonDefault }),
   hovered: webStyle({ boxShadow: bevels.buttonHover }),
-  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
+  pressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.buttonPressed }),
   disabled: {
     backgroundColor: palette.stone,
-    ...webStyle({ backgroundImage: 'none', boxShadow: `inset 0 0 0 1px ${palette.stoneDark}`, cursor: 'default' }),
+    ...webStyle({ backgroundImage: 'none', boxShadow: bevels.buttonDisabled, cursor: 'default' }),
   },
   label: { fontSize: fontSize.sm },
   labelDisabled: { color: colors.textMuted },

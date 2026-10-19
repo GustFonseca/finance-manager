@@ -1,5 +1,6 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, View, ViewProps } from 'react-native';
 import { bevels, colors, fonts, gradients, palette, PressState, webStyle } from '@/theme';
 
@@ -38,7 +39,7 @@ export function TitleBar({
         draggable && styles.draggable,
         webStyle({ backgroundImage: active ? gradients.titleBar : gradients.titleBarInactive }),
       ]}>
-      {icon ? <FontAwesome name={icon} size={14} color={colors.textOnAccent} style={styles.icon} /> : null}
+      {icon ? <PixelIcon name={icon} size={14} color={colors.textOnAccent} style={styles.icon} /> : null}
       <Text style={[styles.title, { fontFamily: fonts.body }]} numberOfLines={1}>
         {title}
       </Text>
@@ -116,20 +117,20 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textOnAccent,
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
     letterSpacing: 0.3,
   },
-  buttons: { flexDirection: 'row', gap: 3 },
+  buttons: { flexDirection: 'row', gap: 6, paddingRight: 2 },
   button: {
-    width: 20,
-    height: 19,
+    width: 18,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: palette.sandLight,
-    ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.button, cursor: 'pointer' }),
+    ...webStyle({ backgroundImage: gradients.button, boxShadow: bevels.caption, cursor: 'pointer' }),
   },
   buttonHover: webStyle({ boxShadow: bevels.buttonHover }),
-  buttonPressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.sunken }),
+  buttonPressed: webStyle({ backgroundImage: gradients.buttonPressed, boxShadow: bevels.buttonPressed }),
   minimizeGlyph: {
     width: 8,
     height: 2,
@@ -154,5 +155,5 @@ const styles = StyleSheet.create({
   },
   restoreBack: { top: 0, right: 0 },
   restoreFront: { bottom: 0, left: 0, backgroundColor: palette.sandLight },
-  glyphText: { color: GLYPH, fontWeight: '700', fontSize: 11, lineHeight: 13 },
+  glyphText: { color: GLYPH, fontWeight: '700', fontSize: 12, lineHeight: 14 },
 });

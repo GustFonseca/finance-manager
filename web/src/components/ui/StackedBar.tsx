@@ -34,5 +34,5 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', width: '100%' },
   gap: { borderLeftWidth: 2, borderLeftColor: chart.surface },
   end: { borderTopRightRadius: 4, borderBottomRightRadius: 4 },
-  empty: { width: '100%', backgroundColor: chart.grid, borderRadius: 4 },
+  empty: { width: '100%', backgroundColor: chart.grid },
 });

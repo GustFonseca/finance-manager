@@ -1,5 +1,5 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useDialog } from '@/components/ui/DialogProvider';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -119,7 +119,7 @@ function StartItem({ icon, color, title, description, compact, onPress }: StartI
         const hovered = (state as PressState).hovered;
         return (
           <>
-            <FontAwesome name={icon} size={compact ? 18 : 24} color={color} style={styles.itemIcon} />
+            <PixelIcon name={icon} size={compact ? 18 : 24} color={color} style={styles.itemIcon} />
             <View style={styles.itemText}>
               <Text
                 style={[
@@ -149,7 +149,7 @@ function FooterButton({ icon, color, label, onPress }: FooterButtonProps) {
       onPress={onPress}
       style={(state) => [styles.footerButton, (state as PressState).hovered && styles.footerHover]}>
       <View style={[styles.footerIcon, { backgroundColor: color }]}>
-        <FontAwesome name={icon} size={13} color={colors.textOnAccent} />
+        <PixelIcon name={icon} size={13} color={colors.textOnAccent} />
       </View>
       <Text style={styles.footerLabel}>{label}</Text>
     </Pressable>

@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   name: { flex: 1, minWidth: 0 },
   kind: { width: 100 },
   kindCell: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  swatch: { width: 10, height: 10, borderRadius: 2 },
+  swatch: { width: 10, height: 10 },
   count: { width: 50, textAlign: 'right' },
   total: { width: 110, textAlign: 'right' },
 });

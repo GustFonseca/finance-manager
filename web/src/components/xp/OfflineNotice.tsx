@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { PixelIcon } from '@/components/ui/PixelIcon';
 import { StyleSheet, Text, View } from 'react-native';
 import { bevels, colors, fontSize, palette, spacing, webStyle } from '@/theme';
 
@@ -27,7 +27,7 @@ export function OfflineNotice() {
 
   return (
     <View style={styles.notice} accessibilityRole="alert">
-      <FontAwesome name="plug" size={14} color={palette.amber} />
+      <PixelIcon name="plug" size={14} color={palette.amber} />
       <Text style={styles.text}>{OFFLINE_MESSAGE}</Text>
     </View>
   );

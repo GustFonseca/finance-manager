@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { StyleSheet, Text, View } from 'react-native';
+import { PixelIcon } from './PixelIcon';
 import { colors, spacing, fontSize } from '@/theme';
 import { Modal } from './Modal';
 import { Button } from './Button';
@@ -152,7 +152,7 @@ function DialogMessage({ text, icon }: { text?: string; icon: 'question' | 'info
   if (!text) return null;
   return (
     <View style={styles.messageRow}>
-      <FontAwesome
+      <PixelIcon
         name={icon === 'question' ? 'question-circle' : 'info-circle'}
         size={32}
         color={colors.primary}

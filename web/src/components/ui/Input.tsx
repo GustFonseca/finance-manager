@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
-import { colors, spacing, fontSize, webStyle } from '@/theme';
+import { bevels, colors, spacing, fontSize, webStyle } from '@/theme';
 
 type Props = TextInputProps & {
   label?: string;
@@ -37,19 +37,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: {
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
     backgroundColor: colors.surface,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: spacing.xs + 1,
+    paddingHorizontal: spacing.xs + 3,
     fontSize: fontSize.sm,
     color: colors.textPrimary,
-    ...webStyle({ outlineStyle: 'none' }),
+    ...webStyle({ outlineStyle: 'none', boxShadow: bevels.field }),
   },
-  focused: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    paddingVertical: spacing.xs - 1,
-    paddingHorizontal: spacing.xs + 1,
-  },
+  focused: webStyle({ boxShadow: bevels.fieldFocus }),
 });
