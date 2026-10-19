@@ -1,6 +1,7 @@
 module.exports = {
   preset: 'jest-expo/web',
   testMatch: ['**/__tests__/**/*.test.ts?(x)'],
+  globalSetup: '<rootDir>/src/test/globalSetup.js',
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
