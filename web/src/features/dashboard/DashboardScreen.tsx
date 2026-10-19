@@ -7,6 +7,7 @@ import { colors, spacing, fontSize } from '@/theme';
 import { ALL_ACCOUNTS, AccountSelect } from '@/features/accounts/components/AccountSelect';
 import { useAccounts } from '@/features/accounts/queries';
 import { useAuth } from '@/features/auth/AuthContext';
+import { LazyReceiptScanner } from '@/features/receipts/LazyReceiptScanner';
 import { AvoidableSummaryCard } from '@/features/avoidable/components/AvoidableSummaryCard';
 import { useTransactions } from '@/features/transactions/queries';
 import { useGoals } from '@/features/goals/queries';
@@ -27,6 +28,7 @@ export function DashboardScreen() {
   const month = useMemo(() => monthRange(monthKey), [monthKey]);
   const { data: accounts = [] } = useAccounts();
   const [accountId, setAccountId] = useState(ALL_ACCOUNTS);
+  const [scannerVisible, setScannerVisible] = useState(false);
   const filter = { ...month, accountId: accountId || undefined };
   const accountName = accounts.find((a) => a.id === accountId)?.name;
 
@@ -62,79 +64,84 @@ export function DashboardScreen() {
   const monthName = monthLabel(monthKey);
 
   return (
-    <Window
-      title="Painel"
-      icon="line-chart"
-      onRefresh={refetchAll}
-      status={isFetching ? 'Atualizando...' : `Resumo de ${monthName} · ${accountName ?? 'todas as contas'}`}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
-          <View style={styles.filters}>
-            <MonthSelect value={monthKey} onChange={setMonthKey} />
-            <AccountSelect value={accountId} onChange={setAccountId} />
+    <>
+      <Window
+        title="Painel"
+        icon="line-chart"
+        actions={[{ label: 'Ler nota', icon: 'camera', onPress: () => setScannerVisible(true) }]}
+        onRefresh={refetchAll}
+        status={isFetching ? 'Atualizando...' : `Resumo de ${monthName} · ${accountName ?? 'todas as contas'}`}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetchAll} />}>
+          <View style={styles.header}>
+            <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
+            <View style={styles.filters}>
+              <MonthSelect value={monthKey} onChange={setMonthKey} />
+              <AccountSelect value={accountId} onChange={setAccountId} />
+            </View>
           </View>
-        </View>
 
-        {summaryQuery.error ? (
-          <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
-        ) : null}
-        {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
+          {summaryQuery.error ? (
+            <ErrorState error={summaryQuery.error} fallback="Não foi possível carregar o resumo" onRetry={refetchAll} />
+          ) : null}
+          {summaryQuery.data && <SummaryCards summary={summaryQuery.data} />}
 
-        {digestQuery.data && <DigestCard digest={digestQuery.data} />}
+          {digestQuery.data && <DigestCard digest={digestQuery.data} />}
 
-        {dailyQuery.data && <DailyBudgetCard daily={dailyQuery.data} />}
+          {dailyQuery.data && <DailyBudgetCard daily={dailyQuery.data} />}
 
-        {dailyQuery.data && <BudgetAlerts budgets={dailyQuery.data.budgets} />}
+          {dailyQuery.data && <BudgetAlerts budgets={dailyQuery.data.budgets} />}
 
-        {forecastQuery.data && <ForecastCard forecast={forecastQuery.data} />}
+          {forecastQuery.data && <ForecastCard forecast={forecastQuery.data} />}
 
-        <AvoidableSummaryCard filter={filter} />
+          <AvoidableSummaryCard filter={filter} />
 
-        <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
+          <RecurringExpenses items={recurringQuery.data ?? []} showAccount={!accountId} />
 
-        {forecastQuery.data && <Installments installments={forecastQuery.data.installments} />}
+          {forecastQuery.data && <Installments installments={forecastQuery.data.installments} />}
 
-        {activeGoals.length > 0 && (
-          <Card title="Metas ativas" style={styles.section}>
-            {activeGoals.map((goal) => (
-              <View key={goal.id} style={styles.goalRow}>
-                <Text style={styles.goalName} numberOfLines={1}>
-                  {goal.name}
-                </Text>
-                <View style={styles.goalBar}>
-                  <ProgressBar percent={goal.progressPercent} height={12} />
+          {activeGoals.length > 0 && (
+            <Card title="Metas ativas" style={styles.section}>
+              {activeGoals.map((goal) => (
+                <View key={goal.id} style={styles.goalRow}>
+                  <Text style={styles.goalName} numberOfLines={1}>
+                    {goal.name}
+                  </Text>
+                  <View style={styles.goalBar}>
+                    <ProgressBar percent={goal.progressPercent} height={12} />
+                  </View>
+                  <Text style={styles.goalPercent}>{goal.progressPercent.toFixed(0)}%</Text>
                 </View>
-                <Text style={styles.goalPercent}>{goal.progressPercent.toFixed(0)}%</Text>
+              ))}
+            </Card>
+          )}
+
+          <Card title="Últimas transações" style={styles.section}>
+            {recentTransactions.length === 0 && (
+              <Text style={styles.empty}>Nenhuma transação neste mês</Text>
+            )}
+            {recentTransactions.map((txn) => (
+              <View key={txn.id} style={styles.txnRow}>
+                <View style={styles.txnInfo}>
+                  <Text style={styles.txnDesc}>{txn.description || txn.categoryName}</Text>
+                  <Text style={styles.txnDate}>
+                    {new Date(txn.date).toLocaleDateString('pt-BR')} · {txn.accountName}
+                  </Text>
+                </View>
+                <MoneyText
+                  cents={txn.type === 'EXPENSE' ? -txn.amountCents : txn.amountCents}
+                  tone={txn.type === 'EXPENSE' ? 'expense' : 'income'}
+                  style={styles.txnValue}
+                />
               </View>
             ))}
           </Card>
-        )}
+        </ScrollView>
+      </Window>
 
-        <Card title="Últimas transações" style={styles.section}>
-          {recentTransactions.length === 0 && (
-            <Text style={styles.empty}>Nenhuma transação neste mês</Text>
-          )}
-          {recentTransactions.map((txn) => (
-            <View key={txn.id} style={styles.txnRow}>
-              <View style={styles.txnInfo}>
-                <Text style={styles.txnDesc}>{txn.description || txn.categoryName}</Text>
-                <Text style={styles.txnDate}>
-                  {new Date(txn.date).toLocaleDateString('pt-BR')} · {txn.accountName}
-                </Text>
-              </View>
-              <MoneyText
-                cents={txn.type === 'EXPENSE' ? -txn.amountCents : txn.amountCents}
-                tone={txn.type === 'EXPENSE' ? 'expense' : 'income'}
-                style={styles.txnValue}
-              />
-            </View>
-          ))}
-        </Card>
-      </ScrollView>
-    </Window>
+      <LazyReceiptScanner visible={scannerVisible} onClose={() => setScannerVisible(false)} />
+    </>
   );
 }
 

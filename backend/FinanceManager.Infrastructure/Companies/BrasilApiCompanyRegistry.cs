@@ -25,11 +25,18 @@ public sealed class BrasilApiCompanyRegistry : ICompanyRegistry
         response.EnsureSuccessStatusCode();
         var company = await response.Content.ReadFromJsonAsync<Company>(cancellationToken);
         return company?.CnaeFiscal is { } code && !string.IsNullOrWhiteSpace(company.CnaeFiscalDescricao)
-            ? new CompanyInfo(code.ToString(), company.CnaeFiscalDescricao)
+            ? new CompanyInfo(code.ToString(), company.CnaeFiscalDescricao, NameOf(company))
             : null;
     }
 
+    private static string? NameOf(Company company) =>
+        !string.IsNullOrWhiteSpace(company.NomeFantasia) ? company.NomeFantasia.Trim()
+        : !string.IsNullOrWhiteSpace(company.RazaoSocial) ? company.RazaoSocial.Trim()
+        : null;
+
     private sealed record Company(
         [property: JsonPropertyName("cnae_fiscal")] long? CnaeFiscal,
-        [property: JsonPropertyName("cnae_fiscal_descricao")] string? CnaeFiscalDescricao);
+        [property: JsonPropertyName("cnae_fiscal_descricao")] string? CnaeFiscalDescricao,
+        [property: JsonPropertyName("nome_fantasia")] string? NomeFantasia = null,
+        [property: JsonPropertyName("razao_social")] string? RazaoSocial = null);
 }

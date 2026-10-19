@@ -4,6 +4,7 @@ import { renderWithProviders } from '@/test/render';
 import { formatCents } from '@/lib/money';
 import { monthKeyOf, monthLabel, monthRange } from '@/lib/periods';
 import { accountsApi } from '@/features/accounts/api';
+import { categoriesApi } from '@/features/categories/api';
 import { transactionsApi } from '@/features/transactions/api';
 import { goalsApi } from '@/features/goals/api';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -15,6 +16,7 @@ import { CashFlowForecastDto, DailyBudgetDto, DigestDto, RecurringExpenseDto } f
 
 jest.mock('../api');
 jest.mock('@/features/accounts/api');
+jest.mock('@/features/categories/api');
 jest.mock('@/features/transactions/api');
 jest.mock('@/features/goals/api');
 jest.mock('@/features/avoidable/api');
@@ -243,6 +245,19 @@ describe('DashboardScreen', () => {
     expect(summaryApi.daily).toHaveBeenCalledTimes(2);
     expect(summaryApi.digest).toHaveBeenCalledTimes(2);
     expect(goalsApi.getAll).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens the receipt scanner from the toolbar', async () => {
+    renderWithProviders(<DashboardScreen />, { windowId: '/' });
+    await waitFor(() => expect(screen.getByText('Viagem')).toBeTruthy());
+
+    jest.mocked(categoriesApi.getAll).mockResolvedValue([]);
+    const toolbarButton = screen.getAllByRole('button').find((b) => within(b).queryByText('Ler nota'));
+    fireEvent.click(toolbarButton!);
+    expect(await screen.findByText('Ler nota fiscal')).toBeTruthy();
+    fireEvent.click(screen.getByText('Cancelar'));
+
+    await waitFor(() => expect(screen.queryByText('Ler nota fiscal')).toBeNull());
   });
 
   it('refreshes from the toolbar', async () => {

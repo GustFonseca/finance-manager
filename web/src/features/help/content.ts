@@ -33,10 +33,13 @@ export const HELP: HelpRegistry = {
       'Ao importar, o sistema lê arquivos CSV do Nubank (conta e cartão), OFX e CSV de outros bancos, aponta o que parece duplicado e sugere a categoria pelo estabelecimento.',
       'O estabelecimento é reconhecido pela descrição e guardado no catálogo de Estabelecimentos, que aprende a categoria que você usa.',
       'Comprovantes anexados ficam guardados na pasta "Comprovantes" dos seus arquivos.',
+      '"Ler nota" procura o QR Code da NFC-e para achar a empresa pelo CNPJ e lê o texto da nota no próprio aparelho para preencher o valor, a data e a loja. A foto fica anexada como comprovante.',
     ],
     steps: [
       { title: 'Lance ou importe', text: 'Use "Nova transação" para lançar à mão ou "Importar extrato" para trazer o arquivo do banco. No assistente, escolha o arquivo e a conta, revise a lista e clique em Importar.' },
       { title: 'Filtre', text: 'Use os filtros de mês, conta, categoria, tipo e a busca para achar o que precisa. A busca ignora acentos no nome do estabelecimento.' },
+      { title: 'Ler nota', text: 'Use "Ler nota" (também no Painel) e tire uma foto da nota fiscal ou do cupom. No celular abre a câmera; no computador, escolha a imagem. O app lê o QR Code da NFC-e e o texto da nota no próprio aparelho, sem enviar a imagem para leitura.' },
+      { title: 'Confira e lance', text: 'Os campos que não deram para ler ficam marcados para você preencher. Sempre confira o valor, a data e a categoria antes de clicar em Lançar: a transação é criada e a foto fica anexada como comprovante na pasta "Comprovantes".' },
       { title: 'Edite ou anexe', text: 'Clique numa transação para editar, remover, anexar um comprovante (foto ou PDF) ou abrir o comprovante já anexado.' },
     ],
     tips: ['Revise a categoria na importação: o sistema aprende com a sua escolha e acerta mais nas próximas.'],

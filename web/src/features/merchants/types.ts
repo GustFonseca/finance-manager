@@ -30,6 +30,12 @@ export type MerchantMatchDto = {
   skipReason: string | null;
 };
 
+export type CompanyDto = {
+  cnpj: string;
+  name: string | null;
+  activity: string;
+};
+
 export type MerchantSpendingDto = {
   merchantId: string | null;
   name: string;

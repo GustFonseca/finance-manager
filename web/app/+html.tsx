@@ -32,7 +32,7 @@ const globalStyles = `
 @font-face {
   font-family: "Pixel Digits";
   src: url(https://fonts.gstatic.com/s/vt323/v18/pxiKyp0ihIEF2isfFJU.woff2) format("woff2");
-  unicode-range: U+0030-0039;
+  unicode-range: U+002C, U+002E, U+0030-0039;
   size-adjust: 125%;
   font-display: swap;
 }

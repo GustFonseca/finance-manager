@@ -425,6 +425,16 @@ describe('TransactionsScreen', () => {
     await waitFor(() => expect(screen.getByText('Não foi possível apagar as transações')).toBeTruthy());
   });
 
+  it('opens and closes the receipt scanner', async () => {
+    renderScreen();
+
+    fireEvent.click(await screen.findByText('Ler nota'));
+    expect(await screen.findByText('Ler nota fiscal')).toBeTruthy();
+    fireEvent.click(screen.getByText('Cancelar'));
+
+    await waitFor(() => expect(screen.queryByText('Ler nota fiscal')).toBeNull());
+  });
+
   it('opens and closes the import wizard', async () => {
     renderScreen();
 

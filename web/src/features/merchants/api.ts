@@ -2,6 +2,7 @@ import { http } from '@/lib/http';
 import { SpendingClass } from '@/features/spending/types';
 import { DateRange, PeriodFilter, TransactionType } from '@/features/transactions/types';
 import {
+  CompanyDto,
   MerchantDto,
   MerchantHistoryDto,
   MerchantMatchDto,
@@ -15,6 +16,7 @@ export const merchantsApi = {
   getAll: () => http.get<MerchantDto[]>('/merchants').then((r) => r.data),
   resolve: (lines: { description: string; type: TransactionType }[]) =>
     http.post<MerchantMatchDto[]>('/merchants/resolve', { lines }).then((r) => r.data),
+  company: (cnpj: string) => http.get<CompanyDto>(`/merchants/company/${cnpj}`).then((r) => r.data),
   unsorted: ({ start, end }: DateRange) =>
     http.get<MerchantSpendingDto[]>('/merchants/unsorted', { params: { start, end } }).then((r) => r.data),
   setClass: (id: string, spendingClass: SpendingClass | null) =>

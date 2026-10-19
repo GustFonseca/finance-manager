@@ -22,6 +22,16 @@ describe('merchantsApi', () => {
     expect(mocked.post).toHaveBeenCalledWith('/merchants/resolve', { lines });
   });
 
+  it('looks up a company by CNPJ', async () => {
+    mocked.get.mockResolvedValue(httpResponse({ cnpj: '11222333000181', name: 'Loja', activity: 'Comércio' }));
+    await expect(merchantsApi.company('11222333000181')).resolves.toEqual({
+      cnpj: '11222333000181',
+      name: 'Loja',
+      activity: 'Comércio',
+    });
+    expect(mocked.get).toHaveBeenCalledWith('/merchants/company/11222333000181');
+  });
+
   it('updates a merchant', async () => {
     const data = { name: 'iFood', kind: 'BUSINESS' as const, categoryId: 'c', applyToTransactions: true };
     mocked.put.mockResolvedValue(httpResponse({ updatedTransactions: 2 }));

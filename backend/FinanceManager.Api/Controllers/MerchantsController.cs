@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FinanceManager.Api.Models;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
+using FinanceManager.Aplication.UseCases.Merchants.Queries.LookupCompany;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
@@ -60,6 +61,14 @@ public class MerchantsController : ControllerBase
     {
         var merchant = await _mediator.Send(new SetMerchantClassCommand(GetUserId(), id, request.Class));
         return merchant == null ? NotFound() : Ok(merchant);
+    }
+
+    [HttpGet("company/{cnpj}")]
+    public async Task<ActionResult<CompanyDto>> LookupCompany(string cnpj)
+    {
+        var company = await _mediator.Send(new LookupCompanyQuery(cnpj));
+        if (company == null) return NotFound(new { message = "Empresa não encontrada" });
+        return Ok(company);
     }
 
     [HttpGet("spending")]

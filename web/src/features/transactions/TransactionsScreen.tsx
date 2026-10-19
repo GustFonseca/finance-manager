@@ -4,6 +4,7 @@ import { EmptyState, ErrorState, MoneyText, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { filesApi } from '@/features/files/api';
 import { ImportWizard } from '@/features/import/ImportWizard';
+import { LazyReceiptScanner } from '@/features/receipts/LazyReceiptScanner';
 import { getErrorMessage } from '@/lib/http';
 import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
 import { colors, fontSize, spacing } from '@/theme';
@@ -71,6 +72,7 @@ export function TransactionsScreen() {
   const [editing, setEditing] = useState<TransactionDto | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [importVisible, setImportVisible] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
 
   const periodName = filters.grouping === 'month' ? monthLabel(filters.monthKey) : String(filters.year);
   const totals = transactions.reduce(
@@ -212,6 +214,7 @@ export function TransactionsScreen() {
         icon="exchange"
         actions={[
           { label: 'Nova transação', icon: 'plus-circle', onPress: openNew },
+          { label: 'Ler nota', icon: 'camera', onPress: () => setScannerVisible(true) },
           { label: 'Importar extrato', icon: 'upload', onPress: () => setImportVisible(true) },
           { label: 'Exportar CSV', icon: 'download', onPress: handleExport },
           { label: 'Apagar todas', icon: 'trash', onPress: handleDeleteAll },
@@ -257,6 +260,8 @@ export function TransactionsScreen() {
       />
 
       <ImportWizard visible={importVisible} onClose={() => setImportVisible(false)} />
+
+      <LazyReceiptScanner visible={scannerVisible} onClose={() => setScannerVisible(false)} />
 
       <input
         ref={receiptInput}
