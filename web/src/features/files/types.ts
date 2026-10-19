@@ -33,3 +33,10 @@ export type UpdateFileInput = {
   name?: string;
   folderId?: string;
 };
+
+export type FileViewDto = {
+  url: string;
+  name: string;
+  contentType: string;
+  sizeBytes: number;
+};

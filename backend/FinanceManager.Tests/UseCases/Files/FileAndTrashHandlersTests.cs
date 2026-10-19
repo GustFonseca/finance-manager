@@ -153,6 +153,23 @@ public class FileAndTrashHandlersTests
     }
 
     [Fact]
+    public async Task GetFileView_returns_an_inline_link_with_the_file_details()
+    {
+        var file = _store.AddFile(_store.AddFolder(Me), "nota.jpg");
+        var trashed = _store.AddFile(_store.AddFolder(Me), "velha.jpg");
+        trashed.DeletedAt = DateTime.UtcNow;
+        var foreign = _store.AddFile(_store.AddFolder(SomeoneElse), "outra.jpg");
+        var handler = new FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewHandler(_store.FileRepository, _store.Storage);
+
+        var view = await handler.Handle(new FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery(Me, file.Id));
+
+        Assert.Equal(($"https://storage.test/{file.StorageKey}", "nota.jpg", file.ContentType, file.SizeBytes), (view!.Url, view.Name, view.ContentType, view.SizeBytes));
+        Assert.Null(await handler.Handle(new FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery(Me, trashed.Id)));
+        Assert.Null(await handler.Handle(new FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery(Me, foreign.Id)));
+        Assert.Null(await handler.Handle(new FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery(Me, Guid.NewGuid())));
+    }
+
+    [Fact]
     public async Task Upload_returns_null_when_the_folder_is_missing_foreign_or_trashed()
     {
         var foreign = _store.AddFolder(SomeoneElse);

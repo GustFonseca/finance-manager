@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { EmptyState, ErrorState, MoneyText, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
-import { filesApi } from '@/features/files/api';
 import { ImportWizard } from '@/features/import/ImportWizard';
 import { LazyReceiptScanner } from '@/features/receipts/LazyReceiptScanner';
 import { getErrorMessage } from '@/lib/http';
@@ -10,6 +9,7 @@ import { monthKeyOf, monthLabel, monthRange, yearRange } from '@/lib/periods';
 import { colors, fontSize, spacing } from '@/theme';
 import { ALL, FilterValues, TransactionFilters } from './components/TransactionFilters';
 import { TransactionForm } from './components/TransactionForm';
+import { ReceiptViewer } from './components/ReceiptViewer';
 import { TransactionListItem } from './components/TransactionListItem';
 import { buildTransactionsCsv, downloadCsv } from './exportCsv';
 import { RECEIPTS_FOLDER } from './receipts';
@@ -40,6 +40,7 @@ function initialFilters(): FilterValues {
 }
 
 export function TransactionsScreen() {
+  const [viewingReceipt, setViewingReceipt] = useState<TransactionDto | null>(null);
   const { confirm, alert, menu } = useDialog();
   const [filters, setFilters] = useState(initialFilters);
   const [search, setSearch] = useState('');
@@ -143,16 +144,8 @@ export function TransactionsScreen() {
     downloadCsv(`transacoes-${name}.csv`, buildTransactionsCsv(transactions));
   }
 
-  async function openReceipt(transaction: TransactionDto) {
-    const tab = window.open('', '_blank');
-    try {
-      const url = await filesApi.downloadUrl(transaction.receiptFileId!);
-      if (tab) tab.location.href = url;
-      else window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (e) {
-      tab?.close();
-      alert({ title: 'Erro', message: getErrorMessage(e, 'Não foi possível abrir o comprovante') });
-    }
+  function openReceipt(transaction: TransactionDto) {
+    setViewingReceipt(transaction);
   }
 
   function chooseReceipt(transaction: TransactionDto) {
@@ -262,6 +255,7 @@ export function TransactionsScreen() {
       <ImportWizard visible={importVisible} onClose={() => setImportVisible(false)} />
 
       <LazyReceiptScanner visible={scannerVisible} onClose={() => setScannerVisible(false)} />
+      <ReceiptViewer transaction={viewingReceipt} onClose={() => setViewingReceipt(null)} />
 
       <input
         ref={receiptInput}

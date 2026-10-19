@@ -35,7 +35,7 @@ public class SupabaseFileStorage : IFileStorage
         await EnsureSuccessAsync(response, "enviar o arquivo", cancellationToken);
     }
 
-    public async Task<string> GetDownloadUrlAsync(string key, string downloadName, CancellationToken cancellationToken = default)
+    public async Task<string> GetDownloadUrlAsync(string key, string? downloadName, CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsJsonAsync(
             $"object/sign/{_bucket}/{key}", new { expiresIn = DownloadUrlSeconds }, cancellationToken);
@@ -44,7 +44,8 @@ public class SupabaseFileStorage : IFileStorage
         var signed = await response.Content.ReadFromJsonAsync<SignedUrlResponse>(cancellationToken)
             ?? throw new InvalidOperationException("Resposta inválida do armazenamento.");
         var baseUrl = _http.BaseAddress!.ToString().TrimEnd('/');
-        return $"{baseUrl}{signed.SignedURL}&download={Uri.EscapeDataString(downloadName)}";
+        var url = $"{baseUrl}{signed.SignedURL}";
+        return downloadName == null ? url : $"{url}&download={Uri.EscapeDataString(downloadName)}";
     }
 
     public async Task DeleteAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default)

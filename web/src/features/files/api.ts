@@ -1,5 +1,5 @@
 import { http } from '@/lib/http';
-import { FolderDto, StoredFileDto, TrashDto, UpdateFileInput } from './types';
+import { FileViewDto, FolderDto, StoredFileDto, TrashDto, UpdateFileInput } from './types';
 
 export const foldersApi = {
   getAll: () => http.get<FolderDto[]>('/folders').then((r) => r.data),
@@ -21,6 +21,7 @@ export const filesApi = {
   trash: (id: string) => http.delete(`/files/${id}`).then(() => undefined),
   downloadUrl: (id: string) =>
     http.get<{ url: string }>(`/files/${id}/download`).then((r) => r.data.url),
+  view: (id: string) => http.get<FileViewDto>(`/files/${id}/view`).then((r) => r.data),
 };
 
 export const trashApi = {

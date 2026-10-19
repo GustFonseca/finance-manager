@@ -4,6 +4,7 @@ using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Files.Commands.TrashFile;
 using FinanceManager.Aplication.UseCases.Files.Commands.UpdateFile;
 using FinanceManager.Aplication.UseCases.Files.Queries.GetFileDownloadUrl;
+using FinanceManager.Aplication.UseCases.Files.Queries.GetFileView;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,6 +38,14 @@ public class FilesController : ControllerBase
         var trashed = await _mediator.Send(new TrashFileCommand(GetUserId(), id));
         if (!trashed) return NotFound();
         return NoContent();
+    }
+
+    [HttpGet("{id}/view")]
+    public async Task<ActionResult<FileViewDto>> View(Guid id)
+    {
+        var view = await _mediator.Send(new GetFileViewQuery(GetUserId(), id));
+        if (view == null) return NotFound();
+        return Ok(view);
     }
 
     [HttpGet("{id}/download")]

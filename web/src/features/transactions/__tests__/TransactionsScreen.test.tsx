@@ -448,10 +448,6 @@ describe('TransactionsScreen', () => {
     const withReceipt: TransactionDto = { ...ifood, receiptFileId: 'f1' };
     const receiptsFolder = { id: 'fo1', name: 'Comprovantes', isSystem: false, fileCount: 0, createdAt: '' };
 
-    function fakeTab() {
-      return { location: { href: '' }, close: jest.fn() };
-    }
-
     function receiptInput() {
       return screen.getByLabelText('Arquivo do comprovante') as HTMLInputElement;
     }
@@ -462,51 +458,21 @@ describe('TransactionsScreen', () => {
 
     afterEach(() => jest.restoreAllMocks());
 
-    it('shows a paperclip that opens the receipt in a new tab', async () => {
-      const tab = fakeTab();
-      const open = jest.spyOn(window, 'open').mockReturnValue(tab as never);
-      jest.mocked(filesApi.downloadUrl).mockResolvedValue('https://files/nota.pdf');
+    it('opens the receipt viewer from the paperclip and from the menu', async () => {
+      jest.mocked(filesApi.view).mockResolvedValue({ url: 'https://files/nota.jpg', name: 'nota.jpg', contentType: 'image/jpeg', sizeBytes: 2048 });
       api.getAll.mockResolvedValue([withReceipt, salary]);
       renderScreen();
 
       fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
-      expect(screen.getAllByTestId('icon-paperclip')).toHaveLength(1);
-      expect(open).toHaveBeenCalledWith('', '_blank');
-      await waitFor(() => expect(tab.location.href).toBe('https://files/nota.pdf'));
-      expect(filesApi.downloadUrl).toHaveBeenCalledWith('f1');
-    });
+      expect(screen.getAllByTestId('icon-paperclip').length).toBeGreaterThan(0);
+      expect(await screen.findByLabelText('Foto do comprovante nota.jpg')).toBeTruthy();
+      expect(filesApi.view).toHaveBeenCalledWith('f1');
+      fireEvent.click(screen.getByText('Fechar'));
+      expect(screen.queryByLabelText('Foto do comprovante nota.jpg')).toBeNull();
 
-    it('falls back to opening the link directly when the tab was blocked', async () => {
-      const open = jest.spyOn(window, 'open').mockReturnValue(null);
-      jest.mocked(filesApi.downloadUrl).mockResolvedValue('https://files/nota.pdf');
-      api.getAll.mockResolvedValue([withReceipt]);
-      renderScreen();
-
-      fireEvent.click(await screen.findByText('Compra no débito via NuPay - iFood'));
+      fireEvent.click(screen.getByText('Compra no débito via NuPay - iFood'));
       fireEvent.click(screen.getByText('Ver comprovante'));
-      await waitFor(() => expect(open).toHaveBeenLastCalledWith('https://files/nota.pdf', '_blank', 'noopener,noreferrer'));
-    });
-
-    it('closes the tab and alerts when the receipt cannot be opened', async () => {
-      const tab = fakeTab();
-      jest.spyOn(window, 'open').mockReturnValue(tab as never);
-      jest.mocked(filesApi.downloadUrl).mockRejectedValue(new Error('x'));
-      api.getAll.mockResolvedValue([withReceipt]);
-      renderScreen();
-
-      fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
-      expect(await screen.findByText('Não foi possível abrir o comprovante')).toBeTruthy();
-      expect(tab.close).toHaveBeenCalled();
-    });
-
-    it('alerts when opening fails and the tab was blocked', async () => {
-      jest.spyOn(window, 'open').mockReturnValue(null);
-      jest.mocked(filesApi.downloadUrl).mockRejectedValue(new Error('x'));
-      api.getAll.mockResolvedValue([withReceipt]);
-      renderScreen();
-
-      fireEvent.click(await screen.findByRole('button', { name: 'Abrir comprovante' }));
-      expect(await screen.findByText('Não foi possível abrir o comprovante')).toBeTruthy();
+      expect(await screen.findByLabelText('Foto do comprovante nota.jpg')).toBeTruthy();
     });
 
     it('attaches a receipt saved in the Comprovantes folder', async () => {

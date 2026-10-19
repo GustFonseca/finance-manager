@@ -97,6 +97,16 @@ public class SupabaseFileStorageTests
     }
 
     [Fact]
+    public async Task An_inline_url_has_no_download_name()
+    {
+        _handler.Respond(HttpStatusCode.OK, "{\"signedURL\":\"/object/sign/docs/user/file?token=abc\"}");
+
+        var url = await Storage(bucket: "docs").GetDownloadUrlAsync("user/file", null);
+
+        Assert.Equal("https://projeto.supabase.co/storage/v1/object/sign/docs/user/file?token=abc", url);
+    }
+
+    [Fact]
     public async Task A_failed_signing_is_reported()
     {
         _handler.Respond(HttpStatusCode.NotFound, "not found");

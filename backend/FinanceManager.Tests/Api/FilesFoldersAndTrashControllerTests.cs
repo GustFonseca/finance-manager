@@ -79,6 +79,16 @@ public class FilesFoldersAndTrashControllerTests
     }
 
     [Fact]
+    public async Task Files_View_returns_the_inline_link_or_404()
+    {
+        var view = new FileViewDto { Url = "https://storage/x", Name = "nota.jpg", ContentType = "image/jpeg" };
+        _mediator.Returns<FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery>(q => q.FileId == Known ? view : null);
+
+        Assert.Same(view, Assert.IsType<OkObjectResult>((await Files.View(Known)).Result).Value);
+        Assert.IsType<NotFoundResult>((await Files.View(Guid.NewGuid())).Result);
+    }
+
+    [Fact]
     public async Task Folders_GetAll_and_Create()
     {
         var folders = new List<FolderDto>();

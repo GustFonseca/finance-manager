@@ -95,8 +95,8 @@ public class FakeFileStorage(FakeStore store) : IFileStorage
         return Task.CompletedTask;
     }
 
-    public Task<string> GetDownloadUrlAsync(string key, string downloadName, CancellationToken cancellationToken = default) =>
-        Task.FromResult($"https://storage.test/{key}?download={downloadName}");
+    public Task<string> GetDownloadUrlAsync(string key, string? downloadName, CancellationToken cancellationToken = default) =>
+        Task.FromResult(downloadName == null ? $"https://storage.test/{key}" : $"https://storage.test/{key}?download={downloadName}");
 
     public Task DeleteAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default)
     {

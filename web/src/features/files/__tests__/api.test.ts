@@ -52,6 +52,11 @@ describe('filesApi', () => {
     await expect(filesApi.downloadUrl('f1')).resolves.toBe('https://s3/x');
     expect(http.get).toHaveBeenCalledWith('/files/f1/download');
   });
+
+  it('gets the inline view of a file', async () => {
+    await expect(filesApi.view('f1')).resolves.toBe('got');
+    expect(http.get).toHaveBeenCalledWith('/files/f1/view');
+  });
 });
 
 describe('trashApi', () => {
