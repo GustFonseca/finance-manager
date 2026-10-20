@@ -3,16 +3,23 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Checkbox, DateInput, ErrorState, FormError, Input, Select, useDialog } from '@/components/ui';
 import { Window } from '@/components/xp';
 import { getErrorMessage } from '@/lib/http';
-import { longMonthOf, todayKey } from '@/lib/periods';
+import { formatDateTime, longMonthOf, todayKey } from '@/lib/periods';
 import { colors, fontSize, spacing } from '@/theme';
 import { AvatarPicker } from './components/AvatarPicker';
 import { BRAZILIAN_STATES, formatPhone, ProfileForm, toForm, validateProfile } from './form';
 import { useProfile, useUpdateProfile } from './queries';
+import { ProfileDto } from './types';
 
 const STATE_OPTIONS = [
   { id: '', label: 'Não informar' },
   ...BRAZILIAN_STATES.map((state) => ({ id: state.uf, label: `${state.uf} — ${state.name}` })),
 ];
+
+function accessSummary({ lastSeenAt, loginCount }: ProfileDto): string {
+  return lastSeenAt
+    ? `Último acesso em ${formatDateTime(lastSeenAt)} · ${loginCount} login(s)`
+    : `${loginCount} login(s)`;
+}
 
 export function AccountScreen() {
   const { alert } = useDialog();
@@ -148,6 +155,7 @@ export function AccountScreen() {
             </Card>
 
             <Text style={styles.footer}>Membro desde {longMonthOf(profile.memberSince)}</Text>
+            <Text style={styles.footer}>{accessSummary(profile)}</Text>
           </>
         ) : null}
       </ScrollView>

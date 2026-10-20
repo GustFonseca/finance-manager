@@ -134,6 +134,15 @@ export const PROGRAMS: Program[] = [
     adminOnly: true,
   },
   {
+    route: '/users',
+    title: 'Usuários',
+    icon: 'users',
+    color: palette.tealDark,
+    description: 'Quem usa o sistema e quando acessou',
+    adminOnly: true,
+    startMenuOnly: true,
+  },
+  {
     route: '/account',
     title: 'Minha conta',
     icon: 'user-circle',

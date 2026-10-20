@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         try
         {
             var identity = await _mediator.Send(new ValidateGoogleTokenQuery(request.IdToken, request.Nonce));
-            var response = await _mediator.Send(new GoogleLoginCommand(identity));
+            var response = await _mediator.Send(new GoogleLoginCommand(identity, DateTime.UtcNow));
             return Ok(response);
         }
         catch (InvalidJwtException ex)

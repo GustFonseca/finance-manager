@@ -269,6 +269,22 @@ export const HELP: HelpRegistry = {
     ],
     tips: ['Use \\b para casar palavras inteiras e | para alternativas. Padrões muito genéricos podem classificar errado muitas transações.'],
   },
+  '/users': {
+    title: 'Usuários',
+    icon: 'users',
+    summary: 'Quem usa o Finance: quando cada pessoa se cadastrou, quando entrou pela última vez e quanto usa o sistema. Só administradores veem esta janela.',
+    howItWorks: [
+      'O último login é gravado sempre que a pessoa entra com a conta Google; a quantidade de logins conta cada entrada.',
+      'O último acesso é atualizado enquanto a pessoa usa o sistema, no máximo uma vez por hora.',
+      'Ativo nos últimos 7 dias indica quem acessou o sistema na última semana.',
+      'A lista começa por quem acessou mais recentemente.',
+    ],
+    steps: [
+      { title: 'Veja o resumo', text: 'No topo aparecem quantos usuários estão cadastrados, quantos estão ativos e a soma de logins.' },
+      { title: 'Procure alguém', text: 'Busque pelo nome ou e-mail para encontrar um usuário.' },
+      { title: 'Atualize', text: 'Use o botão de atualizar da janela para ver os dados mais recentes.' },
+    ],
+  },
   '/account': {
     title: 'Minha conta',
     icon: 'user-circle',

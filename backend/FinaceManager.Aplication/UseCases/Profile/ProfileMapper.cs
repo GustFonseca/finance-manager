@@ -35,6 +35,9 @@ public static partial class ProfileMapper
         Dependents = user.Dependents,
         DigestByEmail = user.DigestByEmail,
         MemberSince = user.CreatedAt,
+        LastLoginAt = user.LastLoginAt,
+        LastSeenAt = user.LastSeenAt,
+        LoginCount = user.LoginCount,
     };
 
     public static void Apply(User user, UpdateProfileRequest request, DateTime now)

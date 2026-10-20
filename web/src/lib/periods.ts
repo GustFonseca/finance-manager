@@ -38,6 +38,10 @@ export function shortMonthOf(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
 }
 
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
 export function longMonthOf(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 }

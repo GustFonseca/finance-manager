@@ -1347,6 +1347,15 @@ namespace FinanceManager.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LoginCount")
+                        .HasColumnType("integer");
+
                     b.Property<long?>("MonthlyIncomeCents")
                         .HasColumnType("bigint");
 

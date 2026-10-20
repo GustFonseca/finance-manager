@@ -16,6 +16,8 @@ namespace FinanceManager.Tests.UseCases.Auth;
 
 public class GoogleLoginHandlerTests
 {
+    private static readonly DateTime Now = new(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
+
     private readonly AppDbContext _db = TestDb.InMemory();
 
     private readonly IConfiguration _config = new ConfigurationBuilder()
@@ -42,7 +44,7 @@ public class GoogleLoginHandlerTests
     [Fact]
     public async Task A_first_login_creates_the_user_with_a_default_account_and_categories()
     {
-        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-1", "ana@gmail.com", "Ana", true, "n1")));
+        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-1", "ana@gmail.com", "Ana", true, "n1"), Now));
 
         var user = Assert.Single(_db.Users);
         Assert.Equal(("google-1", "ana@gmail.com", "Ana"), (user.GoogleId, user.Email, user.Name));
@@ -52,6 +54,7 @@ public class GoogleLoginHandlerTests
         Assert.Contains(_db.Categories, c => c.Name == "Outros");
         Assert.Contains(_db.ActivityLogs, a => a.UserId == user.Id && a.Source == "Sessão" && a.Description == "Entrou no sistema com a conta Google");
         Assert.Equal(("ana@gmail.com", "Ana", true), (response.Email, response.Name, response.IsAdmin));
+        Assert.Equal(((DateTime?)Now, (DateTime?)Now, 1), (user.LastLoginAt, user.LastSeenAt, user.LoginCount));
 
         var principal = Validate(response.Token);
         Assert.Equal(user.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));
@@ -66,7 +69,7 @@ public class GoogleLoginHandlerTests
         var existing = new User { GoogleId = "google-2", Email = "bia@gmail.com", Name = "" };
         _db.Users.Add(existing);
         _db.SaveChanges();
-        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-2", "outro@gmail.com", "Outro nome", true, "n2")));
+        var response = await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-2", "outro@gmail.com", "Outro nome", true, "n2"), Now));
 
         Assert.Single(_db.Users);
         Assert.Empty(_db.Accounts);
@@ -74,6 +77,8 @@ public class GoogleLoginHandlerTests
         Assert.Equal("bia@gmail.com", response.Email);
         Assert.Equal("bia@gmail.com", Validate(response.Token).FindFirstValue(ClaimTypes.Name));
         Assert.Single(_db.ActivityLogs, a => a.UserId == existing.Id && a.Source == "Sessão");
+        await Handler.Handle(new GoogleLoginCommand(new GoogleIdentity("google-2", "outro@gmail.com", "Outro nome", true, "n3"), Now.AddDays(1)));
+        Assert.Equal(((DateTime?)Now.AddDays(1), 2), (_db.Users.Single().LastLoginAt, _db.Users.Single().LoginCount));
     }
 
     [Fact]

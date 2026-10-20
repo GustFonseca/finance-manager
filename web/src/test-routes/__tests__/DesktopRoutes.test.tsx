@@ -16,6 +16,7 @@ import DashboardRoute from '../../../app/(desktop)/index';
 import MerchantsRoute from '../../../app/(desktop)/merchants';
 import PlanningRoute from '../../../app/(desktop)/planning';
 import RulesRoute from '../../../app/(desktop)/rules';
+import UsersRoute from '../../../app/(desktop)/users';
 import SavingsRoute from '../../../app/(desktop)/savings';
 import SpendingRoute from '../../../app/(desktop)/spending';
 import TaxRoute from '../../../app/(desktop)/tax';
@@ -71,6 +72,7 @@ jest.mock('@/features/files/FileDesktop', () => ({ FileDesktop: mockScreen('arqu
 jest.mock('@/features/goals/GoalsScreen', () => ({ GoalsScreen: mockScreen('metas') }));
 jest.mock('@/features/merchants/MerchantsScreen', () => ({ MerchantsScreen: mockScreen('estabelecimentos') }));
 jest.mock('@/features/rules/RulesScreen', () => ({ RulesScreen: mockScreen('regras') }));
+jest.mock('@/features/admin/UsersScreen', () => ({ UsersScreen: mockScreen('usuários') }));
 jest.mock('@/features/savings/SavingsScreen', () => ({ SavingsScreen: mockScreen('economia') }));
 jest.mock('@/features/spending/SpendingScreen', () => ({ SpendingScreen: mockScreen('gastos') }));
 jest.mock('@/features/transactions/TransactionsScreen', () => ({ TransactionsScreen: mockScreen('transações') }));
@@ -102,7 +104,7 @@ describe('DesktopLayout', () => {
 
     const shell = screen.getByTestId('shell');
     expect(shell.textContent).toContain(
-      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /challenges /events /wishlist /debts /planning /tax /calendar /rules /account'
+      '/ /transactions /accounts /goals /categories /spending /merchants /avoidable /savings /challenges /events /wishlist /debts /planning /tax /calendar /rules /users /account'
     );
     expect(screen.getByText('arquivos na área de trabalho')).toBeTruthy();
     expect(screen.getByText('rota atual')).toBeTruthy();
@@ -113,7 +115,7 @@ describe('DesktopLayout', () => {
 
     render(<DesktopLayout />);
 
-    for (const name of ['transações', 'contas', 'metas', 'categorias', 'gastos', 'estabelecimentos', 'gastos evitáveis', 'economia', 'desafios', 'eventos', 'lista de espera', 'dívidas', 'planejamento', 'imposto de renda', 'calendário', 'regras', 'minha conta']) {
+    for (const name of ['transações', 'contas', 'metas', 'categorias', 'gastos', 'estabelecimentos', 'gastos evitáveis', 'economia', 'desafios', 'eventos', 'lista de espera', 'dívidas', 'planejamento', 'imposto de renda', 'calendário', 'regras', 'usuários', 'minha conta']) {
       expect(await screen.findByText(name)).toBeTruthy();
     }
     expect(screen.getByText('painel')).toBeTruthy();
@@ -140,6 +142,7 @@ describe('program routes', () => {
     ['spending', SpendingRoute],
     ['tax', TaxRoute],
     ['transactions', TransactionsRoute],
+    ['users', UsersRoute],
     ['wishlist', WishlistRoute],
   ])('%s renders nothing because the shell draws the window', (_, Route) => {
     const { container } = render(<Route />);

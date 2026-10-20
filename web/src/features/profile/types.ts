@@ -14,6 +14,12 @@ export type ProfileDto = {
   dependents: number | null;
   digestByEmail: boolean;
   memberSince: string;
+  lastLoginAt: string | null;
+  lastSeenAt: string | null;
+  loginCount: number;
 };
 
-export type UpdateProfileRequest = Omit<ProfileDto, 'email' | 'isAdmin' | 'memberSince'>;
+export type UpdateProfileRequest = Omit<
+  ProfileDto,
+  'email' | 'isAdmin' | 'memberSince' | 'lastLoginAt' | 'lastSeenAt' | 'loginCount'
+>;

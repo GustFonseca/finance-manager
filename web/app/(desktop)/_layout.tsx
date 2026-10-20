@@ -30,6 +30,7 @@ const SCREENS: ProgramScreens = {
   '/tax': lazyScreen(() => import('@/features/tax/TaxScreen').then((m) => m.TaxScreen)),
   '/calendar': lazyScreen(() => import('@/features/calendar/CalendarScreen').then((m) => m.CalendarScreen)),
   '/rules': lazyScreen(() => import('@/features/rules/RulesScreen').then((m) => m.RulesScreen)),
+  '/users': lazyScreen(() => import('@/features/admin/UsersScreen').then((m) => m.UsersScreen)),
   '/account': lazyScreen(() => import('@/features/profile/AccountScreen').then((m) => m.AccountScreen)),
 };
 

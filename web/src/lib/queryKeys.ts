@@ -14,6 +14,7 @@ export const queryKeys = {
   challenges: ['challenges'] as const,
   profile: ['profile'] as const,
   rules: ['rules'] as const,
+  adminUsers: ['admin', 'users'] as const,
   wishlist: ['wishlist'] as const,
   debts: ['debts'] as const,
   planning: ['summary', 'planning'] as const,

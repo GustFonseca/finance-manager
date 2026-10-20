@@ -42,8 +42,10 @@ describe('programs', () => {
 
   it('shows the admin only programs to admins only', () => {
     expect(findProgram('/rules')).toMatchObject({ title: 'Regras de classificação', adminOnly: true });
+    expect(findProgram('/users')).toMatchObject({ title: 'Usuários', icon: 'users', adminOnly: true, startMenuOnly: true });
     expect(visiblePrograms(false).map((program) => program.route)).not.toContain('/rules');
-    expect(visiblePrograms(false)).toHaveLength(PROGRAMS.length - 1);
+    expect(visiblePrograms(false).map((program) => program.route)).not.toContain('/users');
+    expect(visiblePrograms(false)).toHaveLength(PROGRAMS.length - 2);
     expect(visiblePrograms(true)).toEqual(PROGRAMS);
   });
 
@@ -53,7 +55,8 @@ describe('programs', () => {
     const routes = desktopPrograms(PROGRAMS).map((program) => program.route);
     expect(routes).not.toContain('/account');
     expect(routes).not.toContain('/events');
-    expect(routes).toHaveLength(PROGRAMS.length - 2);
+    expect(routes).not.toContain('/users');
+    expect(routes).toHaveLength(PROGRAMS.length - 3);
   });
 
   it('is re-exported from the package entry', () => {

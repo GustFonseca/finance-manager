@@ -17,11 +17,14 @@ export function profile(overrides: Partial<ProfileDto> = {}): ProfileDto {
     dependents: null,
     digestByEmail: false,
     memberSince: '2026-03-15T12:00:00Z',
+    lastLoginAt: null,
+    lastSeenAt: null,
+    loginCount: 0,
     ...overrides,
   };
 }
 
 export function profileUpdate(overrides: Partial<UpdateProfileRequest> = {}): UpdateProfileRequest {
-  const { email, isAdmin, memberSince, ...rest } = profile();
+  const { email, isAdmin, memberSince, lastLoginAt, lastSeenAt, loginCount, ...rest } = profile();
   return { ...rest, ...overrides };
 }

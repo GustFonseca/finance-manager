@@ -31,6 +31,22 @@ public class ProfileDto
     public int? Dependents { get; set; }
     public bool DigestByEmail { get; set; }
     public DateTime MemberSince { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public DateTime? LastSeenAt { get; set; }
+    public int LoginCount { get; set; }
+}
+
+public class UserOverviewDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public DateTime? LastSeenAt { get; set; }
+    public int LoginCount { get; set; }
+    public int TransactionCount { get; set; }
+    public bool ActiveLast7Days { get; set; }
 }
 
 public class UpdateProfileRequest

@@ -19,6 +19,9 @@ public class User
     public int? Dependents { get; set; }
     public bool DigestByEmail { get; set; }
     public DateTime? ProfileUpdatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public DateTime? LastSeenAt { get; set; }
+    public int LoginCount { get; set; }
 
     public ICollection<Account> Accounts { get; set; } = [];
     public ICollection<Category> Categories { get; set; } = [];

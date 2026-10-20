@@ -31,7 +31,10 @@ public class AuthActivityAndClientLogsControllerTests
         var result = await new AuthController(_mediator, _logger).GoogleLogin(new GoogleLoginRequest { IdToken = "google-token", Nonce = "n" });
 
         Assert.Same(session, Assert.IsType<OkObjectResult>(result.Result).Value);
-        Assert.Equal([new ValidateGoogleTokenQuery("google-token", "n"), new GoogleLoginCommand(identity)], _mediator.Sent);
+        Assert.Equal(new ValidateGoogleTokenQuery("google-token", "n"), _mediator.Sent[0]);
+        var login = Assert.IsType<GoogleLoginCommand>(_mediator.Sent[1]);
+        Assert.Same(identity, login.Identity);
+        Assert.True((DateTime.UtcNow - login.Now).Duration() < TimeSpan.FromMinutes(1));
     }
 
     [Fact]

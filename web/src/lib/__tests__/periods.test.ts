@@ -3,6 +3,7 @@ import {
   formatDay,
   isCurrentMonth,
   isoToDay,
+  formatDateTime,
   longMonthOf,
   monthKeyOf,
   monthLabel,
@@ -55,6 +56,10 @@ describe('month labels', () => {
   it('names the month in Portuguese', () => {
     expect(monthLabel('2026-03')).toBe('março de 2026');
     expect(longMonthOf(new Date(2026, 4, 10).toISOString())).toBe('maio de 2026');
+  });
+
+  it('formats a date with its time', () => {
+    expect(formatDateTime(new Date(2026, 9, 19, 14, 5).toISOString())).toBe('19/10/2026, 14:05');
   });
 
   it('abbreviates the month without the trailing dot', () => {

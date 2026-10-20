@@ -62,9 +62,17 @@ describe('AccountScreen', () => {
     expect(screen.getByRole('checkbox')).toBeTruthy();
     expect(screen.getByText('Receber um resumo semanal por e-mail (em breve)')).toBeTruthy();
     expect(screen.getByText('Membro desde março de 2026')).toBeTruthy();
+    expect(screen.getByText('0 login(s)')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /^Ícone / }).length).toBeGreaterThanOrEqual(30);
     expect(within(avatar()).getByText('G')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Usar a letra' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('shows the last access and how many times the user logged in', async () => {
+    jest.mocked(profileApi.get).mockResolvedValue(profile({ lastSeenAt: new Date(2026, 9, 19, 9, 30).toISOString(), loginCount: 7 }));
+    await renderScreen();
+
+    expect(screen.getByText('Último acesso em 19/10/2026, 09:30 · 7 login(s)')).toBeTruthy();
   });
 
   it('shows the load error and retries', async () => {
