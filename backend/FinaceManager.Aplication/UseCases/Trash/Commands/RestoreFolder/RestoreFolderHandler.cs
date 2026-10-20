@@ -1,9 +1,10 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Trash.Commands.RestoreFolder;
 
-public class RestoreFolderHandler : IRequestHandler<RestoreFolderCommand, bool>
+public class RestoreFolderHandler : IRequestHandler<RestoreFolderCommand>
 {
     private readonly IFolderRepository _folderRepository;
     private readonly IStoredFileRepository _fileRepository;
@@ -14,10 +15,9 @@ public class RestoreFolderHandler : IRequestHandler<RestoreFolderCommand, bool>
         _fileRepository = fileRepository;
     }
 
-    public async Task<bool> Handle(RestoreFolderCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(RestoreFolderCommand request, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepository.GetByIdAsync(request.FolderId);
-        if (folder == null || folder.UserId != request.UserId || folder.DeletedAt == null) return false;
+        var folder = await _folderRepository.GetTrashedAsync(request.FolderId, request.UserId);
 
         var files = (await _fileRepository.GetByFolderIdAsync(folder.Id)).Where(f => f.DeletedAt == folder.DeletedAt).ToList();
         files.ForEach(f => f.DeletedAt = null);
@@ -25,6 +25,5 @@ public class RestoreFolderHandler : IRequestHandler<RestoreFolderCommand, bool>
 
         folder.DeletedAt = null;
         await _folderRepository.UpdateAsync(folder);
-        return true;
     }
 }

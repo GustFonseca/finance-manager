@@ -22,7 +22,7 @@ public class CategoryHandlersTests
     [Fact]
     public async Task CreateCategory_saves_name_type_and_color()
     {
-        var dto = await new CreateCategoryHandler(Categories, TestDb.Mapper)
+        var dto = await new CreateCategoryHandler(Categories)
             .Handle(new CreateCategoryCommand(Me, "Pets", CategoryType.EXPENSE, "#FF0000"));
 
         var saved = Assert.Single(_db.Categories);
@@ -38,7 +38,7 @@ public class CategoryHandlersTests
         _db.AddCategory(Me, "Moradia");
         _db.AddCategory(Me, "Alimentação");
         _db.AddCategory(SomeoneElse, "Lazer");
-        var handler = new GetAllCategoriesHandler(Categories, TestDb.Mapper);
+        var handler = new GetAllCategoriesHandler(Categories);
 
         var all = await handler.Handle(new GetAllCategoriesQuery(Me, null));
         var expenses = await handler.Handle(new GetAllCategoriesQuery(Me, CategoryType.EXPENSE));
@@ -52,7 +52,7 @@ public class CategoryHandlersTests
     {
         var category = _db.AddCategory(Me, "Pets");
 
-        var dto = await new UpdateCategoryHandler(Categories, TestDb.Mapper)
+        var dto = await new UpdateCategoryHandler(Categories)
             .Handle(new UpdateCategoryCommand(Me, category.Id, "Bicos", CategoryType.INCOME, "#00FF00"));
 
         Assert.Equal(("Bicos", CategoryType.INCOME, "#00FF00"), (dto!.Name, dto.Type, dto.Color));
@@ -63,10 +63,10 @@ public class CategoryHandlersTests
     public async Task UpdateCategory_returns_null_for_a_missing_or_foreign_category()
     {
         var foreign = _db.AddCategory(SomeoneElse, "Lazer");
-        var handler = new UpdateCategoryHandler(Categories, TestDb.Mapper);
+        var handler = new UpdateCategoryHandler(Categories);
 
-        Assert.Null(await handler.Handle(new UpdateCategoryCommand(Me, Guid.NewGuid(), "x", CategoryType.EXPENSE, "#000")));
-        Assert.Null(await handler.Handle(new UpdateCategoryCommand(Me, foreign.Id, "x", CategoryType.EXPENSE, "#000")));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateCategoryCommand(Me, Guid.NewGuid(), "x", CategoryType.EXPENSE, "#000")));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateCategoryCommand(Me, foreign.Id, "x", CategoryType.EXPENSE, "#000")));
         Assert.Equal("Lazer", foreign.Name);
     }
 
@@ -75,9 +75,8 @@ public class CategoryHandlersTests
     {
         var category = _db.AddCategory(Me, "Pets");
 
-        var deleted = await new DeleteCategoryHandler(Categories, new TransactionRepository(_db)).Handle(new DeleteCategoryCommand(Me, category.Id));
+        await new DeleteCategoryHandler(Categories, new TransactionRepository(_db)).Handle(new DeleteCategoryCommand(Me, category.Id));
 
-        Assert.True(deleted);
         Assert.Empty(_db.Categories);
     }
 
@@ -87,8 +86,8 @@ public class CategoryHandlersTests
         var foreign = _db.AddCategory(SomeoneElse, "Lazer");
         var handler = new DeleteCategoryHandler(Categories, new TransactionRepository(_db));
 
-        Assert.False(await handler.Handle(new DeleteCategoryCommand(Me, Guid.NewGuid())));
-        Assert.False(await handler.Handle(new DeleteCategoryCommand(Me, foreign.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteCategoryCommand(Me, Guid.NewGuid())));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteCategoryCommand(Me, foreign.Id)));
         Assert.Single(_db.Categories);
     }
 

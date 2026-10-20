@@ -4,5 +4,5 @@ using FinanceManager.Aplication.Mediator.Messaging;
 
 namespace FinanceManager.Aplication.UseCases.Accounts.Commands.UpdateAccount;
 
-public record UpdateAccountCommand(Guid userId, Guid accountId, string newName) : ICommand<AccountDto?>;
+public record UpdateAccountCommand(Guid UserId, Guid AccountId, string Name) : ICommand<AccountDto>;
 

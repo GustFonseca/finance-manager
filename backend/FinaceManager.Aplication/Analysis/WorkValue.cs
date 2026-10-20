@@ -22,6 +22,6 @@ public static class WorkValue
             .Where(total => total > 0)
             .ToList();
         if (monthly.Count == 0 || hoursPerMonth <= 0) return 0;
-        return AvoidableSpendingAnalyzer.Median(monthly) / hoursPerMonth;
+        return Stats.Median(monthly) / hoursPerMonth;
     }
 }

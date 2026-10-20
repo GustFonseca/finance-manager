@@ -15,54 +15,44 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/folders")]
 [Authorize]
-public class FoldersController : ControllerBase
+public class FoldersController(IMediator mediator) : AppController(mediator)
 {
     private const long MaxUploadRequestBytes = 100 * 1024 * 1024;
 
-    private readonly IMediator _mediator;
 
-    public FoldersController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<FolderDto>>> GetAll()
     {
-        var folders = await _mediator.Send(new GetFoldersQuery(GetUserId()));
+        var folders = await Mediator.Send(new GetFoldersQuery(UserId));
         return Ok(folders);
     }
 
     [HttpPost]
     public async Task<ActionResult<FolderDto>> Create([FromBody] FolderNameRequest request)
     {
-        var folder = await _mediator.Send(new CreateFolderCommand(GetUserId(), request.Name));
+        var folder = await Mediator.Send(new CreateFolderCommand(UserId, request.Name));
         return Created($"/api/folders/{folder.Id}", folder);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<FolderDto>> Rename(Guid id, [FromBody] FolderNameRequest request)
     {
-        var folder = await _mediator.Send(new RenameFolderCommand(GetUserId(), id, request.Name));
-        if (folder == null) return NotFound();
+        var folder = await Mediator.Send(new RenameFolderCommand(UserId, id, request.Name));
         return Ok(folder);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var trashed = await _mediator.Send(new TrashFolderCommand(GetUserId(), id));
-        if (!trashed) return NotFound();
+        await Mediator.Send(new TrashFolderCommand(UserId, id));
         return NoContent();
     }
 
     [HttpGet("{id}/files")]
     public async Task<ActionResult<List<StoredFileDto>>> GetFiles(Guid id)
     {
-        var files = await _mediator.Send(new GetFolderFilesQuery(GetUserId(), id));
-        if (files == null) return NotFound();
+        var files = await Mediator.Send(new GetFolderFilesQuery(UserId, id));
         return Ok(files);
     }
 
@@ -77,9 +67,8 @@ public class FoldersController : ControllerBase
         foreach (var file in files)
         {
             await using var content = file.OpenReadStream();
-            var dto = await _mediator.Send(new UploadFileCommand(
-                GetUserId(), id, file.FileName, file.ContentType, file.Length, content));
-            if (dto == null) return NotFound();
+            var dto = await Mediator.Send(new UploadFileCommand(
+                UserId, id, file.FileName, file.ContentType, file.Length, content));
             uploaded.Add(dto);
         }
 

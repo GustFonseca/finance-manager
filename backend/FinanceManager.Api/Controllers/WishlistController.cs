@@ -16,39 +16,29 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/wishlist")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class WishlistController : ControllerBase
+public class WishlistController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public WishlistController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
-    public async Task<ActionResult<WishlistDto>> Get() => Ok(await _mediator.Send(new GetWishlistQuery(GetUserId(), DateTime.UtcNow)));
+    public async Task<ActionResult<WishlistDto>> Get() => Ok(await Mediator.Send(new GetWishlistQuery(UserId, DateTime.UtcNow)));
 
     [HttpPost]
     public async Task<ActionResult<WishlistItemDto>> Create([FromBody] CreateWishRequest request)
     {
-        var item = await _mediator.Send(new CreateWishCommand(GetUserId(), request.Name, request.PriceCents, request.Link, DateTime.UtcNow));
+        var item = await Mediator.Send(new CreateWishCommand(UserId, request.Name, request.PriceCents, request.Link, DateTime.UtcNow));
         return Created($"/api/wishlist/{item.Id}", item);
     }
 
     [HttpPut("{id}/decision")]
     public async Task<ActionResult<WishlistItemDto>> Decide(Guid id, [FromBody] WishDecisionRequest request)
     {
-        var item = await _mediator.Send(new DecideWishCommand(GetUserId(), id, request.Status, DateTime.UtcNow));
-        if (item == null) return NotFound();
+        var item = await Mediator.Send(new DecideWishCommand(UserId, id, request.Status, DateTime.UtcNow));
         return Ok(item);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        if (!await _mediator.Send(new DeleteWishCommand(GetUserId(), id))) return NotFound();
+        await Mediator.Send(new DeleteWishCommand(UserId, id));
         return NoContent();
     }
 }

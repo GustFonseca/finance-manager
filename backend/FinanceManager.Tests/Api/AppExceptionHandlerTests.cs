@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FinanceManager.Api.Errors;
 using FinanceManager.Aplication.Exceptions;
+using FinanceManager.Domain.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,6 +27,7 @@ public class AppExceptionHandlerTests
     [Theory]
     [InlineData(typeof(NotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(BusinessRuleException), StatusCodes.Status400BadRequest)]
+    [InlineData(typeof(DomainException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(UnauthorizedAccessException), StatusCodes.Status401Unauthorized)]
     public async Task Known_exceptions_become_problem_details_with_the_message(Type type, int status)
     {

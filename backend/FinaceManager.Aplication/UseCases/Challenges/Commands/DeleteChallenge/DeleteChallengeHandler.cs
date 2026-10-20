@@ -1,9 +1,10 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Challenges.Commands.DeleteChallenge;
 
-public class DeleteChallengeHandler : IRequestHandler<DeleteChallengeCommand, bool>
+public class DeleteChallengeHandler : IRequestHandler<DeleteChallengeCommand>
 {
     private readonly IChallengeRepository _challengeRepository;
 
@@ -12,12 +13,10 @@ public class DeleteChallengeHandler : IRequestHandler<DeleteChallengeCommand, bo
         _challengeRepository = challengeRepository;
     }
 
-    public async Task<bool> Handle(DeleteChallengeCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(DeleteChallengeCommand request, CancellationToken cancellationToken = default)
     {
-        var challenge = await _challengeRepository.GetByIdAsync(request.ChallengeId);
-        if (challenge == null || challenge.UserId != request.UserId) return false;
+        var challenge = await _challengeRepository.GetOwnedAsync(request.ChallengeId, request.UserId);
 
         await _challengeRepository.DeleteAsync(challenge);
-        return true;
     }
 }

@@ -16,44 +16,34 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/rules")]
 [Authorize(Policy = AdminPolicy.Name)]
-public class RulesController : ControllerBase
+public class RulesController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-    public RulesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
-    public async Task<ActionResult<List<RuleDto>>> GetAll() => Ok(await _mediator.Send(new GetRulesQuery()));
+    public async Task<ActionResult<List<RuleDto>>> GetAll() => Ok(await Mediator.Send(new GetRulesQuery()));
 
     [HttpPost]
     public async Task<ActionResult<RuleDto>> Create([FromBody] SaveRuleRequest request)
     {
-        var rule = await _mediator.Send(new SaveRuleCommand(GetUserId(), null, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
-        return Created($"/api/rules/{rule!.Id}", rule);
+        var rule = await Mediator.Send(new SaveRuleCommand(UserId, null, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
+        return Created($"/api/rules/{rule.Id}", rule);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<RuleDto>> Update(Guid id, [FromBody] SaveRuleRequest request)
     {
-        var rule = await _mediator.Send(new SaveRuleCommand(GetUserId(), id, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
-        if (rule == null) return NotFound();
+        var rule = await Mediator.Send(new SaveRuleCommand(UserId, id, request.Type, request.Pattern, request.Value, request.Priority, request.Note));
         return Ok(rule);
     }
 
     [HttpPut("{id}/active")]
     public async Task<ActionResult<RuleDto>> SetActive(Guid id, [FromBody] RuleActiveRequest request)
     {
-        var rule = await _mediator.Send(new SetRuleActiveCommand(GetUserId(), id, request.IsActive));
-        if (rule == null) return NotFound();
+        var rule = await Mediator.Send(new SetRuleActiveCommand(UserId, id, request.IsActive));
         return Ok(rule);
     }
 
     [HttpPost("test")]
     [EnableRateLimiting(RateLimits.Lookup)]
     public async Task<ActionResult<RuleTestDto>> Test([FromBody] RuleTestRequest request) =>
-        Ok(await _mediator.Send(new TestRuleQuery(GetUserId(), request.Pattern, DateTime.UtcNow)));
+        Ok(await Mediator.Send(new TestRuleQuery(UserId, request.Pattern, DateTime.UtcNow)));
 }

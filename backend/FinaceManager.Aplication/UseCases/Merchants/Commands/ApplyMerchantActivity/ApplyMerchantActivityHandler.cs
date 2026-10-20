@@ -1,5 +1,4 @@
 using FinanceManager.Aplication.Analysis;
-using FinanceManager.Aplication.Caching;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Enuns;
@@ -13,19 +12,13 @@ public class ApplyMerchantActivityHandler : IRequestHandler<ApplyMerchantActivit
     private readonly ICategoryRepository _categoryRepository;
     private readonly ITransactionRepository _transactionRepository;
     private readonly IClassificationRulesProvider _rulesProvider;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IUserDataVersions _versions;
 
     public ApplyMerchantActivityHandler(
         IMerchantRepository merchantRepository,
         ICategoryRepository categoryRepository,
         ITransactionRepository transactionRepository,
-        IClassificationRulesProvider rulesProvider,
-        IUnitOfWork unitOfWork,
-        IUserDataVersions versions)
+        IClassificationRulesProvider rulesProvider)
     {
-        _unitOfWork = unitOfWork;
-        _versions = versions;
         _merchantRepository = merchantRepository;
         _categoryRepository = categoryRepository;
         _transactionRepository = transactionRepository;
@@ -37,9 +30,7 @@ public class ApplyMerchantActivityHandler : IRequestHandler<ApplyMerchantActivit
         var merchant = await _merchantRepository.GetByIdAsync(request.MerchantId);
         if (merchant == null) return 0;
 
-        merchant.EnrichedAt = request.Now;
-        merchant.ActivityCode = request.Company?.ActivityCode;
-        merchant.Activity = request.Company?.Activity;
+        merchant.ApplyActivity(request.Company?.ActivityCode, request.Company?.Activity, request.Now);
 
         var moved = 0;
         if (request.Company != null && merchant.CategoryId == null)
@@ -61,12 +52,6 @@ public class ApplyMerchantActivityHandler : IRequestHandler<ApplyMerchantActivit
         }
 
         await _merchantRepository.UpdateAsync(merchant);
-        var userId = merchant.UserId;
-        _unitOfWork.OnCommitted(() =>
-        {
-            _versions.Bump(userId);
-            return Task.CompletedTask;
-        });
         return moved;
     }
 }

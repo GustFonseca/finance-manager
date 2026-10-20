@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using System.Text.RegularExpressions;
 using FinanceManager.Aplication.DTOs.Auth;
 using FinanceManager.Aplication.Exceptions;
@@ -7,8 +8,6 @@ namespace FinanceManager.Aplication.UseCases.Profile;
 
 public static partial class ProfileMapper
 {
-    public const int MaxNameLength = 100;
-    public const int MaxTextLength = 100;
     public const int MaxDependents = 20;
     public static readonly DateTime MinBirthDate = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -17,6 +16,8 @@ public static partial class ProfileMapper
         "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
         "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
     };
+
+    public static NotFoundException UserNotFound() => new("Usuário não encontrado.");
 
     public static ProfileDto ToDto(User user, bool isAdmin) => new()
     {
@@ -42,27 +43,25 @@ public static partial class ProfileMapper
 
     public static void Apply(User user, UpdateProfileRequest request, DateTime now)
     {
-        var name = request.Name?.Trim() ?? string.Empty;
-        if (name.Length == 0) throw new BusinessRuleException("Informe o seu nome.");
-        if (name.Length > MaxNameLength) throw new BusinessRuleException($"O nome pode ter até {MaxNameLength} caracteres.");
+        var name = Input.Name(request.Name, emptyMessage: "Informe o seu nome.");
 
-        var icon = Optional(request.AvatarIcon);
+        var icon = Input.Optional(request.AvatarIcon);
         if (icon != null && !IconName().IsMatch(icon)) throw new BusinessRuleException("Ícone inválido.");
-        var color = Optional(request.AvatarColor);
+        var color = Input.Optional(request.AvatarColor);
         if (color != null && !HexColor().IsMatch(color)) throw new BusinessRuleException("Cor inválida.");
 
         if (request.BirthDate is { } birth && (birth < MinBirthDate || birth > now))
             throw new BusinessRuleException("Data de nascimento inválida.");
 
-        var phone = Optional(request.Phone);
+        var phone = Input.Optional(request.Phone);
         var digits = phone == null ? null : new string(phone.Where(char.IsDigit).ToArray());
         if (digits != null && (digits.Length < 10 || digits.Length > 13)) throw new BusinessRuleException("Telefone inválido. Use DDD + número.");
 
-        var state = Optional(request.State)?.ToUpperInvariant();
+        var state = Input.Optional(request.State)?.ToUpperInvariant();
         if (state != null && !States.Contains(state)) throw new BusinessRuleException("Estado (UF) inválido.");
 
-        var city = Text(request.City, "A cidade");
-        var occupation = Text(request.Occupation, "A profissão");
+        var city = Input.Text(request.City, EntityLimits.TextLength, "A cidade");
+        var occupation = Input.Text(request.Occupation, EntityLimits.TextLength, "A profissão");
 
         if (request.MonthlyIncomeCents is < 0) throw new BusinessRuleException("A renda não pode ser negativa.");
         if (request.Payday is < 1 or > 31) throw new BusinessRuleException("O dia do pagamento deve ficar entre 1 e 31.");
@@ -81,15 +80,6 @@ public static partial class ProfileMapper
         user.Dependents = request.Dependents;
         user.DigestByEmail = request.DigestByEmail;
         user.ProfileUpdatedAt = now;
-    }
-
-    private static string? Optional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static string? Text(string? value, string label)
-    {
-        var text = Optional(value);
-        if (text?.Length > MaxTextLength) throw new BusinessRuleException($"{label} pode ter até {MaxTextLength} caracteres.");
-        return text;
     }
 
     [GeneratedRegex("^[a-z0-9-]{1,40}$")]

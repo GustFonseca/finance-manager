@@ -17,50 +17,40 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/goals")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class GoalsController : ControllerBase
+public class GoalsController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public GoalsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<List<GoalDto>>> GetAll()
     {
-        var goals = await _mediator.Send(new GetAllGoalsQuery(GetUserId()));
+        var goals = await Mediator.Send(new GetAllGoalsQuery(UserId));
         return Ok(goals);
     }
 
     [HttpPost]
     public async Task<ActionResult<GoalDto>> Create([FromBody] CreateGoalRequest request)
     {
-        var goal = await _mediator.Send(new CreateGoalCommand(GetUserId(), request.Name, request.TargetCents, request.Deadline));
+        var goal = await Mediator.Send(new CreateGoalCommand(UserId, request.Name, request.TargetCents, request.Deadline));
         return Created($"/api/goals/{goal.Id}", goal);
     }
 
     [HttpPut("{id}/progress")]
     public async Task<ActionResult<GoalDto>> UpdateProgress(Guid id, [FromBody] UpdateGoalProgressRequest request)
     {
-        var goal = await _mediator.Send(new UpdateGoalProgressCommand(GetUserId(), id, request.AmountCents));
+        var goal = await Mediator.Send(new UpdateGoalProgressCommand(UserId, id, request.AmountCents));
         return Ok(goal);
     }
 
     [HttpPut("{id}/complete")]
     public async Task<ActionResult<GoalDto>> Complete(Guid id)
     {
-        var goal = await _mediator.Send(new CompleteGoalCommand(GetUserId(), id));
+        var goal = await Mediator.Send(new CompleteGoalCommand(UserId, id));
         return Ok(goal);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteGoalCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteGoalCommand(UserId, id));
         return NoContent();
     }
 }

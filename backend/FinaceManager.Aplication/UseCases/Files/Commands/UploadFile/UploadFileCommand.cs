@@ -10,4 +10,4 @@ public record UploadFileCommand(
     string ContentType,
     long SizeBytes,
     Stream Content
-) : ICommand<StoredFileDto?>, IRunsOutsideTransaction;
+) : ICommand<StoredFileDto>, IRunsOutsideTransaction;

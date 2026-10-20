@@ -13,20 +13,13 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/client-logs")]
 [AllowAnonymous]
 [EnableRateLimiting(RateLimits.ClientLogs)]
-public class ClientLogsController : ControllerBase
+public class ClientLogsController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public ClientLogsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Report([FromBody] ClientLogRequest request)
     {
         Guid? userId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
-        await _mediator.Send(new ReportClientErrorCommand(
+        await Mediator.Send(new ReportClientErrorCommand(
             userId, request.Level, request.Message, request.Stack, request.Url, request.UserAgent));
         return NoContent();
     }

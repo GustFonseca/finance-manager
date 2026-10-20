@@ -7,7 +7,7 @@ namespace FinanceManager.Aplication.UseCases.Summary.Commands.SetSubscriptionCho
 
 public class SetSubscriptionChoiceHandler : IRequestHandler<SetSubscriptionChoiceCommand, bool>
 {
-    public const int MaxLength = 200;
+    public const int MaxLength = EntityLimits.KeyLength;
 
     private readonly ISubscriptionDecisionRepository _decisionRepository;
 

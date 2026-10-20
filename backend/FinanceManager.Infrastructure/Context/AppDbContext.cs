@@ -1,3 +1,4 @@
+using FinanceManager.Domain.Common;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Infrastructure.Classification;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,11 @@ namespace FinanceManager.Infrastructure.Context;
 
 public class AppDbContext : DbContext
 {
+    private readonly List<IDomainEvent> _domainEvents = [];
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public IReadOnlyList<IDomainEvent> PendingDomainEvents => _domainEvents;
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Account> Accounts => Set<Account>();
@@ -26,6 +31,45 @@ public class AppDbContext : DbContext
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
     public DbSet<Debt> Debts => Set<Debt>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        var raised = CollectDomainEvents();
+        var saved = base.SaveChanges(acceptAllChangesOnSuccess);
+        _domainEvents.AddRange(raised);
+        return saved;
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        var raised = CollectDomainEvents();
+        var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        _domainEvents.AddRange(raised);
+        return saved;
+    }
+
+    public IReadOnlyList<IDomainEvent> TakeDomainEvents()
+    {
+        var events = _domainEvents.ToList();
+        _domainEvents.Clear();
+        return events;
+    }
+
+    public void DiscardDomainEvents() => _domainEvents.Clear();
+
+    public void DiscardChanges()
+    {
+        ChangeTracker.Clear();
+        DiscardDomainEvents();
+    }
+
+    private List<IDomainEvent> CollectDomainEvents()
+    {
+        var raisers = ChangeTracker.Entries<Entity>().Select(e => e.Entity).Where(e => e.DomainEvents.Count > 0).ToList();
+        var events = raisers.SelectMany(e => e.DomainEvents).ToList();
+        raisers.ForEach(e => e.ClearDomainEvents());
+        return events;
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(e =>
@@ -33,13 +77,13 @@ public class AppDbContext : DbContext
             e.HasKey(u => u.Id);
             e.HasIndex(u => u.GoogleId).IsUnique();
             e.HasIndex(u => u.Email).IsUnique();
-            e.Property(u => u.Name).HasMaxLength(100);
+            e.Property(u => u.Name).HasMaxLength(EntityLimits.NameLength);
             e.Property(u => u.AvatarIcon).HasMaxLength(40);
-            e.Property(u => u.AvatarColor).HasMaxLength(7);
+            e.Property(u => u.AvatarColor).HasMaxLength(EntityLimits.ColorLength);
             e.Property(u => u.Phone).HasMaxLength(20);
-            e.Property(u => u.City).HasMaxLength(100);
+            e.Property(u => u.City).HasMaxLength(EntityLimits.TextLength);
             e.Property(u => u.State).HasMaxLength(2);
-            e.Property(u => u.Occupation).HasMaxLength(100);
+            e.Property(u => u.Occupation).HasMaxLength(EntityLimits.TextLength);
         });
 
         modelBuilder.Entity<Account>(e =>
@@ -56,7 +100,7 @@ public class AppDbContext : DbContext
             e.HasKey(c => c.Id);
             e.HasIndex(c => c.UserId);
             e.Property(c => c.Name).HasMaxLength(EntityLimits.NameLength);
-            e.Property(c => c.Color).HasMaxLength(7);
+            e.Property(c => c.Color).HasMaxLength(EntityLimits.ColorLength);
             e.Property(c => c.Type).HasConversion<string>();
             e.HasOne(c => c.User).WithMany(u => u.Categories).HasForeignKey(c => c.UserId);
         });
@@ -80,9 +124,9 @@ public class AppDbContext : DbContext
             e.HasKey(r => r.Id);
             e.HasIndex(r => new { r.Type, r.Priority });
             e.Property(r => r.Type).HasConversion<string>().HasMaxLength(30);
-            e.Property(r => r.Pattern).HasMaxLength(2000);
-            e.Property(r => r.Value).HasMaxLength(100);
-            e.Property(r => r.Note).HasMaxLength(300);
+            e.Property(r => r.Pattern).HasMaxLength(EntityLimits.RulePatternLength);
+            e.Property(r => r.Value).HasMaxLength(EntityLimits.RuleValueLength);
+            e.Property(r => r.Note).HasMaxLength(EntityLimits.RuleNoteLength);
             e.HasData(DefaultClassificationRules.All);
         });
 
@@ -90,7 +134,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(m => m.Id);
             e.HasIndex(m => new { m.UserId, m.Key }).IsUnique();
-            e.Property(m => m.Name).HasMaxLength(100);
+            e.Property(m => m.Name).HasMaxLength(EntityLimits.NameLength);
             e.Property(m => m.Key).HasMaxLength(100);
             e.Property(m => m.Document).HasMaxLength(30);
             e.Property(m => m.Kind).HasConversion<string>().HasMaxLength(20);
@@ -115,7 +159,7 @@ public class AppDbContext : DbContext
             e.HasKey(f => f.Id);
             e.HasIndex(f => f.UserId);
             e.HasIndex(f => f.UserId, "IX_Folders_UserId_System").IsUnique().HasFilter("\"IsSystem\"");
-            e.Property(f => f.Name).HasMaxLength(100);
+            e.Property(f => f.Name).HasMaxLength(EntityLimits.NameLength);
             e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
         });
 
@@ -125,7 +169,7 @@ public class AppDbContext : DbContext
             e.HasKey(f => f.Id);
             e.HasIndex(f => f.UserId);
             e.HasIndex(f => f.FolderId);
-            e.Property(f => f.Name).HasMaxLength(255);
+            e.Property(f => f.Name).HasMaxLength(EntityLimits.FileNameLength);
             e.Property(f => f.ContentType).HasMaxLength(255);
             e.Property(f => f.StorageKey).HasMaxLength(100);
             e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId);
@@ -138,7 +182,7 @@ public class AppDbContext : DbContext
             e.HasIndex(a => new { a.UserId, a.CreatedAt });
             e.Property(a => a.Type).HasConversion<string>().HasMaxLength(20);
             e.Property(a => a.Source).HasMaxLength(50);
-            e.Property(a => a.Description).HasMaxLength(500);
+            e.Property(a => a.Description).HasMaxLength(EntityLimits.DescriptionLength);
             e.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
         });
 
@@ -153,7 +197,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(c => c.Id);
             e.HasIndex(c => c.UserId);
-            e.Property(c => c.Name).HasMaxLength(100);
+            e.Property(c => c.Name).HasMaxLength(EntityLimits.NameLength);
             e.Property(c => c.Scope).HasConversion<string>().HasMaxLength(20);
             e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId);
         });
@@ -162,7 +206,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(d => d.Id);
             e.HasIndex(d => new { d.UserId, d.Key }).IsUnique();
-            e.Property(d => d.Key).HasMaxLength(200);
+            e.Property(d => d.Key).HasMaxLength(EntityLimits.KeyLength);
             e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
         });
 
@@ -170,8 +214,8 @@ public class AppDbContext : DbContext
         {
             e.HasKey(d => d.Id);
             e.HasIndex(d => new { d.UserId, d.MerchantKey }).IsUnique();
-            e.Property(d => d.MerchantKey).HasMaxLength(200);
-            e.Property(d => d.Name).HasMaxLength(200);
+            e.Property(d => d.MerchantKey).HasMaxLength(EntityLimits.KeyLength);
+            e.Property(d => d.Name).HasMaxLength(EntityLimits.KeyLength);
             e.Property(d => d.Choice).HasConversion<string>().HasMaxLength(10);
             e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
         });
@@ -180,8 +224,8 @@ public class AppDbContext : DbContext
         {
             e.HasKey(w => w.Id);
             e.HasIndex(w => w.UserId);
-            e.Property(w => w.Name).HasMaxLength(150);
-            e.Property(w => w.Link).HasMaxLength(500);
+            e.Property(w => w.Name).HasMaxLength(EntityLimits.WishNameLength);
+            e.Property(w => w.Link).HasMaxLength(EntityLimits.LinkLength);
             e.Property(w => w.Status).HasConversion<string>().HasMaxLength(10);
             e.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId);
         });
@@ -190,7 +234,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(d => d.Id);
             e.HasIndex(d => d.UserId);
-            e.Property(d => d.Name).HasMaxLength(100);
+            e.Property(d => d.Name).HasMaxLength(EntityLimits.NameLength);
             e.Property(d => d.MonthlyRatePercent).HasPrecision(7, 4);
             e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId);
         });

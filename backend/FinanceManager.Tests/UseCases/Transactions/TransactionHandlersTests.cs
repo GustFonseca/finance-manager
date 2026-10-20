@@ -33,7 +33,7 @@ public class TransactionHandlersTests
 
     private CreateTransactionHandler CreateHandler => new(
         new TransactionRepository(_db), new AccountRepository(_db), new CategoryRepository(_db),
-        new MerchantRepository(_db), new UserRepository(_db), TestDb.Mapper, TestRules.Provider);
+        new MerchantRepository(_db), new UserRepository(_db), TestRules.Provider);
 
     private CreateTransactionCommand Command(Guid accountId, Guid categoryId, TransactionType type = TransactionType.EXPENSE, long cents = 1000, string description = "Cinema", DateTime? date = null) =>
         new(_me.Id, accountId, categoryId, type, cents, description, date ?? Day, Recurrence.NONE);
@@ -98,7 +98,7 @@ public class TransactionHandlersTests
         _db.AddTransaction(_nubank, _lazer, 200, Day.AddDays(1), "Depois", merchant);
         _db.AddTransaction(itau, _lazer, 300, Day, "Outra conta");
         _db.AddTransaction(_nubank, _lazer, 400, Day.AddDays(-30), "Fora");
-        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db), TestDb.Mapper);
+        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db));
 
         var period = await handler.Handle(new GetTransactionsByDateRangeQuery(_me.Id, Day.AddDays(-7), Day.AddDays(7)));
         var nubank = await handler.Handle(new GetTransactionsByDateRangeQuery(_me.Id, Day.AddDays(-7), Day.AddDays(7), _nubank.Id));

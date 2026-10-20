@@ -1,5 +1,5 @@
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.Validation;
-using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
@@ -10,12 +10,10 @@ namespace FinanceManager.Aplication.UseCases.Categories.Commands.CreateCategory;
 public class CreateCategoryHandler : IRequestHandler<CreateCategoryCommand, CategoryDto>
 {
     private readonly ICategoryRepository _categoryRepository;
-    private readonly IMapper _mapper;
 
-    public CreateCategoryHandler(ICategoryRepository categoryRepository, IMapper mapper)
+    public CreateCategoryHandler(ICategoryRepository categoryRepository)
     {
         _categoryRepository = categoryRepository;
-        _mapper = mapper;
     }
 
     public async Task<CategoryDto> Handle(CreateCategoryCommand request, CancellationToken cancellationToken = default)
@@ -30,6 +28,6 @@ public class CreateCategoryHandler : IRequestHandler<CreateCategoryCommand, Cate
         };
 
         await _categoryRepository.CreateAsync(category);
-        return _mapper.Map<CategoryDto>(category);
+        return category.ToDto();
     }
 }

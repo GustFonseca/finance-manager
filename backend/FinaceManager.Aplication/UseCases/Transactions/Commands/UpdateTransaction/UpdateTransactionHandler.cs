@@ -1,10 +1,10 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.UseCases.Merchants;
-using FinanceManager.Domain.Enuns;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Transactions.Commands.UpdateTransaction;
@@ -17,7 +17,6 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
     private readonly IMerchantRepository _merchantRepository;
     private readonly IUserRepository _userRepository;
     private readonly IClassificationRulesProvider _rulesProvider;
-    private readonly IMapper _mapper;
 
     public UpdateTransactionHandler(
         ITransactionRepository transactionRepository,
@@ -25,8 +24,7 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
         ICategoryRepository categoryRepository,
         IMerchantRepository merchantRepository,
         IUserRepository userRepository,
-        IClassificationRulesProvider rulesProvider,
-        IMapper mapper)
+        IClassificationRulesProvider rulesProvider)
     {
         _transactionRepository = transactionRepository;
         _accountRepository = accountRepository;
@@ -34,14 +32,11 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
         _merchantRepository = merchantRepository;
         _userRepository = userRepository;
         _rulesProvider = rulesProvider;
-        _mapper = mapper;
     }
 
     public async Task<TransactionDto> Handle(UpdateTransactionCommand request, CancellationToken cancellationToken = default)
     {
-        var transaction = await _transactionRepository.GetByIdAsync(request.TransactionId);
-        if (transaction == null || transaction.UserId != request.UserId)
-            throw new NotFoundException("Transação não encontrada.");
+        var transaction = await _transactionRepository.GetOwnedAsync(request.TransactionId, request.UserId);
 
         var description = TransactionInput.Validate(request.AmountCents, request.Description, request.Type, request.Recurrence);
         var (account, category) = await TransactionInput.LoadReferencesAsync(
@@ -55,8 +50,7 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
 
         var previousAccount = await _accountRepository.GetByIdAsync(transaction.AccountId)
             ?? throw new NotFoundException("Conta não encontrada.");
-        TransactionInput.ApplyToBalance(previousAccount, Opposite(transaction.Type), transaction.AmountCents);
-        TransactionInput.ApplyToBalance(account, request.Type, request.AmountCents);
+        previousAccount.Reverse(transaction);
 
         transaction.AccountId = account.Id;
         transaction.Account = account;
@@ -69,14 +63,12 @@ public class UpdateTransactionHandler : IRequestHandler<UpdateTransactionCommand
         transaction.Recurrence = request.Recurrence;
         transaction.MerchantId = merchant?.Id;
         transaction.Merchant = merchant;
+        account.Record(transaction);
 
         if (previousAccount.Id != account.Id) await _accountRepository.UpdateAsync(previousAccount);
         await _accountRepository.UpdateAsync(account);
         await _transactionRepository.UpdateAsync(transaction);
 
-        return _mapper.Map<TransactionDto>(transaction);
+        return transaction.ToDto();
     }
-
-    private static TransactionType Opposite(TransactionType type) =>
-        type == TransactionType.INCOME ? TransactionType.EXPENSE : TransactionType.INCOME;
 }

@@ -1,4 +1,3 @@
-using AutoMapper;
 using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.Storage;
 using FinanceManager.Domain.Entities;
@@ -12,13 +11,9 @@ public class FakeStore
     public List<StoredFile> Files { get; } = [];
     public List<string> StoredKeys { get; } = [];
 
-    public IMapper Mapper { get; } =
-        new MapperConfiguration(cfg => cfg.AddMaps(typeof(FolderProfile).Assembly)).CreateMapper();
-
     public FakeFolderRepository FolderRepository => new(this);
     public FakeFileRepository FileRepository => new(this);
     public FakeFileStorage Storage => new(this);
-    public FinanceManager.Infrastructure.Messaging.UnitOfWork Work { get; } = new();
 
     public Folder AddFolder(Guid userId, string name = "Pasta", bool isSystem = false)
     {

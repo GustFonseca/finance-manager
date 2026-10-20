@@ -1,3 +1,4 @@
+using FinanceManager.Domain.Entities;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using FinanceManager.Aplication.Classification;
@@ -9,7 +10,6 @@ public record ParsedMerchant(string Name, string Key, MerchantKind Kind, string?
 
 public static partial class MerchantParser
 {
-    private const int MaxNameLength = 100;
 
     private static readonly HashSet<string> Particles = ["de", "da", "do", "das", "dos", "e", "em", "para", "com"];
 
@@ -68,14 +68,14 @@ public static partial class MerchantParser
             name = CorporateSuffix().Replace(name.Trim(' ', '.', ',', '-'), string.Empty);
         } while (name != previous);
         name = Spaces().Replace(name, " ").Trim(' ', '.', ',', '-');
-        if (name.Length > MaxNameLength) name = name[..MaxNameLength].Trim();
+        if (name.Length > EntityLimits.NameLength) name = name[..EntityLimits.NameLength].Trim();
         return IsShouting(name) ? TitleCase(name) : name;
     }
 
     private static bool IsShouting(string name) => name.Any(char.IsLetter) && !name.Any(char.IsLower);
 
     private static string TitleCase(string name) =>
-        string.Join(' ', name.ToLower(CultureInfo.GetCultureInfo("pt-BR")).Split(' ').Select((word, i) =>
+        string.Join(' ', name.ToLower(MoneyText.PtBr).Split(' ').Select((word, i) =>
             i > 0 && Particles.Contains(word) ? word
             : word.Length == 0 ? word
             : char.ToUpper(word[0]) + word[1..]));

@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantHistory;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchants;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantSpending;
@@ -39,12 +40,12 @@ public class MerchantQueriesTests
     }
 
     private GetMerchantHistoryHandler HistoryHandler =>
-        new(new MerchantRepository(_db), new TransactionRepository(_db), TestDb.Mapper);
+        new(new MerchantRepository(_db), new TransactionRepository(_db));
 
     [Fact]
     public async Task GetMerchants_lists_the_users_merchants_by_name_with_their_category()
     {
-        var merchants = await new GetMerchantsHandler(new MerchantRepository(_db), TestDb.Mapper).Handle(new GetMerchantsQuery(_me));
+        var merchants = await new GetMerchantsHandler(new MerchantRepository(_db)).Handle(new GetMerchantsQuery(_me));
 
         Assert.Equal(["iFood", "Uber"], merchants.Select(m => m.Name));
         Assert.Equal("Alimentação", merchants[0].CategoryName);
@@ -103,7 +104,7 @@ public class MerchantQueriesTests
     [Fact]
     public async Task GetMerchantHistory_returns_null_for_missing_or_foreign_merchants()
     {
-        Assert.Null(await HistoryHandler.Handle(new GetMerchantHistoryQuery(_me, Guid.NewGuid(), Start, End)));
-        Assert.Null(await HistoryHandler.Handle(new GetMerchantHistoryQuery(_me, _foreign.Id, Start, End)));
+        await Assert.ThrowsAsync<NotFoundException>(() => HistoryHandler.Handle(new GetMerchantHistoryQuery(_me, Guid.NewGuid(), Start, End)));
+        await Assert.ThrowsAsync<NotFoundException>(() => HistoryHandler.Handle(new GetMerchantHistoryQuery(_me, _foreign.Id, Start, End)));
     }
 }

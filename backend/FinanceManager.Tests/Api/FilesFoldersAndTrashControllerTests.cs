@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using System.Text;
 using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
@@ -47,45 +48,43 @@ public class FilesFoldersAndTrashControllerTests
     public async Task Files_Update_returns_200_or_404()
     {
         var folderId = Guid.NewGuid();
-        _mediator.Returns<UpdateFileCommand>(c => c.FileId == Known ? new StoredFileDto { Id = Known, Name = c.Name! } : null);
+        _mediator.Returns<UpdateFileCommand>(c => c.FileId == Known ? new StoredFileDto { Id = Known, Name = c.Name! } : throw new NotFoundException("não encontrado"));
 
         var found = await Files.Update(Known, new UpdateFileRequest { Name = "novo.pdf", FolderId = folderId });
-        var missing = await Files.Update(Guid.NewGuid(), new UpdateFileRequest { Name = "x" });
 
         Assert.Equal("novo.pdf", Assert.IsType<StoredFileDto>(Assert.IsType<OkObjectResult>(found.Result).Value).Name);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Files.Update(Guid.NewGuid(), new UpdateFileRequest { Name = "x" }));
         Assert.Equal(new UpdateFileCommand(Me, Known, "novo.pdf", folderId), _mediator.Sent[0]);
     }
 
     [Fact]
     public async Task Files_Delete_returns_204_or_404()
     {
-        _mediator.Returns<TrashFileCommand>(c => c.FileId == Known);
+        _mediator.Returns<TrashFileCommand>(c => c.FileId == Known ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Files.Delete(Known));
-        Assert.IsType<NotFoundResult>(await Files.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Files.Delete(Guid.NewGuid()));
     }
 
     [Fact]
     public async Task Files_Download_returns_the_signed_url_or_404()
     {
-        _mediator.Returns<GetFileDownloadUrlQuery>(q => q.FileId == Known ? "https://storage/x" : null);
+        _mediator.Returns<GetFileDownloadUrlQuery>(q => q.FileId == Known ? "https://storage/x" : throw new NotFoundException("não encontrado"));
 
         var found = await Files.Download(Known);
-        var missing = await Files.Download(Guid.NewGuid());
 
         Assert.Equal("https://storage/x", Assert.IsType<FileDownloadDto>(Assert.IsType<OkObjectResult>(found.Result).Value).Url);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Files.Download(Guid.NewGuid()));
     }
 
     [Fact]
     public async Task Files_View_returns_the_inline_link_or_404()
     {
         var view = new FileViewDto { Url = "https://storage/x", Name = "nota.jpg", ContentType = "image/jpeg" };
-        _mediator.Returns<FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery>(q => q.FileId == Known ? view : null);
+        _mediator.Returns<FinanceManager.Aplication.UseCases.Files.Queries.GetFileView.GetFileViewQuery>(q => q.FileId == Known ? view : throw new NotFoundException("não encontrado"));
 
         Assert.Same(view, Assert.IsType<OkObjectResult>((await Files.View(Known)).Result).Value);
-        Assert.IsType<NotFoundResult>((await Files.View(Guid.NewGuid())).Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Files.View(Guid.NewGuid()));
     }
 
     [Fact]
@@ -107,35 +106,33 @@ public class FilesFoldersAndTrashControllerTests
     [Fact]
     public async Task Folders_Rename_returns_200_or_404()
     {
-        _mediator.Returns<RenameFolderCommand>(c => c.FolderId == Known ? new FolderDto { Id = Known, Name = c.Name } : null);
+        _mediator.Returns<RenameFolderCommand>(c => c.FolderId == Known ? new FolderDto { Id = Known, Name = c.Name } : throw new NotFoundException("não encontrado"));
 
         var found = await Folders.Rename(Known, new FolderNameRequest { Name = "Nova" });
-        var missing = await Folders.Rename(Guid.NewGuid(), new FolderNameRequest { Name = "Nova" });
 
         Assert.Equal("Nova", Assert.IsType<FolderDto>(Assert.IsType<OkObjectResult>(found.Result).Value).Name);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Folders.Rename(Guid.NewGuid(), new FolderNameRequest { Name = "Nova" }));
     }
 
     [Fact]
     public async Task Folders_Delete_returns_204_or_404()
     {
-        _mediator.Returns<TrashFolderCommand>(c => c.FolderId == Known);
+        _mediator.Returns<TrashFolderCommand>(c => c.FolderId == Known ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Folders.Delete(Known));
-        Assert.IsType<NotFoundResult>(await Folders.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Folders.Delete(Guid.NewGuid()));
     }
 
     [Fact]
     public async Task Folders_GetFiles_returns_200_or_404()
     {
         var files = new List<StoredFileDto>();
-        _mediator.Returns<GetFolderFilesQuery>(q => q.FolderId == Known ? files : null);
+        _mediator.Returns<GetFolderFilesQuery>(q => q.FolderId == Known ? files : throw new NotFoundException("não encontrado"));
 
         var found = await Folders.GetFiles(Known);
-        var missing = await Folders.GetFiles(Guid.NewGuid());
 
         Assert.Same(files, Assert.IsType<OkObjectResult>(found.Result).Value);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Folders.GetFiles(Guid.NewGuid()));
     }
 
     [Fact]
@@ -169,11 +166,10 @@ public class FilesFoldersAndTrashControllerTests
     [Fact]
     public async Task Folders_Upload_to_a_missing_folder_is_404()
     {
-        _mediator.Returns<UploadFileCommand>(_ => null);
+        _mediator.Throws<UploadFileCommand>(new NotFoundException("Pasta não encontrada."));
 
-        var result = await Folders.Upload(Guid.NewGuid(), [Form("a.pdf", "abc"), Form("b.pdf", "abc")]);
+        await Assert.ThrowsAsync<NotFoundException>(() => Folders.Upload(Guid.NewGuid(), [Form("a.pdf", "abc"), Form("b.pdf", "abc")]));
 
-        Assert.IsType<NotFoundResult>(result.Result);
         Assert.Single(_mediator.Sent);
     }
 
@@ -195,19 +191,19 @@ public class FilesFoldersAndTrashControllerTests
     [Fact]
     public async Task Trash_restore_and_delete_return_204_or_404()
     {
-        _mediator.Returns<RestoreFolderCommand>(c => c.FolderId == Known);
-        _mediator.Returns<RestoreFileCommand>(c => c.FileId == Known);
-        _mediator.Returns<DeleteFolderForeverCommand>(c => c.FolderId == Known);
-        _mediator.Returns<DeleteFileForeverCommand>(c => c.FileId == Known);
+        _mediator.Returns<RestoreFolderCommand>(c => c.FolderId == Known ? true : throw new NotFoundException("não encontrado"));
+        _mediator.Returns<RestoreFileCommand>(c => c.FileId == Known ? true : throw new NotFoundException("não encontrado"));
+        _mediator.Returns<DeleteFolderForeverCommand>(c => c.FolderId == Known ? true : throw new NotFoundException("não encontrado"));
+        _mediator.Returns<DeleteFileForeverCommand>(c => c.FileId == Known ? true : throw new NotFoundException("não encontrado"));
         var other = Guid.NewGuid();
 
         Assert.IsType<NoContentResult>(await Trash.RestoreFolder(Known));
-        Assert.IsType<NotFoundResult>(await Trash.RestoreFolder(other));
+        await Assert.ThrowsAsync<NotFoundException>(() => Trash.RestoreFolder(other));
         Assert.IsType<NoContentResult>(await Trash.RestoreFile(Known));
-        Assert.IsType<NotFoundResult>(await Trash.RestoreFile(other));
+        await Assert.ThrowsAsync<NotFoundException>(() => Trash.RestoreFile(other));
         Assert.IsType<NoContentResult>(await Trash.DeleteFolder(Known));
-        Assert.IsType<NotFoundResult>(await Trash.DeleteFolder(other));
+        await Assert.ThrowsAsync<NotFoundException>(() => Trash.DeleteFolder(other));
         Assert.IsType<NoContentResult>(await Trash.DeleteFile(Known));
-        Assert.IsType<NotFoundResult>(await Trash.DeleteFile(other));
+        await Assert.ThrowsAsync<NotFoundException>(() => Trash.DeleteFile(other));
     }
 }

@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Analysis;
 using FinanceManager.Aplication.Rates;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
@@ -27,7 +28,7 @@ public class MerchantClassAndAvoidableTests
         _db.SaveChanges();
     }
 
-    private SetMerchantClassHandler ClassHandler => new(new MerchantRepository(_db), TestDb.Mapper);
+    private SetMerchantClassHandler ClassHandler => new(new MerchantRepository(_db));
 
     [Fact]
     public async Task Marking_a_merchant_changes_its_class_and_is_recorded()
@@ -57,8 +58,8 @@ public class MerchantClassAndAvoidableTests
     [Fact]
     public async Task Someone_elses_or_a_missing_merchant_is_not_found()
     {
-        Assert.Null(await ClassHandler.Handle(new SetMerchantClassCommand(Guid.NewGuid(), _padaria.Id, SpendingClass.ESSENTIAL)));
-        Assert.Null(await ClassHandler.Handle(new SetMerchantClassCommand(_me.Id, Guid.NewGuid(), SpendingClass.ESSENTIAL)));
+        await Assert.ThrowsAsync<NotFoundException>(() => ClassHandler.Handle(new SetMerchantClassCommand(Guid.NewGuid(), _padaria.Id, SpendingClass.ESSENTIAL)));
+        await Assert.ThrowsAsync<NotFoundException>(() => ClassHandler.Handle(new SetMerchantClassCommand(_me.Id, Guid.NewGuid(), SpendingClass.ESSENTIAL)));
     }
 
     [Fact]

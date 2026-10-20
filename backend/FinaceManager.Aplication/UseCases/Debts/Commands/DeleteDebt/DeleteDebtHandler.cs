@@ -1,9 +1,10 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Debts.Commands.DeleteDebt;
 
-public class DeleteDebtHandler : IRequestHandler<DeleteDebtCommand, bool>
+public class DeleteDebtHandler : IRequestHandler<DeleteDebtCommand>
 {
     private readonly IDebtRepository _debtRepository;
 
@@ -12,11 +13,9 @@ public class DeleteDebtHandler : IRequestHandler<DeleteDebtCommand, bool>
         _debtRepository = debtRepository;
     }
 
-    public async Task<bool> Handle(DeleteDebtCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(DeleteDebtCommand request, CancellationToken cancellationToken = default)
     {
-        var debt = await _debtRepository.GetByIdAsync(request.DebtId);
-        if (debt == null || debt.UserId != request.UserId) return false;
+        var debt = await _debtRepository.GetOwnedAsync(request.DebtId, request.UserId);
         await _debtRepository.DeleteAsync(debt);
-        return true;
     }
 }

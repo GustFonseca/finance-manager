@@ -1,4 +1,3 @@
-using AutoMapper;
 using FinanceManager.Aplication.Mappings;
 using FinanceManager.Infrastructure.Auditing;
 using FinanceManager.Infrastructure.Context;
@@ -27,6 +26,4 @@ public static class TestDb
         return (db, connection);
     }
 
-    public static IMapper Mapper { get; } =
-        new MapperConfiguration(cfg => cfg.AddMaps(typeof(TransactionProfile).Assembly)).CreateMapper();
 }

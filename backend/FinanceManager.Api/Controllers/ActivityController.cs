@@ -13,21 +13,12 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/activity")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class ActivityController : ControllerBase
+public class ActivityController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public ActivityController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<List<ActivityLogDto>>> Get([FromQuery] DateTime? before, [FromQuery] int limit = 50)
     {
-        var entries = await _mediator.Send(new GetActivityQuery(GetUserId(), before, limit));
+        var entries = await Mediator.Send(new GetActivityQuery(UserId, before, limit));
         return Ok(entries);
     }
 }

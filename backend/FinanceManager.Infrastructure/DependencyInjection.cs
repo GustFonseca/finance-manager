@@ -32,9 +32,7 @@ public static class DependencyInjection
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-        services.AddScoped<UnitOfWork>();
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
-        services.AddScoped<IMediator, Mediator>();
+        services.AddMessaging();
 
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IUserRepository, UserRepository>();

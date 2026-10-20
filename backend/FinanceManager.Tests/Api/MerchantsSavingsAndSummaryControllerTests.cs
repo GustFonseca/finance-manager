@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
@@ -76,14 +77,13 @@ public class MerchantsSavingsAndSummaryControllerTests
     public async Task Merchants_Update_returns_200_or_404()
     {
         var category = Guid.NewGuid();
-        _mediator.Returns<UpdateMerchantCommand>(c => c.MerchantId == Known ? new UpdateMerchantResultDto { UpdatedTransactions = 2 } : null);
+        _mediator.Returns<UpdateMerchantCommand>(c => c.MerchantId == Known ? new UpdateMerchantResultDto { UpdatedTransactions = 2 } : throw new NotFoundException("não encontrado"));
         var request = new UpdateMerchantRequest { Name = "iFood", Kind = MerchantKind.BUSINESS, CategoryId = category, ApplyToTransactions = true };
 
         var found = await Merchants.Update(Known, request);
-        var missing = await Merchants.Update(Guid.NewGuid(), request);
 
         Assert.Equal(2, Assert.IsType<UpdateMerchantResultDto>(Assert.IsType<OkObjectResult>(found.Result).Value).UpdatedTransactions);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Merchants.Update(Guid.NewGuid(), request));
         Assert.Equal(new UpdateMerchantCommand(Me, Known, "iFood", MerchantKind.BUSINESS, category, true), _mediator.Sent[0]);
     }
 
@@ -91,13 +91,12 @@ public class MerchantsSavingsAndSummaryControllerTests
     public async Task Merchants_SetClass_returns_200_or_404()
     {
         var dto = new MerchantDto { Id = Known, Class = SpendingClass.ESSENTIAL };
-        _mediator.Returns<SetMerchantClassCommand>(c => c.MerchantId == Known ? dto : null);
+        _mediator.Returns<SetMerchantClassCommand>(c => c.MerchantId == Known ? dto : throw new NotFoundException("não encontrado"));
 
         var found = await Merchants.SetClass(Known, new SetMerchantClassRequest { Class = SpendingClass.ESSENTIAL });
-        var missing = await Merchants.SetClass(Guid.NewGuid(), new SetMerchantClassRequest());
 
         Assert.Same(dto, Assert.IsType<OkObjectResult>(found.Result).Value);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Merchants.SetClass(Guid.NewGuid(), new SetMerchantClassRequest()));
         Assert.Equal(new SetMerchantClassCommand(Me, Known, SpendingClass.ESSENTIAL), _mediator.Sent[0]);
     }
 
@@ -130,13 +129,12 @@ public class MerchantsSavingsAndSummaryControllerTests
     public async Task Merchants_GetHistory_returns_200_or_404()
     {
         var history = new MerchantHistoryDto();
-        _mediator.Returns<GetMerchantHistoryQuery>(q => q.MerchantId == Known ? history : null);
+        _mediator.Returns<GetMerchantHistoryQuery>(q => q.MerchantId == Known ? history : throw new NotFoundException("não encontrado"));
 
         var found = await Merchants.GetHistory(Known, Start, End);
-        var missing = await Merchants.GetHistory(Guid.NewGuid(), Start, End);
 
         Assert.Same(history, Assert.IsType<OkObjectResult>(found.Result).Value);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Merchants.GetHistory(Guid.NewGuid(), Start, End));
         Assert.Equal(new GetMerchantHistoryQuery(Me, Known, Start, End), _mediator.Sent[0]);
     }
 
@@ -166,10 +164,10 @@ public class MerchantsSavingsAndSummaryControllerTests
     [Fact]
     public async Task Savings_SetBudget_returns_204_or_404()
     {
-        _mediator.Returns<SetCategoryBudgetCommand>(c => c.CategoryId == Known);
+        _mediator.Returns<SetCategoryBudgetCommand>(c => c.CategoryId == Known ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Savings.SetBudget(Known, new CategoryBudgetRequest { LimitCents = 100 }));
-        Assert.IsType<NotFoundResult>(await Savings.SetBudget(Guid.NewGuid(), new CategoryBudgetRequest()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Savings.SetBudget(Guid.NewGuid(), new CategoryBudgetRequest()));
         Assert.Equal(new SetCategoryBudgetCommand(Me, Known, 100), _mediator.Sent[0]);
     }
 

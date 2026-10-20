@@ -1,4 +1,5 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -9,33 +10,29 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Files.Commands.UploadFile;
 
-public class UploadFileHandler : IRequestHandler<UploadFileCommand, StoredFileDto?>
+public class UploadFileHandler : IRequestHandler<UploadFileCommand, StoredFileDto>
 {
     public const long MaxSizeBytes = 20 * 1024 * 1024;
 
     private readonly IFolderRepository _folderRepository;
     private readonly IStoredFileRepository _fileRepository;
     private readonly IFileStorage _storage;
-    private readonly IMapper _mapper;
 
     public UploadFileHandler(
         IFolderRepository folderRepository,
         IStoredFileRepository fileRepository,
-        IFileStorage storage,
-        IMapper mapper)
+        IFileStorage storage)
     {
         _folderRepository = folderRepository;
         _fileRepository = fileRepository;
         _storage = storage;
-        _mapper = mapper;
     }
 
-    public async Task<StoredFileDto?> Handle(UploadFileCommand request, CancellationToken cancellationToken = default)
+    public async Task<StoredFileDto> Handle(UploadFileCommand request, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepository.GetByIdAsync(request.FolderId);
-        if (folder == null || folder.UserId != request.UserId || folder.DeletedAt != null) return null;
+        var folder = await _folderRepository.GetLiveAsync(request.FolderId, request.UserId);
 
-        var name = ItemNames.Validate(Path.GetFileName(request.FileName), 255);
+        var name = ItemNames.Validate(Path.GetFileName(request.FileName), EntityLimits.FileNameLength);
         if (request.SizeBytes > MaxSizeBytes)
             throw new BusinessRuleException($"\"{name}\" passa do limite de {MaxSizeBytes / 1024 / 1024} MB.");
 
@@ -60,6 +57,6 @@ public class UploadFileHandler : IRequestHandler<UploadFileCommand, StoredFileDt
             throw;
         }
 
-        return _mapper.Map<StoredFileDto>(file);
+        return file.ToDto();
     }
 }

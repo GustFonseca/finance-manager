@@ -1,5 +1,5 @@
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.Validation;
-using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
@@ -11,12 +11,10 @@ namespace FinanceManager.Aplication.UseCases.Goals.Commands.CreateGoal;
 public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, GoalDto>
 {
     private readonly IGoalRepository _goalRepository;
-    private readonly IMapper _mapper;
 
-    public CreateGoalHandler(IGoalRepository goalRepository, IMapper mapper)
+    public CreateGoalHandler(IGoalRepository goalRepository)
     {
         _goalRepository = goalRepository;
-        _mapper = mapper;
     }
 
     public async Task<GoalDto> Handle(CreateGoalCommand request, CancellationToken cancellationToken = default)
@@ -32,7 +30,7 @@ public class CreateGoalHandler : IRequestHandler<CreateGoalCommand, GoalDto>
         };
 
         await _goalRepository.CreateAsync(goal);
-        var dto = _mapper.Map<GoalDto>(goal);
+        var dto = goal.ToDto();
         dto.ProgressPercent = 0;
         return dto;
     }

@@ -1,6 +1,8 @@
+using FinanceManager.Domain.Common;
+
 namespace FinanceManager.Domain.Entities;
 
-public class Folder
+public class Folder : IOwned, ISoftDeletable
 {
     public const string ImportsFolderName = "Extratos importados";
 

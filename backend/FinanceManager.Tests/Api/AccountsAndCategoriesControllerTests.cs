@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.UseCases.Accounts.Commands.CreateAccount;
@@ -53,23 +54,22 @@ public class AccountsAndCategoriesControllerTests
     public async Task Accounts_Update_returns_200_or_404()
     {
         var id = Guid.NewGuid();
-        _mediator.Returns<UpdateAccountCommand>(c => c.accountId == id ? new AccountDto { Id = id, Name = c.newName } : null);
+        _mediator.Returns<UpdateAccountCommand>(c => c.AccountId == id ? new AccountDto { Id = id, Name = c.Name } : throw new NotFoundException("não encontrado"));
 
         var found = await Accounts.Update(id, new UpdateAccountRequest { Name = "Novo" });
-        var missing = await Accounts.Update(Guid.NewGuid(), new UpdateAccountRequest { Name = "Novo" });
 
         Assert.Equal("Novo", Assert.IsType<AccountDto>(Assert.IsType<OkObjectResult>(found.Result).Value).Name);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Accounts.Update(Guid.NewGuid(), new UpdateAccountRequest { Name = "Novo" }));
     }
 
     [Fact]
     public async Task Accounts_Delete_returns_204_or_404()
     {
         var id = Guid.NewGuid();
-        _mediator.Returns<DeleteAccountCommand>(c => c.AccountId == id);
+        _mediator.Returns<DeleteAccountCommand>(c => c.AccountId == id ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Accounts.Delete(id));
-        Assert.IsType<NotFoundResult>(await Accounts.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Accounts.Delete(Guid.NewGuid()));
         Assert.All(_mediator.Sent, s => Assert.Equal(Me, ((DeleteAccountCommand)s).UserId));
     }
 
@@ -111,14 +111,13 @@ public class AccountsAndCategoriesControllerTests
     public async Task Categories_Update_returns_200_or_404()
     {
         var id = Guid.NewGuid();
-        _mediator.Returns<UpdateCategoryCommand>(c => c.CategoryId == id ? new CategoryDto { Id = id, Name = c.Name } : null);
+        _mediator.Returns<UpdateCategoryCommand>(c => c.CategoryId == id ? new CategoryDto { Id = id, Name = c.Name } : throw new NotFoundException("não encontrado"));
         var request = new UpdateCategoryRequest { Name = "Bicos", Type = CategoryType.INCOME, Color = "#222" };
 
         var found = await Categories.Update(id, request);
-        var missing = await Categories.Update(Guid.NewGuid(), request);
 
         Assert.Equal("Bicos", Assert.IsType<CategoryDto>(Assert.IsType<OkObjectResult>(found.Result).Value).Name);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Categories.Update(Guid.NewGuid(), request));
         Assert.Equal(new UpdateCategoryCommand(Me, id, "Bicos", CategoryType.INCOME, "#222"), _mediator.Sent[0]);
     }
 
@@ -126,9 +125,9 @@ public class AccountsAndCategoriesControllerTests
     public async Task Categories_Delete_returns_204_or_404()
     {
         var id = Guid.NewGuid();
-        _mediator.Returns<DeleteCategoryCommand>(c => c.CategoryId == id);
+        _mediator.Returns<DeleteCategoryCommand>(c => c.CategoryId == id ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Categories.Delete(id));
-        Assert.IsType<NotFoundResult>(await Categories.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Categories.Delete(Guid.NewGuid()));
     }
 }

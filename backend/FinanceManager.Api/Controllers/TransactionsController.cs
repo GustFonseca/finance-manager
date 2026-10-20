@@ -22,18 +22,11 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/transactions")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class TransactionsController : ControllerBase
+public class TransactionsController(IMediator mediator) : AppController(mediator)
 {
     public const int MaxLimit = 500;
 
-    private readonly IMediator _mediator;
 
-    public TransactionsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<TransactionDto>>> GetAll(
@@ -47,24 +40,23 @@ public class TransactionsController : ControllerBase
         [FromQuery] int? limit)
     {
         if (limit is < 1 or > MaxLimit) return BadRequest(new { message = $"O limite deve ficar entre 1 e {MaxLimit}" });
-        var transactions = await _mediator.Send(new GetTransactionsByDateRangeQuery(
-            GetUserId(), start?.ToUniversalTime(), end?.ToUniversalTime(), accountId, merchantId, categoryId, type, search, limit));
+        var transactions = await Mediator.Send(new GetTransactionsByDateRangeQuery(
+            UserId, start?.ToUniversalTime(), end?.ToUniversalTime(), accountId, merchantId, categoryId, type, search, limit));
         return Ok(transactions);
     }
 
     [HttpPut("{id}/receipt")]
     public async Task<ActionResult<TransactionDto>> SetReceipt(Guid id, [FromBody] ReceiptRequest request)
     {
-        var transaction = await _mediator.Send(new SetReceiptCommand(GetUserId(), id, request.FileId));
-        if (transaction == null) return NotFound();
+        var transaction = await Mediator.Send(new SetReceiptCommand(UserId, id, request.FileId));
         return Ok(transaction);
     }
 
     [HttpPost]
     public async Task<ActionResult<TransactionDto>> Create([FromBody] CreateTransactionRequest request)
     {
-        var transaction = await _mediator.Send(new CreateTransactionCommand(
-            GetUserId(),
+        var transaction = await Mediator.Send(new CreateTransactionCommand(
+            UserId,
             request.AccountId,
             request.CategoryId,
             request.Type,
@@ -78,8 +70,8 @@ public class TransactionsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<TransactionDto>> Update(Guid id, [FromBody] CreateTransactionRequest request)
     {
-        var transaction = await _mediator.Send(new UpdateTransactionCommand(
-            GetUserId(), id, request.AccountId, request.CategoryId, request.Type,
+        var transaction = await Mediator.Send(new UpdateTransactionCommand(
+            UserId, id, request.AccountId, request.CategoryId, request.Type,
             request.AmountCents, request.Description, request.Date, request.Recurrence));
         return Ok(transaction);
     }
@@ -87,7 +79,7 @@ public class TransactionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _mediator.Send(new DeleteTransactionCommand(GetUserId(), id));
+        await Mediator.Send(new DeleteTransactionCommand(UserId, id));
         return NoContent();
     }
 
@@ -95,14 +87,14 @@ public class TransactionsController : ControllerBase
     [EnableRateLimiting(RateLimits.Import)]
     public async Task<ActionResult<object>> Import([FromBody] ImportTransactionsRequest request)
     {
-        var imported = await _mediator.Send(new ImportTransactionsCommand(GetUserId(), request.AccountId, request.Lines));
+        var imported = await Mediator.Send(new ImportTransactionsCommand(UserId, request.AccountId, request.Lines));
         return Ok(new { imported });
     }
 
     [HttpDelete]
     public async Task<ActionResult<object>> DeleteAll()
     {
-        var deleted = await _mediator.Send(new DeleteAllTransactionsCommand(GetUserId()));
+        var deleted = await Mediator.Send(new DeleteAllTransactionsCommand(UserId));
         return Ok(new { deleted });
     }
 }

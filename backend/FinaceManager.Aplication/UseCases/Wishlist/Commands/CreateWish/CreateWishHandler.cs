@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -17,12 +18,10 @@ public class CreateWishHandler : IRequestHandler<CreateWishCommand, WishlistItem
 
     public async Task<WishlistItemDto> Handle(CreateWishCommand request, CancellationToken cancellationToken = default)
     {
-        var name = request.Name?.Trim() ?? string.Empty;
-        if (name.Length == 0) throw new BusinessRuleException("Diga o que você quer comprar.");
-        if (name.Length > WishlistMapper.MaxNameLength) throw new BusinessRuleException($"O nome pode ter até {WishlistMapper.MaxNameLength} caracteres.");
+        var name = Input.Name(request.Name, EntityLimits.WishNameLength, "Diga o que você quer comprar.");
         if (request.PriceCents <= 0) throw new BusinessRuleException("Informe o preço.");
-        var link = string.IsNullOrWhiteSpace(request.Link) ? null : request.Link.Trim();
-        if (link != null && (link.Length > WishlistMapper.MaxLinkLength || !Uri.TryCreate(link, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+        var link = Input.Optional(request.Link);
+        if (link != null && (link.Length > EntityLimits.LinkLength || !Uri.TryCreate(link, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
             throw new BusinessRuleException("O link deve ser um endereço http(s) válido.");
 
         var item = new WishlistItem

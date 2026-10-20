@@ -17,6 +17,7 @@ using FinanceManager.Aplication.UseCases.Summary.Commands.SetSubscriptionChoice;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetDigest;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
+using FinanceManager.Domain.Events;
 using FinanceManager.Infrastructure.Auth;
 using FinanceManager.Infrastructure.Classification;
 using FinanceManager.Infrastructure.Context;
@@ -47,11 +48,10 @@ public class RulesHandlersTests
         _me = _db.AddUser();
     }
 
-    private readonly FinanceManager.Infrastructure.Messaging.UnitOfWork _work = new();
     private readonly CountingVersions _versions = new();
 
-    private SaveRuleHandler Save => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider, _work, _versions);
-    private SetRuleActiveHandler Toggle => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db), _provider, _work, _versions);
+    private SaveRuleHandler Save => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db));
+    private SetRuleActiveHandler Toggle => new(new ClassificationRuleRepository(_db), new ActivityLogRepository(_db));
 
     private SaveRuleCommand Command(Guid? id = null, RuleType type = RuleType.SUPERFLUOUS, string pattern = @"\bbar\b", string? value = null, string? note = " Bares ") =>
         new(_me.Id, id, type, pattern, value, 5, note);
@@ -64,9 +64,7 @@ public class RulesHandlersTests
         var saved = Assert.Single(_db.ClassificationRules.Where(r => r.Id == dto!.Id));
         Assert.Equal((@"\bbar\b", "Bares", 5, true), (saved.Pattern, saved.Note, saved.Priority, saved.IsActive));
         Assert.False(dto!.IsDefault);
-        Assert.Equal((0, 0), (_provider.Invalidations, _versions.All));
-        await _work.FlushAsync();
-        Assert.Equal((1, 1), (_provider.Invalidations, _versions.All));
+        Assert.Equal([new ClassificationRulesChanged(saved.Id)], _db.TakeDomainEvents());
         Assert.Contains(_db.ActivityLogs, a => a.Source == "Regras" && a.Description == @"Regra criada: SUPERFLUOUS ""\bbar\b""" && a.UserId == _me.Id);
     }
 
@@ -79,7 +77,7 @@ public class RulesHandlersTests
 
         Assert.Equal((RuleType.BRAND, "Toru", (string?)null), (updated!.Type, updated.Value, updated.Note));
         Assert.Contains(_db.ActivityLogs, a => a.Description == @"Regra alterada: BRAND ""toru""");
-        Assert.Null(await Save.Handle(Command(Guid.NewGuid())));
+        await Assert.ThrowsAsync<NotFoundException>(() => Save.Handle(Command(Guid.NewGuid())));
     }
 
     public static TheoryData<RuleType, string, string?, string?> Invalid => new()
@@ -89,8 +87,8 @@ public class RulesHandlersTests
         { RuleType.SUPERFLUOUS, new string('a', RuleCatalog.MaxPatternLength + 1), null, null },
         { RuleType.SUPERFLUOUS, "(", null, null },
         { RuleType.BRAND, "toru", " ", null },
-        { RuleType.BRAND, "toru", new string('v', RuleCatalog.MaxValueLength + 1), null },
-        { RuleType.SUPERFLUOUS, "x", null, new string('n', RuleCatalog.MaxNoteLength + 1) },
+        { RuleType.BRAND, "toru", new string('v', EntityLimits.RuleValueLength + 1), null },
+        { RuleType.SUPERFLUOUS, "x", null, new string('n', EntityLimits.RuleNoteLength + 1) },
     };
 
     [Theory]
@@ -98,8 +96,16 @@ public class RulesHandlersTests
     public async Task Invalid_rules_are_rejected(RuleType type, string pattern, string? value, string? note)
     {
         await Assert.ThrowsAsync<BusinessRuleException>(() => Save.Handle(Command(type: type, pattern: pattern, value: value, note: note)));
-        await _work.FlushAsync();
-        Assert.Equal(0, _provider.Invalidations);
+        Assert.Empty(_db.PendingDomainEvents);
+    }
+
+    [Fact]
+    public async Task Rule_changes_refresh_the_rules_and_every_cache_once_per_batch()
+    {
+        await new ClassificationRulesChangedHandler(_provider, _versions).Handle(
+            [new ClassificationRulesChanged(Guid.NewGuid()), new ClassificationRulesChanged(Guid.NewGuid())], CancellationToken.None);
+
+        Assert.Equal((1, 1), (_provider.Invalidations, _versions.All));
     }
 
     [Fact]
@@ -114,11 +120,10 @@ public class RulesHandlersTests
         Assert.False(off!.IsActive);
         Assert.False(again!.IsActive);
         Assert.True(on!.IsActive);
-        await _work.FlushAsync();
-        Assert.Equal((3, 3), (_provider.Invalidations, _versions.All));
+        Assert.Equal(3, _db.TakeDomainEvents().OfType<ClassificationRulesChanged>().Count(e => e.RuleId == created.Id));
         Assert.Single(_db.ActivityLogs, a => a.Description.StartsWith("Regra desativada"));
         Assert.Single(_db.ActivityLogs, a => a.Description.StartsWith("Regra ativada"));
-        Assert.Null(await Toggle.Handle(new SetRuleActiveCommand(_me.Id, Guid.NewGuid(), true)));
+        await Assert.ThrowsAsync<NotFoundException>(() => Toggle.Handle(new SetRuleActiveCommand(_me.Id, Guid.NewGuid(), true)));
     }
 
     [Fact]
@@ -321,24 +326,22 @@ public class AdminAndRulesApiTests
     {
         var dto = new RuleDto { Id = Guid.NewGuid() };
         var request = new SaveRuleRequest { Type = RuleType.BRAND, Pattern = "toru", Value = "Toru", Priority = 3, Note = "n" };
-        _mediator.Returns<SaveRuleCommand>(c => c.RuleId == Guid.Empty ? null : dto);
-        _mediator.Returns<SetRuleActiveCommand>(c => c.RuleId == dto.Id ? dto : null);
+        _mediator.Returns<SaveRuleCommand>(c => c.RuleId == Guid.Empty ? throw new NotFoundException("não encontrado") : dto);
+        _mediator.Returns<SetRuleActiveCommand>(c => c.RuleId == dto.Id ? dto : throw new NotFoundException("não encontrado"));
         _mediator.Returns<GetRulesQuery>(_ => new List<RuleDto> { dto });
         _mediator.Returns<TestRuleQuery>(_ => new RuleTestDto { Valid = true });
 
         var created = Assert.IsType<CreatedResult>((await Rules.Create(request)).Result);
         var updated = await Rules.Update(dto.Id, request);
-        var missing = await Rules.Update(Guid.Empty, request);
         var toggled = await Rules.SetActive(dto.Id, new RuleActiveRequest { IsActive = false });
-        var toggleMissing = await Rules.SetActive(Guid.NewGuid(), new RuleActiveRequest { IsActive = true });
         var list = await Rules.GetAll();
         var test = await Rules.Test(new RuleTestRequest { Pattern = "x" });
 
         Assert.Equal($"/api/rules/{dto.Id}", created.Location);
         Assert.Same(dto, Assert.IsType<OkObjectResult>(updated.Result).Value);
-        Assert.IsType<NotFoundResult>(missing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Rules.Update(Guid.Empty, request));
         Assert.Same(dto, Assert.IsType<OkObjectResult>(toggled.Result).Value);
-        Assert.IsType<NotFoundResult>(toggleMissing.Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => Rules.SetActive(Guid.NewGuid(), new RuleActiveRequest { IsActive = true }));
         Assert.IsType<OkObjectResult>(list.Result);
         Assert.True(Assert.IsType<RuleTestDto>(Assert.IsType<OkObjectResult>(test.Result).Value).Valid);
         var sent = _mediator.Sent.OfType<SaveRuleCommand>().First();

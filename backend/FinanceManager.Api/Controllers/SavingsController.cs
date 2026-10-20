@@ -18,44 +18,34 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/savings")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class SavingsController : ControllerBase
+public class SavingsController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public SavingsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<SavingsPlanDto>> Get([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var plan = await _mediator.Send(new GetSavingsPlanQuery(GetUserId(), monthStart, now));
+        var plan = await Mediator.Send(new GetSavingsPlanQuery(UserId, monthStart, now));
         return Ok(plan);
     }
 
     [HttpPut("goal")]
     public async Task<IActionResult> SetGoal([FromBody] SavingsGoalRequest request)
     {
-        await _mediator.Send(new SetSavingsGoalCommand(GetUserId(), request.MonthlyGoalCents));
+        await Mediator.Send(new SetSavingsGoalCommand(UserId, request.MonthlyGoalCents));
         return NoContent();
     }
 
     [HttpPut("work-hours")]
     public async Task<IActionResult> SetWorkHours([FromBody] WorkHoursRequest request)
     {
-        await _mediator.Send(new SetWorkHoursCommand(GetUserId(), request.Hours));
+        await Mediator.Send(new SetWorkHoursCommand(UserId, request.Hours));
         return NoContent();
     }
 
     [HttpPut("budgets/{categoryId}")]
     public async Task<IActionResult> SetBudget(Guid categoryId, [FromBody] CategoryBudgetRequest request)
     {
-        var saved = await _mediator.Send(new SetCategoryBudgetCommand(GetUserId(), categoryId, request.LimitCents));
-        if (!saved) return NotFound();
+        await Mediator.Send(new SetCategoryBudgetCommand(UserId, categoryId, request.LimitCents));
         return NoContent();
     }
 
@@ -63,7 +53,7 @@ public class SavingsController : ControllerBase
     public async Task<ActionResult<int>> ApplySuggested([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var applied = await _mediator.Send(new ApplySuggestedBudgetsCommand(GetUserId(), monthStart, now));
+        var applied = await Mediator.Send(new ApplySuggestedBudgetsCommand(UserId, monthStart, now));
         return Ok(applied);
     }
 }

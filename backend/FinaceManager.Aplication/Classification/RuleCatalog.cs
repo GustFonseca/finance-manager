@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
 
@@ -6,9 +7,9 @@ namespace FinanceManager.Aplication.Classification;
 
 public static class RuleCatalog
 {
-    public const int MaxPatternLength = 2000;
-    public const int MaxValueLength = 100;
-    public const int MaxNoteLength = 300;
+    public static NotFoundException NotFound() => new("Regra não encontrada.");
+
+    public const int MaxPatternLength = EntityLimits.RulePatternLength;
     public const string DefaultIdPrefix = "c1a55100-0000-0000-0000-";
     public static readonly TimeSpan TestTimeout = TimeSpan.FromMilliseconds(200);
 

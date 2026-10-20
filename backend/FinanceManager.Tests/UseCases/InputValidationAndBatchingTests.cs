@@ -39,14 +39,14 @@ public class InputValidationTests
     {
         var account = _db.AddAccount(_me.Id);
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateAccountHandler(new AccountRepository(_db), TestDb.Mapper).Handle(new CreateAccountCommand(_me.Id, name!)));
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateAccountHandler(new AccountRepository(_db), TestDb.Mapper).Handle(new UpdateAccountCommand(_me.Id, account.Id, name!)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateAccountHandler(new AccountRepository(_db)).Handle(new CreateAccountCommand(_me.Id, name!)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateAccountHandler(new AccountRepository(_db)).Handle(new UpdateAccountCommand(_me.Id, account.Id, name!)));
     }
 
     [Fact]
     public async Task Account_names_are_trimmed()
     {
-        var dto = await new CreateAccountHandler(new AccountRepository(_db), TestDb.Mapper).Handle(new CreateAccountCommand(_me.Id, "  Nubank  "));
+        var dto = await new CreateAccountHandler(new AccountRepository(_db)).Handle(new CreateAccountCommand(_me.Id, "  Nubank  "));
 
         Assert.Equal("Nubank", dto.Name);
     }
@@ -67,14 +67,14 @@ public class InputValidationTests
     {
         var category = _db.AddCategory(_me.Id, "Outros");
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateCategoryHandler(new CategoryRepository(_db), TestDb.Mapper).Handle(new CreateCategoryCommand(_me.Id, name!, type, color!)));
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateCategoryHandler(new CategoryRepository(_db), TestDb.Mapper).Handle(new UpdateCategoryCommand(_me.Id, category.Id, name!, type, color!)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateCategoryHandler(new CategoryRepository(_db)).Handle(new CreateCategoryCommand(_me.Id, name!, type, color!)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateCategoryHandler(new CategoryRepository(_db)).Handle(new UpdateCategoryCommand(_me.Id, category.Id, name!, type, color!)));
     }
 
     [Fact]
     public async Task A_valid_category_is_saved_trimmed()
     {
-        var dto = await new CreateCategoryHandler(new CategoryRepository(_db), TestDb.Mapper).Handle(new CreateCategoryCommand(_me.Id, " Pets ", CategoryType.EXPENSE, " #a1B2c3 "));
+        var dto = await new CreateCategoryHandler(new CategoryRepository(_db)).Handle(new CreateCategoryCommand(_me.Id, " Pets ", CategoryType.EXPENSE, " #a1B2c3 "));
 
         Assert.Equal(("Pets", "#a1B2c3"), (dto.Name, dto.Color));
     }
@@ -85,7 +85,7 @@ public class InputValidationTests
     [InlineData("Viagem", -5)]
     public async Task Goals_need_a_name_and_a_positive_target(string name, long target)
     {
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateGoalHandler(new GoalRepository(_db), TestDb.Mapper).Handle(new CreateGoalCommand(_me.Id, name, target, null)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new CreateGoalHandler(new GoalRepository(_db)).Handle(new CreateGoalCommand(_me.Id, name, target, null)));
     }
 
     [Theory]
@@ -97,13 +97,13 @@ public class InputValidationTests
         _db.Goals.Add(goal);
         _db.SaveChanges();
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateGoalProgressHandler(new GoalRepository(_db), TestDb.Mapper).Handle(new UpdateGoalProgressCommand(_me.Id, goal.Id, cents)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => new UpdateGoalProgressHandler(new GoalRepository(_db)).Handle(new UpdateGoalProgressCommand(_me.Id, goal.Id, cents)));
         Assert.Equal(0, _db.Goals.Single().CurrentCents);
     }
 
     private CreateTransactionHandler CreateHandler => new(
         new TransactionRepository(_db), new AccountRepository(_db), new CategoryRepository(_db),
-        new MerchantRepository(_db), new UserRepository(_db), TestDb.Mapper, TestRules.Provider);
+        new MerchantRepository(_db), new UserRepository(_db), TestRules.Provider);
 
     [Theory]
     [InlineData((TransactionType)7, Recurrence.NONE)]

@@ -74,7 +74,7 @@ public sealed class SearchAndUnsortedTests : IDisposable
         _db.Merchants.Add(acougue);
         _db.SaveChanges();
         _db.AddTransaction(_nubank, _alimentacao, 3000, Day, "Compra no débito - AÇOUGUE CENTRAL", acougue);
-        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db), TestDb.Mapper);
+        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db));
 
         var result = await handler.Handle(new GetTransactionsByDateRangeQuery(_me.Id, null, null, Search: "acougue"));
 
@@ -86,7 +86,7 @@ public sealed class SearchAndUnsortedTests : IDisposable
     {
         _db.AddTransaction(_nubank, _alimentacao, 4000, Day, "Mercado");
         _db.AddTransaction(_nubank, _salario, 900000, Day, "Salário");
-        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db), TestDb.Mapper);
+        var handler = new GetTransactionsByDateRangeHandler(new TransactionRepository(_db));
 
         var result = await handler.Handle(new GetTransactionsByDateRangeQuery(
             _me.Id, Day.AddDays(-1), Day.AddDays(1), _nubank.Id, null, _alimentacao.Id, TransactionType.EXPENSE, "merc"));

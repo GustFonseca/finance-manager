@@ -1,35 +1,29 @@
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Validation;
-using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Accounts.Commands.UpdateAccount;
 
-public class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand, AccountDto?>
+public class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand, AccountDto>
 {
     private readonly IAccountRepository _accountRepository;
-    private readonly IMapper _mapper;
 
-    public UpdateAccountHandler(IAccountRepository accountRepository, IMapper mapper)
+    public UpdateAccountHandler(IAccountRepository accountRepository)
     {
         _accountRepository = accountRepository;
-        _mapper = mapper;
     }
-    public async Task<AccountDto?> Handle(UpdateAccountCommand request, CancellationToken cancellationToken = default)
+    public async Task<AccountDto> Handle(UpdateAccountCommand request, CancellationToken cancellationToken = default)
     {
-        var account = await _accountRepository.GetByIdAsync(request.accountId);
+        var account = await _accountRepository.GetOwnedAsync(request.AccountId, request.UserId);
 
-        if (account == null || account.UserId != request.userId)
-        {
-            return null;
-        }
-
-        account.UpdateName(Input.Name(request.newName));
+        account.UpdateName(Input.Name(request.Name));
 
         await _accountRepository.UpdateAsync(account);
 
-        return _mapper.Map<AccountDto>(account);
+        return account.ToDto();
     }
 }
 

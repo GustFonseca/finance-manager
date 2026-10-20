@@ -1,4 +1,4 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
@@ -10,13 +10,11 @@ public class GetFoldersHandler : IRequestHandler<GetFoldersQuery, List<FolderDto
 {
     private readonly IFolderRepository _folderRepository;
     private readonly IStoredFileRepository _fileRepository;
-    private readonly IMapper _mapper;
 
-    public GetFoldersHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository, IMapper mapper)
+    public GetFoldersHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository)
     {
         _folderRepository = folderRepository;
         _fileRepository = fileRepository;
-        _mapper = mapper;
     }
 
     public async Task<List<FolderDto>> Handle(GetFoldersQuery request, CancellationToken cancellationToken = default)
@@ -36,7 +34,7 @@ public class GetFoldersHandler : IRequestHandler<GetFoldersQuery, List<FolderDto
 
         return folders.Select(f =>
         {
-            var dto = _mapper.Map<FolderDto>(f);
+            var dto = f.ToDto();
             dto.FileCount = counts.GetValueOrDefault(f.Id);
             return dto;
         }).ToList();

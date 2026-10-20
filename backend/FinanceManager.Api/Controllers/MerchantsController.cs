@@ -23,23 +23,16 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/merchants")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class MerchantsController : ControllerBase
+public class MerchantsController(IMediator mediator) : AppController(mediator)
 {
     private const int MaxDescriptions = 2000;
 
-    private readonly IMediator _mediator;
 
-    public MerchantsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
 
     [HttpGet]
     public async Task<ActionResult<List<MerchantDto>>> GetAll()
     {
-        return Ok(await _mediator.Send(new GetMerchantsQuery(GetUserId())));
+        return Ok(await Mediator.Send(new GetMerchantsQuery(UserId)));
     }
 
     [HttpPost("resolve")]
@@ -48,29 +41,29 @@ public class MerchantsController : ControllerBase
     {
         if (request.Lines.Count > MaxDescriptions)
             return BadRequest(new { message = $"No máximo {MaxDescriptions} linhas por vez" });
-        return Ok(await _mediator.Send(new ResolveMerchantsQuery(GetUserId(), request.Lines)));
+        return Ok(await Mediator.Send(new ResolveMerchantsQuery(UserId, request.Lines)));
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<UpdateMerchantResultDto>> Update(Guid id, [FromBody] UpdateMerchantRequest request)
     {
-        var result = await _mediator.Send(new UpdateMerchantCommand(
-            GetUserId(), id, request.Name, request.Kind, request.CategoryId, request.ApplyToTransactions));
-        return result == null ? NotFound() : Ok(result);
+        var result = await Mediator.Send(new UpdateMerchantCommand(
+            UserId, id, request.Name, request.Kind, request.CategoryId, request.ApplyToTransactions));
+        return Ok(result);
     }
 
     [HttpPut("{id}/class")]
     public async Task<ActionResult<MerchantDto>> SetClass(Guid id, [FromBody] SetMerchantClassRequest request)
     {
-        var merchant = await _mediator.Send(new SetMerchantClassCommand(GetUserId(), id, request.Class));
-        return merchant == null ? NotFound() : Ok(merchant);
+        var merchant = await Mediator.Send(new SetMerchantClassCommand(UserId, id, request.Class));
+        return Ok(merchant);
     }
 
     [HttpGet("company/{cnpj}")]
     [EnableRateLimiting(RateLimits.Lookup)]
     public async Task<ActionResult<CompanyDto>> LookupCompany(string cnpj)
     {
-        var company = await _mediator.Send(new LookupCompanyQuery(cnpj));
+        var company = await Mediator.Send(new LookupCompanyQuery(cnpj));
         if (company == null) return NotFound(new { message = "Empresa não encontrada" });
         return Ok(company);
     }
@@ -82,21 +75,21 @@ public class MerchantsController : ControllerBase
         [FromQuery] Guid? accountId)
     {
         var (periodStart, periodEnd) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetMerchantSpendingQuery(GetUserId(), periodStart, periodEnd, accountId)));
+        return Ok(await Mediator.Send(new GetMerchantSpendingQuery(UserId, periodStart, periodEnd, accountId)));
     }
 
     [HttpGet("unsorted")]
     public async Task<ActionResult<List<MerchantSpendingDto>>> GetUnsorted([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (periodStart, periodEnd) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetUnsortedMerchantsQuery(GetUserId(), periodStart, periodEnd)));
+        return Ok(await Mediator.Send(new GetUnsortedMerchantsQuery(UserId, periodStart, periodEnd)));
     }
 
     [HttpGet("{id}/history")]
     public async Task<ActionResult<MerchantHistoryDto>> GetHistory(Guid id, [FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (periodStart, periodEnd) = MonthPeriod.Resolve(start, end);
-        var history = await _mediator.Send(new GetMerchantHistoryQuery(GetUserId(), id, periodStart, periodEnd));
-        return history == null ? NotFound() : Ok(history);
+        var history = await Mediator.Send(new GetMerchantHistoryQuery(UserId, id, periodStart, periodEnd));
+        return Ok(history);
     }
 }

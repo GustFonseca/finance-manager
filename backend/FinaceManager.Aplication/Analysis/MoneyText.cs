@@ -6,7 +6,7 @@ namespace FinanceManager.Aplication.Analysis;
 
 public static partial class MoneyText
 {
-    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+    public static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     public static string Format(long cents, bool signed = false)
     {
@@ -19,26 +19,18 @@ public static partial class MoneyText
 
     public static string Percent(double ratio) => ratio.ToString("P0", PtBr);
 
-    public static string Key(string text)
-    {
-        var decomposed = text.Normalize(NormalizationForm.FormD);
-        var letters = new StringBuilder(decomposed.Length);
-        foreach (var c in decomposed)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
-            letters.Append(char.IsLetter(c) ? char.ToLowerInvariant(c) : ' ');
-        }
-        return Spaces().Replace(letters.ToString(), " ").Trim();
-    }
+    public static string Key(string text) => Normalize(text, char.IsLetter);
 
-    public static string Plain(string text)
+    public static string Plain(string text) => Normalize(text, char.IsLetterOrDigit);
+
+    private static string Normalize(string text, Func<char, bool> keep)
     {
         var decomposed = text.Normalize(NormalizationForm.FormD);
         var chars = new StringBuilder(decomposed.Length);
         foreach (var c in decomposed)
         {
             if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
-            chars.Append(char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : ' ');
+            chars.Append(keep(c) ? char.ToLowerInvariant(c) : ' ');
         }
         return Spaces().Replace(chars.ToString(), " ").Trim();
     }

@@ -79,16 +79,16 @@ public class SavingsHandlersTests
     {
         var handler = new SetCategoryBudgetHandler(new CategoryRepository(_db), Budgets);
 
-        Assert.True(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 30000)));
+        await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 30000));
         Assert.Equal(30000, Assert.Single(_db.CategoryBudgets).LimitCents);
 
-        Assert.True(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 25000)));
+        await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 25000));
         Assert.Equal(25000, Assert.Single(_db.CategoryBudgets).LimitCents);
 
-        Assert.True(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 0)));
+        await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, 0));
         Assert.Empty(_db.CategoryBudgets);
 
-        Assert.True(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, null)));
+        await handler.Handle(new SetCategoryBudgetCommand(_me.Id, _lazer.Id, null));
         Assert.Empty(_db.CategoryBudgets);
     }
 
@@ -98,8 +98,8 @@ public class SavingsHandlersTests
         var foreign = _db.AddCategory(Guid.NewGuid(), "Lazer");
         var handler = new SetCategoryBudgetHandler(new CategoryRepository(_db), Budgets);
 
-        Assert.False(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, Guid.NewGuid(), 100)));
-        Assert.False(await handler.Handle(new SetCategoryBudgetCommand(_me.Id, foreign.Id, 100)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new SetCategoryBudgetCommand(_me.Id, Guid.NewGuid(), 100)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new SetCategoryBudgetCommand(_me.Id, foreign.Id, 100)));
         Assert.Empty(_db.CategoryBudgets);
     }
 

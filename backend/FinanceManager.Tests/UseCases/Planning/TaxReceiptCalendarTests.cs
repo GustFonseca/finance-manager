@@ -87,7 +87,7 @@ public class TaxReceiptCalendarTests
         _db.Set<StoredFile>().AddRange(mine, trashed, foreign);
         _db.SaveChanges();
         var transaction = _db.AddTransaction(_account, _saude, 30000, Day(2026, 10, 1), "Consulta");
-        var handler = new SetReceiptHandler(new TransactionRepository(_db), new StoredFileRepository(_db), TestDb.Mapper);
+        var handler = new SetReceiptHandler(new TransactionRepository(_db), new StoredFileRepository(_db));
 
         var linked = await handler.Handle(new SetReceiptCommand(_me.Id, transaction.Id, mine.Id));
         Assert.Equal(mine.Id, linked!.ReceiptFileId);
@@ -96,8 +96,8 @@ public class TaxReceiptCalendarTests
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new SetReceiptCommand(_me.Id, transaction.Id, trashed.Id)));
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new SetReceiptCommand(_me.Id, transaction.Id, foreign.Id)));
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new SetReceiptCommand(_me.Id, transaction.Id, Guid.NewGuid())));
-        Assert.Null(await handler.Handle(new SetReceiptCommand(Guid.NewGuid(), transaction.Id, null)));
-        Assert.Null(await handler.Handle(new SetReceiptCommand(_me.Id, Guid.NewGuid(), null)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new SetReceiptCommand(Guid.NewGuid(), transaction.Id, null)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new SetReceiptCommand(_me.Id, Guid.NewGuid(), null)));
 
         var unlinked = await handler.Handle(new SetReceiptCommand(_me.Id, transaction.Id, null));
         Assert.Null(unlinked!.ReceiptFileId);
@@ -164,7 +164,7 @@ public class TaxReceiptCalendarTests
         var tx = new TransactionDto { Id = Guid.NewGuid() };
         mediator.Returns<GetTaxReportQuery>(_ => new TaxReportDto());
         mediator.Returns<GetCalendarQuery>(_ => new CalendarDto());
-        mediator.Returns<SetReceiptCommand>(c => c.TransactionId == tx.Id ? tx : null);
+        mediator.Returns<SetReceiptCommand>(c => c.TransactionId == tx.Id ? tx : throw new NotFoundException("não encontrado"));
         var start = new DateTime(2025, 9, 1, 3, 0, 0, DateTimeKind.Utc);
         var end = new DateTime(2025, 9, 30, 23, 0, 0, DateTimeKind.Utc);
 
@@ -172,7 +172,7 @@ public class TaxReceiptCalendarTests
         await planning.GetTaxReport(null);
         Assert.IsType<OkObjectResult>((await summary.GetCalendar(start, end)).Result);
         Assert.IsType<OkObjectResult>((await transactions.SetReceipt(tx.Id, new ReceiptRequest { FileId = Guid.NewGuid() })).Result);
-        Assert.IsType<NotFoundResult>((await transactions.SetReceipt(Guid.NewGuid(), new ReceiptRequest())).Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => transactions.SetReceipt(Guid.NewGuid(), new ReceiptRequest()));
 
         Assert.Equal([2024, DateTime.UtcNow.Year - 1], mediator.Sent.OfType<GetTaxReportQuery>().Select(q => q.Year));
         Assert.Equal(new GetCalendarQuery(me, start, end), mediator.Sent.OfType<GetCalendarQuery>().Single());

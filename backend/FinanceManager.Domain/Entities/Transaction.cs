@@ -1,8 +1,9 @@
+using FinanceManager.Domain.Common;
 using FinanceManager.Domain.Enuns;
 
 namespace FinanceManager.Domain.Entities;
 
-public class Transaction
+public class Transaction : IOwned
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
@@ -17,6 +18,8 @@ public class Transaction
     public Guid? ReceiptFileId { get; set; }
     public DateTime? CatalogAttemptedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public long SignedAmountCents => Type == TransactionType.INCOME ? AmountCents : -AmountCents;
 
     public User User { get; set; } = null!;
     public Account Account { get; set; } = null!;

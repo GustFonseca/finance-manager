@@ -1,4 +1,5 @@
 using FinanceManager.Aplication.Exceptions;
+using FinanceManager.Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,7 @@ public sealed class AppExceptionHandler(IProblemDetailsService problemDetails) :
         var status = exception switch
         {
             NotFoundException => StatusCodes.Status404NotFound,
-            BusinessRuleException => StatusCodes.Status400BadRequest,
+            DomainException => StatusCodes.Status400BadRequest,
             ConflictException => StatusCodes.Status409Conflict,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             _ => 0,

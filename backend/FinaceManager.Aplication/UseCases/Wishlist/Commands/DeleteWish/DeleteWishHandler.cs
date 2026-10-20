@@ -1,9 +1,10 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Wishlist.Commands.DeleteWish;
 
-public class DeleteWishHandler : IRequestHandler<DeleteWishCommand, bool>
+public class DeleteWishHandler : IRequestHandler<DeleteWishCommand>
 {
     private readonly IWishlistRepository _wishlistRepository;
 
@@ -12,11 +13,9 @@ public class DeleteWishHandler : IRequestHandler<DeleteWishCommand, bool>
         _wishlistRepository = wishlistRepository;
     }
 
-    public async Task<bool> Handle(DeleteWishCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(DeleteWishCommand request, CancellationToken cancellationToken = default)
     {
-        var item = await _wishlistRepository.GetByIdAsync(request.WishId);
-        if (item == null || item.UserId != request.UserId) return false;
+        var item = await _wishlistRepository.GetOwnedAsync(request.WishId, request.UserId);
         await _wishlistRepository.DeleteAsync(item);
-        return true;
     }
 }

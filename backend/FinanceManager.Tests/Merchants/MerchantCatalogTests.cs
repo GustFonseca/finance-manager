@@ -1,4 +1,3 @@
-using AutoMapper;
 using FinanceManager.Aplication.Analysis;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
@@ -24,8 +23,6 @@ public class MerchantCatalogTests
         .AddInterceptors(new ActivityLogInterceptor())
         .Options);
 
-    private readonly IMapper _mapper = new MapperConfiguration(cfg => cfg.AddMaps(typeof(MerchantProfile).Assembly)).CreateMapper();
-
     private readonly User _me = new() { Name = "Gustavo Fonseca Dias Silva", Email = "g@x.com", GoogleId = "g" };
     private readonly Account _account;
     private readonly Category _alimentacao;
@@ -44,7 +41,7 @@ public class MerchantCatalogTests
     }
 
     private Task Create(string description, Category category, long cents = 4590) =>
-        new CreateTransactionHandler(Transactions, new AccountRepository(_db), new CategoryRepository(_db), Merchants, new UserRepository(_db), _mapper, TestRules.Provider)
+        new CreateTransactionHandler(Transactions, new AccountRepository(_db), new CategoryRepository(_db), Merchants, new UserRepository(_db), TestRules.Provider)
             .Handle(new CreateTransactionCommand(_me.Id, _account.Id, category.Id, TransactionType.EXPENSE, cents, description, DateTime.UtcNow, Recurrence.NONE));
 
     [Fact]
@@ -98,7 +95,7 @@ public class MerchantCatalogTests
         await Create("Transferência enviada pelo Pix - TORU - 24.444.401/0001-07 - ITAÚ", _outros);
         var toru = Assert.Single(_db.Merchants);
 
-        var result = await new UpdateMerchantHandler(Merchants, new CategoryRepository(_db), Transactions, _mapper)
+        var result = await new UpdateMerchantHandler(Merchants, new CategoryRepository(_db), Transactions)
             .Handle(new UpdateMerchantCommand(_me.Id, toru.Id, "Toru Sushi", MerchantKind.BUSINESS, _alimentacao.Id, ApplyToTransactions: true));
 
         Assert.Equal(2, result!.UpdatedTransactions);
@@ -115,7 +112,7 @@ public class MerchantCatalogTests
         var toru = _db.Merchants.Single(m => m.Key == "toru");
 
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            new UpdateMerchantHandler(Merchants, new CategoryRepository(_db), Transactions, _mapper)
+            new UpdateMerchantHandler(Merchants, new CategoryRepository(_db), Transactions)
                 .Handle(new UpdateMerchantCommand(_me.Id, toru.Id, "IFOOD", MerchantKind.BUSINESS, null, false)));
     }
 

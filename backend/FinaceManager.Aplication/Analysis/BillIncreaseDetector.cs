@@ -33,7 +33,7 @@ public static class BillIncreaseDetector
                 var previous = g.Where(t => t.Date < monthStart).OrderByDescending(t => t.Date).Take(PreviousCharges)
                     .Select(t => t.AmountCents).ToList();
                 if (previous.Count < MinPreviousCharges) return null;
-                var usual = AvoidableSpendingAnalyzer.Median(previous);
+                var usual = Stats.Median(previous);
                 if (usual <= 0) return null;
                 var increase = ((double)latest.AmountCents / usual - 1) * 100;
                 var key = $"{KeyPrefix}{g.Key}:{monthStart:yyyy-MM}";

@@ -1,4 +1,4 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Interfaces.Repositories;
@@ -8,12 +8,10 @@ namespace FinanceManager.Aplication.UseCases.Categories.Queries.GetAllCategories
 public class GetAllCategoriesHandler : IRequestHandler<GetAllCategoriesQuery, List<CategoryDto>>
 {
     private readonly ICategoryRepository _categoryRepository;
-    private readonly IMapper _mapper;
 
-    public GetAllCategoriesHandler(ICategoryRepository categoryRepository, IMapper mapper)
+    public GetAllCategoriesHandler(ICategoryRepository categoryRepository)
     {
         _categoryRepository = categoryRepository;
-        _mapper = mapper;
     }
 
     public async Task<List<CategoryDto>> Handle(GetAllCategoriesQuery request, CancellationToken cancellationToken = default)
@@ -22,6 +20,6 @@ public class GetAllCategoriesHandler : IRequestHandler<GetAllCategoriesQuery, Li
             ? await _categoryRepository.GetByUserIdAndTypeAsync(request.UserId, request.Type.Value)
             : await _categoryRepository.GetByUserIdAsync(request.UserId);
 
-        return _mapper.Map<List<CategoryDto>>(categories);
+        return categories.Select(x => x.ToDto()).ToList();
     }
 }

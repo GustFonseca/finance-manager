@@ -1,6 +1,8 @@
+using FinanceManager.Domain.Common;
+
 namespace FinanceManager.Domain.Entities;
 
-public class Account
+public class Account : IOwned
 {
     public Account(Guid userId, string name)
     {
@@ -34,6 +36,10 @@ public class Account
         BalanceCents -= amountCents;
         Version = Guid.NewGuid();
     }
+
+    public void Record(Transaction transaction) => AddBalance(transaction.SignedAmountCents);
+
+    public void Reverse(Transaction transaction) => AddBalance(-transaction.SignedAmountCents);
 
     public void ResetBalance()
     {

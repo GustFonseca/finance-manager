@@ -43,6 +43,7 @@ public sealed class MediatorTests : IDisposable
         services.AddSingleton(db);
         services.AddSingleton(_probe);
         services.AddSingleton(TestRules.Provider);
+        services.AddMessaging();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IRequestHandler<SaveUserCommand, bool>, SaveUserHandler>();

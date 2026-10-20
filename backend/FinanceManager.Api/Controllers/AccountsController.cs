@@ -16,44 +16,33 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/accounts")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class AccountsController : ControllerBase
+public class AccountsController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public AccountsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<List<AccountDto>>> GetAll()
     {
-        var accounts = await _mediator.Send(new GetAllAccountsQuery(GetUserId()));
+        var accounts = await Mediator.Send(new GetAllAccountsQuery(UserId));
         return Ok(accounts);
     }
 
     [HttpPost]
     public async Task<ActionResult<AccountDto>> Create([FromBody] CreateAccountRequest request)
     {
-        var account = await _mediator.Send(new CreateAccountCommand(GetUserId(), request.Name));
+        var account = await Mediator.Send(new CreateAccountCommand(UserId, request.Name));
         return Created($"/api/accounts/{account.Id}", account);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<AccountDto>> Update(Guid id, [FromBody] UpdateAccountRequest request)
     {
-        var account = await _mediator.Send(new UpdateAccountCommand(GetUserId(), id, request.Name));
-        if (account == null) return NotFound();
+        var account = await Mediator.Send(new UpdateAccountCommand(UserId, id, request.Name));
         return Ok(account);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteAccountCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteAccountCommand(UserId, id));
         return NoContent();
     }
 }

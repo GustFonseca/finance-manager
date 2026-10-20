@@ -15,60 +15,47 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/trash")]
 [Authorize]
-public class TrashController : ControllerBase
+public class TrashController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public TrashController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<TrashDto>> Get()
     {
-        var trash = await _mediator.Send(new GetTrashQuery(GetUserId()));
+        var trash = await Mediator.Send(new GetTrashQuery(UserId));
         return Ok(trash);
     }
 
     [HttpDelete]
     public async Task<IActionResult> EmptyTrash()
     {
-        await _mediator.Send(new EmptyTrashCommand(GetUserId()));
+        await Mediator.Send(new EmptyTrashCommand(UserId));
         return NoContent();
     }
 
     [HttpPost("folders/{id}/restore")]
     public async Task<IActionResult> RestoreFolder(Guid id)
     {
-        var restored = await _mediator.Send(new RestoreFolderCommand(GetUserId(), id));
-        if (!restored) return NotFound();
+        await Mediator.Send(new RestoreFolderCommand(UserId, id));
         return NoContent();
     }
 
     [HttpPost("files/{id}/restore")]
     public async Task<IActionResult> RestoreFile(Guid id)
     {
-        var restored = await _mediator.Send(new RestoreFileCommand(GetUserId(), id));
-        if (!restored) return NotFound();
+        await Mediator.Send(new RestoreFileCommand(UserId, id));
         return NoContent();
     }
 
     [HttpDelete("folders/{id}")]
     public async Task<IActionResult> DeleteFolder(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteFolderForeverCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteFolderForeverCommand(UserId, id));
         return NoContent();
     }
 
     [HttpDelete("files/{id}")]
     public async Task<IActionResult> DeleteFile(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteFileForeverCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteFileForeverCommand(UserId, id));
         return NoContent();
     }
 }

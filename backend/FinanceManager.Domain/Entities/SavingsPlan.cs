@@ -1,6 +1,8 @@
+using FinanceManager.Domain.Common;
+
 namespace FinanceManager.Domain.Entities;
 
-public class SavingsPlan
+public class SavingsPlan : IOwned
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }

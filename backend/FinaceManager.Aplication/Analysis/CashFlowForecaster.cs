@@ -78,13 +78,13 @@ public static class CashFlowForecaster
             .Where(p => p.Months.Count >= MinIncomeMonths)
             .Select(p => (
                 Payer: p,
-                Pending: Math.Max(0, AvoidableSpendingAnalyzer.Median(p.Months.Select(m => m.Sum(t => t.AmountCents)).ToList()) - received.GetValueOrDefault(p.Key))))
+                Pending: Math.Max(0, Stats.Median(p.Months.Select(m => m.Sum(t => t.AmountCents)).ToList()) - received.GetValueOrDefault(p.Key))))
             .Where(p => p.Pending > 0)
             .Select(p => Item(
                 ForecastItemKind.INCOME,
                 p.Payer.Months.SelectMany(m => m).MaxBy(t => t.Date)!.MerchantName(rules),
                 p.Pending,
-                Expected(monthStart, (int)AvoidableSpendingAnalyzer.Median(p.Payer.Months.Select(m => (long)m.Min(t => LocalDayOfMonth(t.Date, offset))).ToList()), tomorrow)));
+                Expected(monthStart, (int)Stats.Median(p.Payer.Months.Select(m => (long)m.Min(t => LocalDayOfMonth(t.Date, offset))).ToList()), tomorrow)));
     }
 
     private static IEnumerable<ForecastItemDto> PendingBills(

@@ -1,6 +1,9 @@
+using FinanceManager.Domain.Common;
+using FinanceManager.Domain.Events;
+
 namespace FinanceManager.Domain.Entities;
 
-public class StoredFile
+public class StoredFile : Entity, IOwned, ISoftDeletable
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
@@ -14,4 +17,6 @@ public class StoredFile
 
     public User User { get; set; } = null!;
     public Folder Folder { get; set; } = null!;
+
+    public void Purge() => Raise(new StoredFilePurged(Id, StorageKey));
 }

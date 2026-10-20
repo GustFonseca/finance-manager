@@ -6,8 +6,6 @@ namespace FinanceManager.Aplication.UseCases.Wishlist;
 public static class WishlistMapper
 {
     public const int WaitHours = 48;
-    public const int MaxNameLength = 150;
-    public const int MaxLinkLength = 500;
 
     public static WishlistItemDto ToDto(WishlistItem item, DateTime now) => new()
     {

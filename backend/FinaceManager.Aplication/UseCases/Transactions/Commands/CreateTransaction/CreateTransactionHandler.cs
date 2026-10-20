@@ -1,4 +1,4 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -17,7 +17,6 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
     private readonly ICategoryRepository _categoryRepository;
     private readonly IMerchantRepository _merchantRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IMapper _mapper;
 
     public CreateTransactionHandler(
         ITransactionRepository transactionRepository,
@@ -25,7 +24,6 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
         ICategoryRepository categoryRepository,
         IMerchantRepository merchantRepository,
         IUserRepository userRepository,
-        IMapper mapper,
         IClassificationRulesProvider rulesProvider)
     {
         _rulesProvider = rulesProvider;
@@ -34,7 +32,6 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
         _categoryRepository = categoryRepository;
         _merchantRepository = merchantRepository;
         _userRepository = userRepository;
-        _mapper = mapper;
     }
 
     public async Task<TransactionDto> Handle(CreateTransactionCommand request, CancellationToken cancellationToken = default)
@@ -62,11 +59,11 @@ public class CreateTransactionHandler : IRequestHandler<CreateTransactionCommand
             Merchant = merchant,
         };
 
-        TransactionInput.ApplyToBalance(account, transaction.Type, transaction.AmountCents);
+        account.Record(transaction);
 
         await _accountRepository.UpdateAsync(account);
         await _transactionRepository.CreateAsync(transaction);
 
-        return _mapper.Map<TransactionDto>(transaction);
+        return transaction.ToDto();
     }
 }

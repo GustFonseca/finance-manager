@@ -1,6 +1,6 @@
+using FinanceManager.Aplication.Mappings;
 using FinanceManager.Aplication.Validation;
 
-using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
@@ -11,11 +11,9 @@ namespace FinanceManager.Aplication.UseCases.Accounts.Commands.CreateAccount;
 public class CreateAccountHandler : IRequestHandler<CreateAccountCommand, AccountDto>
 {
     private readonly IAccountRepository _accountRepository;
-    private readonly IMapper _mapper;
-    public CreateAccountHandler(IAccountRepository accountRepository, IMapper mapper)
+    public CreateAccountHandler(IAccountRepository accountRepository)
     {
         _accountRepository = accountRepository;
-        _mapper = mapper;
     }
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken = default)
     {
@@ -23,7 +21,7 @@ public class CreateAccountHandler : IRequestHandler<CreateAccountCommand, Accoun
 
         await _accountRepository.CreateAsync(account);
 
-        return _mapper.Map<AccountDto>(account);
+        return account.ToDto();
     }
 }
 

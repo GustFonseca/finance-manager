@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Api.Controllers;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.UseCases.Goals.Commands.CompleteGoal;
@@ -63,10 +64,10 @@ public class GoalsAndTransactionsControllerTests
     [Fact]
     public async Task Goals_Delete_returns_204_or_404()
     {
-        _mediator.Returns<DeleteGoalCommand>(c => c.GoalId == Known);
+        _mediator.Returns<DeleteGoalCommand>(c => c.GoalId == Known ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Goals.Delete(Known));
-        Assert.IsType<NotFoundResult>(await Goals.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Goals.Delete(Guid.NewGuid()));
     }
 
     [Fact]

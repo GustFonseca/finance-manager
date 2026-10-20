@@ -30,7 +30,7 @@ public static class SpendingAnalyzer
         var monthTotal = current.Sum(e => e.Tx.AmountCents);
         double ShareOf(long cents) => monthTotal > 0 ? (double)cents / monthTotal : 0;
 
-        var yearlyKeys = AvoidableSpendingAnalyzer.YearlyKeys(expenses.Select(e => e.Tx), rules);
+        var yearlyKeys = YearlyCharges.Keys(expenses.Select(e => e.Tx), rules);
         var reducible = Reducible(history.Count > 0 ? history : current, history.Count > 0 ? historyMonths : 1, rules, yearlyKeys);
 
         return new SpendingAnalysisDto

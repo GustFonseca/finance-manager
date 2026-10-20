@@ -99,12 +99,12 @@ public class WishlistTests
         var wish = await Create.Handle(new CreateWishCommand(_me.Id, "Tênis", 30000, null, Now));
         var delete = new DeleteWishHandler(new WishlistRepository(_db));
 
-        Assert.Null(await Decide.Handle(new DecideWishCommand(Guid.NewGuid(), wish.Id, WishStatus.GAVE_UP, Now)));
-        Assert.Null(await Decide.Handle(new DecideWishCommand(_me.Id, Guid.NewGuid(), WishStatus.GAVE_UP, Now)));
+        await Assert.ThrowsAsync<NotFoundException>(() => Decide.Handle(new DecideWishCommand(Guid.NewGuid(), wish.Id, WishStatus.GAVE_UP, Now)));
+        await Assert.ThrowsAsync<NotFoundException>(() => Decide.Handle(new DecideWishCommand(_me.Id, Guid.NewGuid(), WishStatus.GAVE_UP, Now)));
         await Assert.ThrowsAsync<BusinessRuleException>(() => Decide.Handle(new DecideWishCommand(_me.Id, wish.Id, (WishStatus)9, Now)));
-        Assert.False(await delete.Handle(new DeleteWishCommand(Guid.NewGuid(), wish.Id)));
-        Assert.True(await delete.Handle(new DeleteWishCommand(_me.Id, wish.Id)));
-        Assert.False(await delete.Handle(new DeleteWishCommand(_me.Id, wish.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => delete.Handle(new DeleteWishCommand(Guid.NewGuid(), wish.Id)));
+        await delete.Handle(new DeleteWishCommand(_me.Id, wish.Id));
+        await Assert.ThrowsAsync<NotFoundException>(() => delete.Handle(new DeleteWishCommand(_me.Id, wish.Id)));
         Assert.Contains(_db.ActivityLogs, a => a.Description == "Desejo removido: Tênis");
     }
 }
@@ -160,15 +160,15 @@ public class DebtTests
         var updated = await save.Handle(new SaveDebtCommand(_me.Id, created!.Id, "Cartão Nubank", 250000, 9.5m, 25000));
 
         Assert.Equal(("Cartão Nubank", 250000L, 9.5m), (updated!.Name, updated.BalanceCents, updated.MonthlyRatePercent));
-        Assert.Null(await save.Handle(new SaveDebtCommand(Guid.NewGuid(), created.Id, "x", 1, 1, 1)));
-        Assert.Null(await save.Handle(new SaveDebtCommand(_me.Id, Guid.NewGuid(), "x", 1, 1, 1)));
+        await Assert.ThrowsAsync<NotFoundException>(() => save.Handle(new SaveDebtCommand(Guid.NewGuid(), created.Id, "x", 1, 1, 1)));
+        await Assert.ThrowsAsync<NotFoundException>(() => save.Handle(new SaveDebtCommand(_me.Id, Guid.NewGuid(), "x", 1, 1, 1)));
         Assert.Single(await new GetDebtsHandler(new DebtRepository(_db)).Handle(new GetDebtsQuery(_me.Id)));
         Assert.True((await new GetDebtPlanHandler(new DebtRepository(_db)).Handle(new GetDebtPlanQuery(_me.Id, 0))).Avalanche.Feasible);
 
         var delete = new DeleteDebtHandler(new DebtRepository(_db));
-        Assert.False(await delete.Handle(new DeleteDebtCommand(Guid.NewGuid(), created.Id)));
-        Assert.True(await delete.Handle(new DeleteDebtCommand(_me.Id, created.Id)));
-        Assert.False(await delete.Handle(new DeleteDebtCommand(_me.Id, created.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => delete.Handle(new DeleteDebtCommand(Guid.NewGuid(), created.Id)));
+        await delete.Handle(new DeleteDebtCommand(_me.Id, created.Id));
+        await Assert.ThrowsAsync<NotFoundException>(() => delete.Handle(new DeleteDebtCommand(_me.Id, created.Id)));
         Assert.Contains(_db.ActivityLogs, a => a.Description.StartsWith("Dívida cadastrada: Cartão"));
         Assert.Contains(_db.ActivityLogs, a => a.Description.StartsWith("Dívida atualizada: Cartão Nubank"));
         Assert.Contains(_db.ActivityLogs, a => a.Description == "Dívida removida: Cartão Nubank");
@@ -327,15 +327,15 @@ public class PlanningApiTests
         var item = new WishlistItemDto { Id = Guid.NewGuid() };
         _mediator.Returns<GetWishlistQuery>(_ => new WishlistDto());
         _mediator.Returns<CreateWishCommand>(_ => item);
-        _mediator.Returns<DecideWishCommand>(c => c.WishId == item.Id ? item : null);
-        _mediator.Returns<DeleteWishCommand>(c => c.WishId == item.Id);
+        _mediator.Returns<DecideWishCommand>(c => c.WishId == item.Id ? item : throw new NotFoundException("não encontrado"));
+        _mediator.Returns<DeleteWishCommand>(c => c.WishId == item.Id ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<OkObjectResult>((await controller.Get()).Result);
         Assert.Equal($"/api/wishlist/{item.Id}", Assert.IsType<CreatedResult>((await controller.Create(new CreateWishRequest { Name = "x", PriceCents = 1 })).Result).Location);
         Assert.IsType<OkObjectResult>((await controller.Decide(item.Id, new WishDecisionRequest { Status = WishStatus.GAVE_UP })).Result);
-        Assert.IsType<NotFoundResult>((await controller.Decide(Guid.NewGuid(), new WishDecisionRequest())).Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => controller.Decide(Guid.NewGuid(), new WishDecisionRequest()));
         Assert.IsType<NoContentResult>(await controller.Delete(item.Id));
-        Assert.IsType<NotFoundResult>(await controller.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => controller.Delete(Guid.NewGuid()));
         Assert.All(_mediator.Sent, s => Assert.Equal(Me, s.GetType().GetProperty("UserId")!.GetValue(s)));
     }
 
@@ -346,8 +346,8 @@ public class PlanningApiTests
         var debt = new DebtDto { Id = Guid.NewGuid() };
         _mediator.Returns<GetDebtsQuery>(_ => new List<DebtDto> { debt });
         _mediator.Returns<GetDebtPlanQuery>(_ => new DebtPlanDto());
-        _mediator.Returns<SaveDebtCommand>(c => c.DebtId == Guid.Empty ? null : debt);
-        _mediator.Returns<DeleteDebtCommand>(c => c.DebtId == debt.Id);
+        _mediator.Returns<SaveDebtCommand>(c => c.DebtId == Guid.Empty ? throw new NotFoundException("não encontrado") : debt);
+        _mediator.Returns<DeleteDebtCommand>(c => c.DebtId == debt.Id ? true : throw new NotFoundException("não encontrado"));
         var request = new SaveDebtRequest { Name = "Cartão", BalanceCents = 1, MonthlyRatePercent = 2, MinimumPaymentCents = 3 };
 
         Assert.IsType<OkObjectResult>((await controller.GetAll()).Result);
@@ -355,9 +355,9 @@ public class PlanningApiTests
         await controller.Plan(null);
         Assert.IsType<CreatedResult>((await controller.Create(request)).Result);
         Assert.IsType<OkObjectResult>((await controller.Update(debt.Id, request)).Result);
-        Assert.IsType<NotFoundResult>((await controller.Update(Guid.Empty, request)).Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => controller.Update(Guid.Empty, request));
         Assert.IsType<NoContentResult>(await controller.Delete(debt.Id));
-        Assert.IsType<NotFoundResult>(await controller.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => controller.Delete(Guid.NewGuid()));
         Assert.Equal([5000L, 0L], _mediator.Sent.OfType<GetDebtPlanQuery>().Select(q => q.ExtraCents));
     }
 

@@ -13,46 +13,33 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/files")]
 [Authorize]
-public class FilesController : ControllerBase
+public class FilesController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public FilesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpPut("{id}")]
     public async Task<ActionResult<StoredFileDto>> Update(Guid id, [FromBody] UpdateFileRequest request)
     {
-        var file = await _mediator.Send(new UpdateFileCommand(GetUserId(), id, request.Name, request.FolderId));
-        if (file == null) return NotFound();
+        var file = await Mediator.Send(new UpdateFileCommand(UserId, id, request.Name, request.FolderId));
         return Ok(file);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var trashed = await _mediator.Send(new TrashFileCommand(GetUserId(), id));
-        if (!trashed) return NotFound();
+        await Mediator.Send(new TrashFileCommand(UserId, id));
         return NoContent();
     }
 
     [HttpGet("{id}/view")]
     public async Task<ActionResult<FileViewDto>> View(Guid id)
     {
-        var view = await _mediator.Send(new GetFileViewQuery(GetUserId(), id));
-        if (view == null) return NotFound();
+        var view = await Mediator.Send(new GetFileViewQuery(UserId, id));
         return Ok(view);
     }
 
     [HttpGet("{id}/download")]
     public async Task<ActionResult<FileDownloadDto>> Download(Guid id)
     {
-        var url = await _mediator.Send(new GetFileDownloadUrlQuery(GetUserId(), id));
-        if (url == null) return NotFound();
+        var url = await Mediator.Send(new GetFileDownloadUrlQuery(UserId, id));
         return Ok(new FileDownloadDto { Url = url });
     }
 }

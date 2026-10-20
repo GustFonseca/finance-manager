@@ -25,7 +25,7 @@ public class MerchantCommandsTests
     }
 
     private UpdateMerchantHandler UpdateHandler =>
-        new(new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db), TestDb.Mapper);
+        new(new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db));
 
     private Task<List<MerchantMatchDto>> Resolve(params ImportLineRequest[] lines) =>
         new ResolveMerchantsHandler(new MerchantRepository(_db), new CategoryRepository(_db), new UserRepository(_db), TestRules.Provider)
@@ -42,7 +42,7 @@ public class MerchantCommandsTests
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             UpdateHandler.Handle(new UpdateMerchantCommand(_me.Id, _toru.Id, name, MerchantKind.BUSINESS, null, false)));
 
-        Assert.StartsWith("O nome deve ter entre 1 e", error.Message);
+        Assert.Equal("Informe o nome.", error.Message);
     }
 
     [Fact]
@@ -74,8 +74,8 @@ public class MerchantCommandsTests
         _db.Merchants.Add(foreign);
         _db.SaveChanges();
 
-        Assert.Null(await UpdateHandler.Handle(new UpdateMerchantCommand(_me.Id, Guid.NewGuid(), "x", MerchantKind.BUSINESS, null, false)));
-        Assert.Null(await UpdateHandler.Handle(new UpdateMerchantCommand(_me.Id, foreign.Id, "x", MerchantKind.BUSINESS, null, false)));
+        await Assert.ThrowsAsync<NotFoundException>(() => UpdateHandler.Handle(new UpdateMerchantCommand(_me.Id, Guid.NewGuid(), "x", MerchantKind.BUSINESS, null, false)));
+        await Assert.ThrowsAsync<NotFoundException>(() => UpdateHandler.Handle(new UpdateMerchantCommand(_me.Id, foreign.Id, "x", MerchantKind.BUSINESS, null, false)));
     }
 
     [Fact]

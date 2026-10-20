@@ -11,6 +11,7 @@ using FinanceManager.Aplication.UseCases.Trash.Commands.RestoreFile;
 using FinanceManager.Aplication.UseCases.Trash.Commands.RestoreFolder;
 using FinanceManager.Aplication.UseCases.Trash.Queries.GetTrash;
 using FinanceManager.Domain.Entities;
+using FinanceManager.Domain.Events;
 
 namespace FinanceManager.Tests.Files;
 
@@ -24,7 +25,7 @@ public class FileHandlersTests
     [Fact]
     public async Task GetFolders_creates_the_imports_folder_once()
     {
-        var handler = new GetFoldersHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper);
+        var handler = new GetFoldersHandler(_store.FolderRepository, _store.FileRepository);
 
         await handler.Handle(new GetFoldersQuery(Me));
         var folders = await handler.Handle(new GetFoldersQuery(Me));
@@ -41,7 +42,7 @@ public class FileHandlersTests
     [InlineData("nome?")]
     public async Task CreateFolder_rejects_invalid_names(string name)
     {
-        var handler = new CreateFolderHandler(_store.FolderRepository, _store.Mapper);
+        var handler = new CreateFolderHandler(_store.FolderRepository);
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new CreateFolderCommand(Me, name)));
     }
@@ -52,7 +53,7 @@ public class FileHandlersTests
         var system = _store.AddFolder(Me, Folder.ImportsFolderName, isSystem: true);
 
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            new RenameFolderHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper)
+            new RenameFolderHandler(_store.FolderRepository, _store.FileRepository)
                 .Handle(new RenameFolderCommand(Me, system.Id, "Outro nome")));
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             new TrashFolderHandler(_store.FolderRepository, _store.FileRepository)
@@ -65,13 +66,11 @@ public class FileHandlersTests
         var folder = _store.AddFolder(SomeoneElse);
         var file = _store.AddFile(folder);
 
-        var trashed = await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository)
-            .Handle(new TrashFolderCommand(Me, folder.Id));
-        var url = await new GetFileDownloadUrlHandler(_store.FileRepository, _store.Storage)
-            .Handle(new GetFileDownloadUrlQuery(Me, file.Id));
+        await Assert.ThrowsAsync<NotFoundException>(() => new TrashFolderHandler(_store.FolderRepository, _store.FileRepository)
+            .Handle(new TrashFolderCommand(Me, folder.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => new GetFileDownloadUrlHandler(_store.FileRepository, _store.Storage)
+            .Handle(new GetFileDownloadUrlQuery(Me, file.Id)));
 
-        Assert.False(trashed);
-        Assert.Null(url);
         Assert.Null(folder.DeletedAt);
     }
 
@@ -80,7 +79,7 @@ public class FileHandlersTests
     {
         var mine = _store.AddFile(_store.AddFolder(Me));
         var theirs = _store.AddFolder(SomeoneElse);
-        var handler = new UpdateFileHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper);
+        var handler = new UpdateFileHandler(_store.FolderRepository, _store.FileRepository);
 
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             handler.Handle(new UpdateFileCommand(Me, mine.Id, null, theirs.Id)));
@@ -94,7 +93,7 @@ public class FileHandlersTests
         var target = _store.AddFolder(Me, "Destino");
         var key = file.StorageKey;
 
-        var dto = await new UpdateFileHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper)
+        var dto = await new UpdateFileHandler(_store.FolderRepository, _store.FileRepository)
             .Handle(new UpdateFileCommand(Me, file.Id, "outubro.csv", target.Id));
 
         Assert.Equal(target.Id, dto!.FolderId);
@@ -106,7 +105,7 @@ public class FileHandlersTests
     public async Task Upload_rejects_files_over_the_size_limit()
     {
         var folder = _store.AddFolder(Me);
-        var handler = new UploadFileHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Mapper);
+        var handler = new UploadFileHandler(_store.FolderRepository, _store.FileRepository, _store.Storage);
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new UploadFileCommand(
             Me, folder.Id, "grande.zip", "application/zip", UploadFileHandler.MaxSizeBytes + 1, Stream.Null)));
@@ -117,7 +116,7 @@ public class FileHandlersTests
     public async Task Upload_stores_the_object_under_a_key_independent_of_the_name()
     {
         var folder = _store.AddFolder(Me);
-        var handler = new UploadFileHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Mapper);
+        var handler = new UploadFileHandler(_store.FolderRepository, _store.FileRepository, _store.Storage);
 
         var dto = await handler.Handle(new UploadFileCommand(Me, folder.Id, "fakepath/nota.pdf", "", 10, Stream.Null));
 
@@ -137,7 +136,7 @@ public class FileHandlersTests
         trashedEarlier.DeletedAt = DateTime.UtcNow.AddDays(-1);
 
         await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new TrashFolderCommand(Me, folder.Id));
-        var trash = await new GetTrashHandler(_store.FolderRepository, _store.FileRepository, _store.Mapper).Handle(new GetTrashQuery(Me));
+        var trash = await new GetTrashHandler(_store.FolderRepository, _store.FileRepository).Handle(new GetTrashQuery(Me));
         await new RestoreFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new RestoreFolderCommand(Me, folder.Id));
 
         Assert.Equal(1, Assert.Single(trash.Folders).FileCount);
@@ -153,10 +152,10 @@ public class FileHandlersTests
         var file = _store.AddFile(folder);
         await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new TrashFolderCommand(Me, folder.Id));
 
-        var restored = await new RestoreFileHandler(_store.FolderRepository, _store.FileRepository)
-            .Handle(new RestoreFileCommand(Me, file.Id));
+        var error = await Assert.ThrowsAsync<BusinessRuleException>(() => new RestoreFileHandler(_store.FolderRepository, _store.FileRepository)
+            .Handle(new RestoreFileCommand(Me, file.Id)));
 
-        Assert.False(restored);
+        Assert.Equal("Restaure a pasta deste arquivo antes.", error.Message);
         Assert.NotNull(file.DeletedAt);
     }
 
@@ -170,13 +169,15 @@ public class FileHandlersTests
         await new TrashFolderHandler(_store.FolderRepository, _store.FileRepository).Handle(new TrashFolderCommand(Me, trashedFolder.Id));
         loose.DeletedAt = DateTime.UtcNow;
 
-        var removed = await new EmptyTrashHandler(_store.FolderRepository, _store.FileRepository, _store.Storage, _store.Work)
+        var trashed = _store.Files.Where(f => f != kept).ToList();
+
+        var removed = await new EmptyTrashHandler(_store.FolderRepository, _store.FileRepository)
             .Handle(new EmptyTrashCommand(Me));
 
         Assert.Equal(2, removed);
         Assert.DoesNotContain(trashedFolder, _store.Folders);
-        await _store.Work.FlushAsync();
-        Assert.Equal([kept.StorageKey], _store.StoredKeys);
+        Assert.Equal(trashed.Select(f => new StoredFilePurged(f.Id, f.StorageKey)), trashed.SelectMany(f => f.DomainEvents));
+        Assert.Empty(kept.DomainEvents);
         Assert.Contains(kept, _store.Files);
     }
 }

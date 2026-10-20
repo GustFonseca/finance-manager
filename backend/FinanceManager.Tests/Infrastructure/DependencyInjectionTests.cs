@@ -1,4 +1,3 @@
-using AutoMapper;
 using FinanceManager.Aplication;
 using FinanceManager.Aplication.Auth;
 using FinanceManager.Aplication.Classification;
@@ -49,10 +48,11 @@ public class DependencyInjectionTests
     private static IEnumerable<Type> HandlerInterfaces(Type type) => type.GetInterfaces()
         .Where(i => i.IsGenericType &&
                     (i.GetGenericTypeDefinition() == typeof(IRequestHandler<>) ||
-                     i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)));
+                     i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>) ||
+                     i.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)));
 
     [Fact]
-    public void AddApplication_registers_every_handler_as_scoped_and_a_valid_mapper()
+    public void AddApplication_registers_every_request_and_event_handler_as_scoped()
     {
         var services = new ServiceCollection().AddApplication();
 
@@ -62,10 +62,9 @@ public class DependencyInjectionTests
             .ToList();
 
         Assert.True(handlers.Count > 40);
+        Assert.Equal(3, handlers.Count(h => h.Interface.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)));
         Assert.All(handlers, h => Assert.Contains(services, d =>
             d.ServiceType == h.Interface && d.ImplementationType == h.Implementation && d.Lifetime == ServiceLifetime.Scoped));
-        using var provider = services.BuildServiceProvider();
-        provider.GetRequiredService<IMapper>().ConfigurationProvider.AssertConfigurationIsValid();
     }
 
     [Fact]

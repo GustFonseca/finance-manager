@@ -36,7 +36,7 @@ public class UpdateTransactionTests
 
     private UpdateTransactionHandler Handler => new(
         new TransactionRepository(_db), new AccountRepository(_db), new CategoryRepository(_db),
-        new MerchantRepository(_db), new UserRepository(_db), TestRules.Provider, TestDb.Mapper);
+        new MerchantRepository(_db), new UserRepository(_db), TestRules.Provider);
 
     private UpdateTransactionCommand Command(
         Guid? accountId = null, Guid? categoryId = null, TransactionType type = TransactionType.EXPENSE,

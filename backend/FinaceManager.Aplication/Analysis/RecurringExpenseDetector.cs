@@ -40,7 +40,7 @@ public static class RecurringExpenseDetector
             if ((now - latest.Date).TotalDays > ActiveWithinDays) continue;
 
             var rule = RuleFor($"{latest.MerchantName(rules)} {latest.Description}", rules);
-            var usual = AvoidableSpendingAnalyzer.Median(group.Select(t => t.AmountCents).ToList());
+            var usual = Stats.Median(group.Select(t => t.AmountCents).ToList());
             var similar = group.Where(t => Math.Abs(t.AmountCents - usual) <= usual * rule.Tolerance).ToList();
             var months = similar.Select(t => (t.Date.Year, t.Date.Month)).Distinct().Count();
             if (months < rule.MinMonths || similar.Count > months * 1.5) continue;

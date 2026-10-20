@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Validation;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Domain.Entities;
@@ -6,7 +7,6 @@ namespace FinanceManager.Aplication.UseCases.Debts;
 
 public static class DebtMapper
 {
-    public const int MaxNameLength = 100;
     public const decimal MaxMonthlyRatePercent = 50m;
 
     public static DebtDto ToDto(Debt debt) => new()
@@ -20,9 +20,7 @@ public static class DebtMapper
 
     public static string Validate(string? name, long balanceCents, decimal monthlyRatePercent, long minimumPaymentCents)
     {
-        var trimmed = name?.Trim() ?? string.Empty;
-        if (trimmed.Length == 0) throw new BusinessRuleException("Dê um nome à dívida.");
-        if (trimmed.Length > MaxNameLength) throw new BusinessRuleException($"O nome pode ter até {MaxNameLength} caracteres.");
+        var trimmed = Input.Name(name, emptyMessage: "Dê um nome à dívida.");
         if (balanceCents < 0) throw new BusinessRuleException("O saldo devedor não pode ser negativo.");
         if (monthlyRatePercent < 0 || monthlyRatePercent > MaxMonthlyRatePercent)
             throw new BusinessRuleException($"Os juros devem ficar entre 0% e {MaxMonthlyRatePercent}% ao mês.");

@@ -8,7 +8,7 @@ namespace FinanceManager.Aplication.UseCases.Summary.Commands.DismissInsight;
 
 public class DismissInsightHandler : IRequestHandler<DismissInsightCommand, bool>
 {
-    public const int MaxKeyLength = 200;
+    public const int MaxKeyLength = EntityLimits.KeyLength;
     private static readonly string[] Prefixes = [DuplicateChargeDetector.KeyPrefix, BillIncreaseDetector.KeyPrefix];
 
     private readonly IInsightDismissalRepository _dismissalRepository;

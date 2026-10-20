@@ -27,4 +27,18 @@ public class User
     public ICollection<Category> Categories { get; set; } = [];
     public ICollection<Transaction> Transactions { get; set; } = [];
     public ICollection<Goal> Goals { get; set; } = [];
+
+    public void RecordLogin(DateTime now)
+    {
+        LastLoginAt = now;
+        LastSeenAt = now;
+        LoginCount++;
+    }
+
+    public bool RecordActivity(DateTime now, TimeSpan minimumGap)
+    {
+        if (LastSeenAt is { } seen && now - seen < minimumGap) return false;
+        LastSeenAt = now;
+        return true;
+    }
 }

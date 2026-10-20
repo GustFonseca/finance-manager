@@ -21,7 +21,7 @@ public class AccountHandlersTests
     [Fact]
     public async Task CreateAccount_saves_the_account_with_a_zero_balance()
     {
-        var dto = await new CreateAccountHandler(Accounts, TestDb.Mapper).Handle(new CreateAccountCommand(Me, "Nubank"));
+        var dto = await new CreateAccountHandler(Accounts).Handle(new CreateAccountCommand(Me, "Nubank"));
 
         var saved = Assert.Single(_db.Accounts);
         Assert.Equal(saved.Id, dto.Id);
@@ -37,7 +37,7 @@ public class AccountHandlersTests
         _db.AddAccount(Me, "Itaú");
         _db.AddAccount(SomeoneElse, "Inter");
 
-        var accounts = await new GetAllAccountsHandler(Accounts, TestDb.Mapper).Handle(new GetAllAccountsQuery(Me));
+        var accounts = await new GetAllAccountsHandler(Accounts).Handle(new GetAllAccountsQuery(Me));
 
         Assert.Equal(["Itaú", "Nubank"], accounts.Select(a => a.Name).Order());
     }
@@ -47,7 +47,7 @@ public class AccountHandlersTests
     {
         var account = _db.AddAccount(Me, "Nubank");
 
-        var dto = await new UpdateAccountHandler(Accounts, TestDb.Mapper).Handle(new UpdateAccountCommand(Me, account.Id, "Nubank PF"));
+        var dto = await new UpdateAccountHandler(Accounts).Handle(new UpdateAccountCommand(Me, account.Id, "Nubank PF"));
 
         Assert.Equal("Nubank PF", dto!.Name);
         Assert.Equal("Nubank PF", (await Accounts.GetByIdAsync(account.Id))!.Name);
@@ -57,10 +57,10 @@ public class AccountHandlersTests
     public async Task UpdateAccount_returns_null_for_a_missing_or_foreign_account()
     {
         var foreign = _db.AddAccount(SomeoneElse, "Inter");
-        var handler = new UpdateAccountHandler(Accounts, TestDb.Mapper);
+        var handler = new UpdateAccountHandler(Accounts);
 
-        Assert.Null(await handler.Handle(new UpdateAccountCommand(Me, Guid.NewGuid(), "x")));
-        Assert.Null(await handler.Handle(new UpdateAccountCommand(Me, foreign.Id, "x")));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateAccountCommand(Me, Guid.NewGuid(), "x")));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateAccountCommand(Me, foreign.Id, "x")));
         Assert.Equal("Inter", foreign.Name);
     }
 
@@ -69,9 +69,8 @@ public class AccountHandlersTests
     {
         var account = _db.AddAccount(Me);
 
-        var deleted = await new DeleteAccountHandler(Accounts, new TransactionRepository(_db)).Handle(new DeleteAccountCommand(Me, account.Id));
+        await new DeleteAccountHandler(Accounts, new TransactionRepository(_db)).Handle(new DeleteAccountCommand(Me, account.Id));
 
-        Assert.True(deleted);
         Assert.Empty(_db.Accounts);
     }
 
@@ -81,8 +80,8 @@ public class AccountHandlersTests
         var foreign = _db.AddAccount(SomeoneElse);
         var handler = new DeleteAccountHandler(Accounts, new TransactionRepository(_db));
 
-        Assert.False(await handler.Handle(new DeleteAccountCommand(Me, Guid.NewGuid())));
-        Assert.False(await handler.Handle(new DeleteAccountCommand(Me, foreign.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteAccountCommand(Me, Guid.NewGuid())));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteAccountCommand(Me, foreign.Id)));
         Assert.Single(_db.Accounts);
     }
 

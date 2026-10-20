@@ -8,7 +8,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddAutoMapper(Assembly.GetExecutingAssembly());
         services.AddHandlers();
 
         return services;
@@ -26,7 +25,8 @@ public static class DependencyInjection
             var interfaces = type.GetInterfaces()
                 .Where(i => i.IsGenericType &&
                     (i.GetGenericTypeDefinition() == typeof(IRequestHandler<>) ||
-                     i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)));
+                     i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>) ||
+                     i.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)));
 
             foreach (var handlerInterface in interfaces)
             {

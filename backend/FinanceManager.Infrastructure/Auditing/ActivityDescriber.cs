@@ -9,7 +9,7 @@ namespace FinanceManager.Infrastructure.Auditing;
 
 public static class ActivityDescriber
 {
-    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+    private static readonly CultureInfo PtBr = MoneyText.PtBr;
 
     public static IEnumerable<ActivityLog> Describe(EntityEntry entry, DbContext context) => entry.Entity switch
     {
@@ -290,7 +290,7 @@ public static class ActivityDescriber
 
     private static T Original<T>(EntityEntry entry, string property) => (T)entry.Property(property).OriginalValue!;
 
-    public const int MaxDescriptionLength = 500;
+    public const int MaxDescriptionLength = EntityLimits.DescriptionLength;
 
     private static ActivityLog Log(Guid userId, string source, string description, ActivityType type = ActivityType.INFO) =>
         new()

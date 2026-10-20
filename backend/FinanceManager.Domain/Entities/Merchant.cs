@@ -1,8 +1,10 @@
+using FinanceManager.Domain.Common;
 using FinanceManager.Domain.Enuns;
+using FinanceManager.Domain.Events;
 
 namespace FinanceManager.Domain.Entities;
 
-public class Merchant
+public class Merchant : Entity, IOwned
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
@@ -21,4 +23,12 @@ public class Merchant
     public User User { get; set; } = null!;
     public Category? Category { get; set; }
     public ICollection<Transaction> Transactions { get; set; } = [];
+
+    public void ApplyActivity(string? activityCode, string? activity, DateTime now)
+    {
+        EnrichedAt = now;
+        ActivityCode = activityCode;
+        Activity = activity;
+        Raise(new MerchantEnriched(Id, UserId));
+    }
 }

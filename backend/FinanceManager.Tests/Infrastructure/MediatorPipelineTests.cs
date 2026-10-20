@@ -1,8 +1,11 @@
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
+using FinanceManager.Domain.Enuns;
+using FinanceManager.Domain.Events;
 using FinanceManager.Infrastructure.Context;
 using FinanceManager.Infrastructure.Messaging;
+using FinanceManager.Infrastructure.Messaging.Pipeline;
 using FinanceManager.Infrastructure.Repositories;
 using FinanceManager.Tests.Support;
 using Microsoft.Data.Sqlite;
@@ -12,15 +15,16 @@ using Microsoft.Extensions.Logging;
 
 namespace FinanceManager.Tests.Infrastructure;
 
-public sealed class MediatorUnitOfWorkTests : IDisposable
+public sealed class MediatorPipelineTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly SqliteConnection _connection;
     private readonly User _me;
     private readonly Probe _probe = new();
-    private readonly ListLogger<Mediator> _logger = new();
+    private readonly ListLogger<ConflictRetryBehavior> _retryLogger = new();
+    private readonly ListLogger<DomainEventDispatcher> _eventLogger = new();
 
-    public MediatorUnitOfWorkTests()
+    public MediatorPipelineTests()
     {
         (_db, _connection) = TestDb.Sqlite();
         _me = _db.AddUser();
@@ -32,22 +36,24 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
         _connection.Dispose();
     }
 
-    private (IMediator Mediator, UnitOfWork Work) Build(AppDbContext db)
+    private IMediator Build(AppDbContext db)
     {
         var services = new ServiceCollection();
         services.AddSingleton(db);
         services.AddSingleton(_probe);
-        services.AddSingleton<ILogger<Mediator>>(_logger);
-        services.AddScoped<UnitOfWork>();
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
+        services.AddSingleton<ILogger<ConflictRetryBehavior>>(_retryLogger);
+        services.AddSingleton<ILogger<DomainEventDispatcher>>(_eventLogger);
+        services.AddMessaging();
         services.AddScoped<IRequestHandler<DepositCommand, long>, DepositHandler>();
-        services.AddScoped<IRequestHandler<AfterCommitCommand, bool>, AfterCommitHandler>();
+        services.AddScoped<IRequestHandler<SaveRuleCommand, bool>, SaveRuleHandler>();
         services.AddScoped<IRequestHandler<OuterCommand, bool>, OuterHandler>();
         services.AddScoped<IRequestHandler<AlwaysConflictCommand, bool>, AlwaysConflictHandler>();
         services.AddScoped<IRequestHandler<DuplicateOnceQuery, int>, DuplicateOnceHandler>();
         services.AddScoped<IRequestHandler<OutsideCommand, bool>, OutsideHandler>();
-        var provider = services.BuildServiceProvider();
-        return (new Mediator(provider), provider.GetRequiredService<UnitOfWork>());
+        services.AddScoped<IRequestHandler<DeleteCommand>, DeleteHandler>();
+        services.AddScoped<IDomainEventHandler<ClassificationRulesChanged>, RulesChangedProbe>();
+        services.AddScoped<IDomainEventHandler<ClassificationRulesChanged>, SecondRulesChangedProbe>();
+        return services.BuildServiceProvider().GetRequiredService<IMediator>();
     }
 
     private Account AddAccount(long balance)
@@ -63,14 +69,14 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
     public async Task A_lost_balance_update_is_detected_and_the_command_runs_again_on_fresh_data()
     {
         var account = AddAccount(1000);
-        var (mediator, _) = Build(_db);
+        var mediator = Build(_db);
         _probe.Concurrent = 500;
 
         var balance = await mediator.Send(new DepositCommand(account.Id, 200));
 
         Assert.Equal(2, _probe.Attempts);
         Assert.Equal(1200, balance);
-        Assert.Contains(_logger.Entries, e => e.Level == LogLevel.Information && e.Message.Contains("DepositCommand"));
+        Assert.Contains(_retryLogger.Entries, e => e.Level == LogLevel.Information && e.Message.Contains("DepositCommand"));
         _db.ChangeTracker.Clear();
         Assert.Equal(1200, _db.Accounts.Single().BalanceCents);
     }
@@ -123,53 +129,73 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
     }
 
     [Fact]
-    public async Task Work_registered_for_after_the_commit_runs_only_once_everything_is_saved()
+    public async Task Domain_events_reach_their_handlers_in_one_batch_only_after_everything_is_committed()
     {
-        var (mediator, _) = Build(_db);
+        var mediator = Build(_db);
 
         await mediator.Send(new OuterCommand(Fail: false));
 
-        Assert.Equal(["inner saved: True", "outer saved: True"], _probe.AfterCommit);
+        Assert.Equal(["2 event(s), committed: True", "second handler: 2"], _probe.Handled);
         Assert.Null(_db.Database.CurrentTransaction);
+        Assert.Empty(_db.PendingDomainEvents);
     }
 
     [Fact]
-    public async Task Work_registered_by_a_failed_command_is_discarded()
+    public async Task Domain_events_raised_by_a_failed_command_are_discarded()
     {
-        var (mediator, work) = Build(_db);
+        var mediator = Build(_db);
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => mediator.Send(new OuterCommand(Fail: true)));
 
-        Assert.Empty(_probe.AfterCommit);
-        Assert.Equal(0, work.Pending);
+        Assert.Empty(_probe.Handled);
+        Assert.Empty(_db.PendingDomainEvents);
+        _db.ChangeTracker.Clear();
+        Assert.DoesNotContain(_db.ClassificationRules, r => r.Value == "Marca");
     }
 
     [Fact]
-    public async Task A_failing_after_commit_action_is_logged_without_failing_the_request()
+    public async Task A_failing_event_handler_is_logged_without_failing_the_request_or_the_other_handlers()
     {
-        var (mediator, _) = Build(_db);
+        var mediator = Build(_db);
+        _probe.FailEvents = true;
 
-        Assert.True(await mediator.Send(new AfterCommitCommand(Throw: true)));
+        Assert.True(await mediator.Send(new SaveRuleCommand()));
 
-        Assert.Contains(_logger.Entries, e => e.Level == LogLevel.Warning && e.Exception is InvalidOperationException);
+        Assert.Contains(_eventLogger.Entries, e => e.Level == LogLevel.Warning && e.Exception is InvalidOperationException && e.Message.Contains("ClassificationRulesChanged"));
+        Assert.Equal(["second handler: 1"], _probe.Handled);
+    }
+
+    [Fact]
+    public async Task Events_raised_by_deleted_entities_are_still_dispatched()
+    {
+        var rule = ClassificationRule.Create(RuleType.BRAND, "toru", "Toru", 1, null);
+        _db.ClassificationRules.Add(rule);
+        _db.SaveChanges();
+        _db.TakeDomainEvents();
+        var mediator = Build(_db);
+
+        await mediator.Send(new DeleteCommand(rule.Id));
+
+        Assert.Equal(["1 event(s), committed: True", "second handler: 1"], _probe.Handled);
     }
 
     [Fact]
     public async Task Repeated_conflicts_become_a_conflict_error_after_a_few_attempts()
     {
-        var (mediator, work) = Build(_db);
+        var mediator = Build(_db);
 
         var error = await Assert.ThrowsAsync<ConflictException>(() => mediator.Send(new AlwaysConflictCommand()));
 
-        Assert.Equal(Mediator.ConflictMessage, error.Message);
-        Assert.Equal(Mediator.MaxAttempts, _probe.Attempts);
-        Assert.Equal(0, work.Pending);
+        Assert.Equal(ConflictRetryBehavior.ConflictMessage, error.Message);
+        Assert.Equal(ConflictRetryBehavior.MaxAttempts, _probe.Attempts);
+        Assert.Empty(_db.PendingDomainEvents);
+        Assert.Empty(_probe.Handled);
     }
 
     [Fact]
     public async Task A_duplicate_insert_from_a_concurrent_request_is_retried_until_it_finds_the_row()
     {
-        var (mediator, _) = Build(_db);
+        var mediator = Build(_db);
 
         Assert.Equal(2, await mediator.Send(new DuplicateOnceQuery()));
     }
@@ -178,7 +204,7 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
     public async Task Without_a_transaction_to_roll_back_a_conflict_is_reported_instead_of_retried()
     {
         using var memory = TestDb.InMemory();
-        var (mediator, _) = Build(memory);
+        var mediator = Build(memory);
 
         await Assert.ThrowsAsync<ConflictException>(() => mediator.Send(new AlwaysConflictCommand()));
 
@@ -188,7 +214,7 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
     [Fact]
     public async Task Commands_marked_to_run_outside_a_transaction_do_not_hold_one()
     {
-        var (mediator, _) = Build(_db);
+        var mediator = Build(_db);
 
         Assert.True(await mediator.Send(new OutsideCommand()));
 
@@ -196,7 +222,7 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
     }
 
     [Fact]
-    public async Task Without_a_registered_unit_of_work_the_mediator_uses_its_own()
+    public async Task Without_registered_behaviors_the_mediator_just_runs_the_handler()
     {
         var services = new ServiceCollection();
         services.AddSingleton(_db);
@@ -206,11 +232,24 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
         Assert.True(await new Mediator(services.BuildServiceProvider()).Send(new OutsideCommand()));
     }
 
+    [Fact]
+    public void The_request_context_knows_commands_queries_and_who_owns_the_transaction()
+    {
+        Assert.Equal((true, true, "SaveRuleCommand"), Shape(RequestContext.For(new SaveRuleCommand(), _db)));
+        Assert.Equal((false, false, "DuplicateOnceQuery"), Shape(RequestContext.For(new DuplicateOnceQuery(), _db)));
+        Assert.Equal((true, false, "OutsideCommand"), Shape(RequestContext.For(new OutsideCommand(), _db)));
+        using var memory = TestDb.InMemory();
+        Assert.False(RequestContext.For(new SaveRuleCommand(), memory).OwnsTransaction);
+
+        static (bool, bool, string) Shape(RequestContext context) => (context.IsCommand, context.OwnsTransaction, context.Name);
+    }
+
     public sealed class Probe
     {
         public int Attempts { get; set; }
         public long Concurrent { get; set; }
-        public List<string> AfterCommit { get; } = [];
+        public bool FailEvents { get; set; }
+        public List<string> Handled { get; } = [];
         public List<bool> InTransaction { get; } = [];
     }
 
@@ -233,49 +272,73 @@ public sealed class MediatorUnitOfWorkTests : IDisposable
         }
     }
 
-    public record AfterCommitCommand(bool Throw) : ICommand<bool>;
+    public record SaveRuleCommand : ICommand<bool>;
 
-    public sealed class AfterCommitHandler(AppDbContext db, Probe probe, IUnitOfWork work) : IRequestHandler<AfterCommitCommand, bool>
+    public sealed class SaveRuleHandler(AppDbContext db) : IRequestHandler<SaveRuleCommand, bool>
     {
-        public async Task<bool> Handle(AfterCommitCommand request, CancellationToken cancellationToken = default)
+        public async Task<bool> Handle(SaveRuleCommand request, CancellationToken cancellationToken = default)
         {
-            db.Users.Add(new User { Name = "Inner", Email = $"{Guid.NewGuid():N}@x.com", GoogleId = Guid.NewGuid().ToString("N") });
+            db.ClassificationRules.Add(ClassificationRule.Create(RuleType.BRAND, Guid.NewGuid().ToString("N"), "Marca", 1, null));
             await db.SaveChangesAsync(cancellationToken);
-            work.OnCommitted(() =>
-            {
-                if (request.Throw) throw new InvalidOperationException("storage down");
-                probe.AfterCommit.Add($"inner saved: {db.Database.CurrentTransaction == null}");
-                return Task.CompletedTask;
-            });
             return true;
         }
     }
 
     public record OuterCommand(bool Fail) : ICommand<bool>;
 
-    public sealed class OuterHandler(AppDbContext db, Probe probe, IUnitOfWork work, IServiceProvider services) : IRequestHandler<OuterCommand, bool>
+    public sealed class OuterHandler(IServiceProvider services) : IRequestHandler<OuterCommand, bool>
     {
         public async Task<bool> Handle(OuterCommand request, CancellationToken cancellationToken = default)
         {
-            await new Mediator(services).Send(new AfterCommitCommand(Throw: false), cancellationToken);
-            work.OnCommitted(() =>
-            {
-                probe.AfterCommit.Add($"outer saved: {db.Database.CurrentTransaction == null}");
-                return Task.CompletedTask;
-            });
+            var mediator = new Mediator(services);
+            await mediator.Send(new SaveRuleCommand(), cancellationToken);
+            await mediator.Send(new SaveRuleCommand(), cancellationToken);
             if (request.Fail) throw new BusinessRuleException("falhou");
             return true;
         }
     }
 
+    public record DeleteCommand(Guid RuleId) : ICommand;
+
+    public sealed class DeleteHandler(AppDbContext db) : IRequestHandler<DeleteCommand>
+    {
+        public async Task Handle(DeleteCommand request, CancellationToken cancellationToken)
+        {
+            var rule = await db.ClassificationRules.SingleAsync(r => r.Id == request.RuleId, cancellationToken);
+            rule.SetActive(false);
+            db.ClassificationRules.Remove(rule);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public sealed class RulesChangedProbe(AppDbContext db, Probe probe) : IDomainEventHandler<ClassificationRulesChanged>
+    {
+        public Task Handle(IReadOnlyList<ClassificationRulesChanged> events, CancellationToken cancellationToken)
+        {
+            if (probe.FailEvents) throw new InvalidOperationException("cache down");
+            probe.Handled.Add($"{events.Count} event(s), committed: {db.Database.CurrentTransaction == null}");
+            return Task.CompletedTask;
+        }
+    }
+
+    public sealed class SecondRulesChangedProbe(Probe probe) : IDomainEventHandler<ClassificationRulesChanged>
+    {
+        public Task Handle(IReadOnlyList<ClassificationRulesChanged> events, CancellationToken cancellationToken)
+        {
+            probe.Handled.Add($"second handler: {events.Count}");
+            return Task.CompletedTask;
+        }
+    }
+
     public record AlwaysConflictCommand : ICommand<bool>;
 
-    public sealed class AlwaysConflictHandler(Probe probe, IUnitOfWork work) : IRequestHandler<AlwaysConflictCommand, bool>
+    public sealed class AlwaysConflictHandler(AppDbContext db, Probe probe) : IRequestHandler<AlwaysConflictCommand, bool>
     {
-        public Task<bool> Handle(AlwaysConflictCommand request, CancellationToken cancellationToken = default)
+        public async Task<bool> Handle(AlwaysConflictCommand request, CancellationToken cancellationToken = default)
         {
             probe.Attempts++;
-            work.OnCommitted(() => Task.CompletedTask);
+            db.ClassificationRules.Add(ClassificationRule.Create(RuleType.BRAND, Guid.NewGuid().ToString("N"), "Marca", 1, null));
+            await db.SaveChangesAsync(cancellationToken);
             throw new DbUpdateConcurrencyException("changed meanwhile");
         }
     }

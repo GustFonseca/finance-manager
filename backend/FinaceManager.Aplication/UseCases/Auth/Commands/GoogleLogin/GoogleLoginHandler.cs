@@ -54,9 +54,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, LoginRespo
             await SeedUserData(user.Id);
         }
 
-        user.LastLoginAt = request.Now;
-        user.LastSeenAt = request.Now;
-        user.LoginCount++;
+        user.RecordLogin(request.Now);
         await _userRepository.UpdateAsync(user);
 
         await _activityLogRepository.CreateAsync(new ActivityLog

@@ -20,7 +20,6 @@ public static class AvoidableSpendingAnalyzer
     public const double PriceIncreaseTolerance = 0.02;
     public const int ActiveWithinDays = 45;
     public const int ResumedGapDays = 45;
-    public const int YearlyGapDays = 300;
     public const int YearlyActiveWithinDays = 400;
 
     private sealed record Expense(Transaction Tx, SpendingClass Class, string Key, string Name);
@@ -107,7 +106,7 @@ public static class AvoidableSpendingAnalyzer
             .Where(e => rules.IsSubscription($"{e.Name} {e.Tx.Description}"))
             .GroupBy(e => e.Key)
             .Select(g => g.OrderBy(e => e.Tx.Date).ToList())
-            .Select(charges => (Charges: charges, Yearly: IsYearly(charges.Select(e => e.Tx).ToList())))
+            .Select(charges => (Charges: charges, Yearly: YearlyCharges.IsYearly(charges.Select(e => e.Tx).ToList())))
             .Where(s => (now - s.Charges[^1].Tx.Date).TotalDays <= (s.Yearly ? YearlyActiveWithinDays : ActiveWithinDays))
             .Select(s =>
             {
@@ -239,7 +238,7 @@ public static class AvoidableSpendingAnalyzer
         var average = series.Sum() / series.Count;
         if (average <= 0) return null;
         var threshold = SpikeThreshold(series, average);
-        return month > threshold && month - Math.Max(average, Median(series)) >= MinSpikeCents
+        return month > threshold && month - Math.Max(average, Stats.Median(series)) >= MinSpikeCents
             ? new SpendingSpikeDto
             {
                 Kind = kind, Id = id, Name = name, MonthCents = month, AverageCents = average,
@@ -252,30 +251,10 @@ public static class AvoidableSpendingAnalyzer
     {
         var floor = (long)Math.Ceiling(average * SpikeRatio);
         if (series.Count < RobustSpikeMinMonths) return floor;
-        var median = Median(series);
-        var deviation = Median(series.Select(v => Math.Abs(v - median)).ToList());
+        var median = Stats.Median(series);
+        var deviation = Stats.Median(series.Select(v => Math.Abs(v - median)).ToList());
         var robust = median + (long)Math.Ceiling(SpikeDeviations * 1.4826 * deviation);
         return Math.Max(robust, (long)Math.Ceiling(Math.Max(median, average) * SpikeRatio));
-    }
-
-    public static bool IsYearly(IReadOnlyList<Transaction> chargesByDate) =>
-        chargesByDate.Count > 0
-        && (chargesByDate[^1].Recurrence == Recurrence.YEARLY
-            || (chargesByDate.Count > 1 && (chargesByDate[^1].Date - chargesByDate[^2].Date).TotalDays >= YearlyGapDays));
-
-    public static IReadOnlySet<string> YearlyKeys(IEnumerable<Transaction> expenses, ClassificationRules rules) =>
-        expenses
-            .GroupBy(t => t.MerchantKey(rules))
-            .Where(g => IsYearly(g.OrderBy(t => t.Date).ToList()))
-            .Select(g => g.Key)
-            .ToHashSet();
-
-    public static long Median(IReadOnlyList<long> values)
-    {
-        if (values.Count == 0) return 0;
-        var sorted = values.Order().ToList();
-        var middle = sorted.Count / 2;
-        return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
     }
 
     private static List<FirstTimePurchaseDto> FirstTimePurchases(List<Expense> current, List<Expense> expenses, DateTime monthStart)

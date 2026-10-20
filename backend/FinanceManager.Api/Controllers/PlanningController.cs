@@ -18,28 +18,19 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/planning")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class PlanningController : ControllerBase
+public class PlanningController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public PlanningController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet("emergency")]
     public async Task<ActionResult<EmergencyFundDto>> GetEmergency([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetEmergencyFundQuery(GetUserId(), monthStart, now)));
+        return Ok(await Mediator.Send(new GetEmergencyFundQuery(UserId, monthStart, now)));
     }
 
     [HttpPut("emergency")]
     public async Task<IActionResult> SetEmergency([FromBody] EmergencyFundRequest request)
     {
-        await _mediator.Send(new SetEmergencyFundCommand(GetUserId(), request.Months, request.GoalId));
+        await Mediator.Send(new SetEmergencyFundCommand(UserId, request.Months, request.GoalId));
         return NoContent();
     }
 
@@ -47,17 +38,17 @@ public class PlanningController : ControllerBase
     public async Task<ActionResult<SeasonalExpensesDto>> GetSeasonal([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetSeasonalExpensesQuery(GetUserId(), monthStart, now)));
+        return Ok(await Mediator.Send(new GetSeasonalExpensesQuery(UserId, monthStart, now)));
     }
 
     [HttpGet("tax-report")]
     public async Task<ActionResult<TaxReportDto>> GetTaxReport([FromQuery] int? year) =>
-        Ok(await _mediator.Send(new GetTaxReportQuery(GetUserId(), year ?? DateTime.UtcNow.Year - 1)));
+        Ok(await Mediator.Send(new GetTaxReportQuery(UserId, year ?? DateTime.UtcNow.Year - 1)));
 
     [HttpGet("net-worth")]
     public async Task<ActionResult<NetWorthDto>> GetNetWorth([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetNetWorthQuery(GetUserId(), monthStart, now)));
+        return Ok(await Mediator.Send(new GetNetWorthQuery(UserId, monthStart, now)));
     }
 }

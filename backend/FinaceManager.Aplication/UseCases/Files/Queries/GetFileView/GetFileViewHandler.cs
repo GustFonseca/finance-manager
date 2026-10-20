@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Aplication.Storage;
@@ -5,7 +6,7 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Files.Queries.GetFileView;
 
-public class GetFileViewHandler : IRequestHandler<GetFileViewQuery, FileViewDto?>
+public class GetFileViewHandler : IRequestHandler<GetFileViewQuery, FileViewDto>
 {
     private readonly IStoredFileRepository _fileRepository;
     private readonly IFileStorage _storage;
@@ -16,10 +17,9 @@ public class GetFileViewHandler : IRequestHandler<GetFileViewQuery, FileViewDto?
         _storage = storage;
     }
 
-    public async Task<FileViewDto?> Handle(GetFileViewQuery request, CancellationToken cancellationToken = default)
+    public async Task<FileViewDto> Handle(GetFileViewQuery request, CancellationToken cancellationToken = default)
     {
-        var file = await _fileRepository.GetByIdAsync(request.FileId);
-        if (file == null || file.UserId != request.UserId || file.DeletedAt != null) return null;
+        var file = await _fileRepository.GetLiveAsync(request.FileId, request.UserId);
 
         return new FileViewDto
         {

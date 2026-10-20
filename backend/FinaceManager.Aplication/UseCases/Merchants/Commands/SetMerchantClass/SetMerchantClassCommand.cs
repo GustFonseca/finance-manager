@@ -4,4 +4,4 @@ using FinanceManager.Domain.Enuns;
 
 namespace FinanceManager.Aplication.UseCases.Merchants.Commands.SetMerchantClass;
 
-public record SetMerchantClassCommand(Guid UserId, Guid MerchantId, SpendingClass? Class) : ICommand<MerchantDto?>;
+public record SetMerchantClassCommand(Guid UserId, Guid MerchantId, SpendingClass? Class) : ICommand<MerchantDto>;

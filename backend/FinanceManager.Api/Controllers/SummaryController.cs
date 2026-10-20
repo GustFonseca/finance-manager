@@ -23,17 +23,8 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/summary")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class SummaryController : ControllerBase
+public class SummaryController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public SummaryController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<FinancialSummaryDto>> GetSummary(
         [FromQuery] DateTime? start,
@@ -41,7 +32,7 @@ public class SummaryController : ControllerBase
         [FromQuery] Guid? accountId)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var summary = await _mediator.Send(new GetFinancialSummaryQuery(GetUserId(), monthStart, now, accountId));
+        var summary = await Mediator.Send(new GetFinancialSummaryQuery(UserId, monthStart, now, accountId));
         return Ok(summary);
     }
 
@@ -52,7 +43,7 @@ public class SummaryController : ControllerBase
         [FromQuery] DateTime? start = null)
     {
         var (_, now) = MonthPeriod.Resolve(start, end);
-        var recurring = await _mediator.Send(new GetRecurringExpensesQuery(GetUserId(), now, accountId));
+        var recurring = await Mediator.Send(new GetRecurringExpensesQuery(UserId, now, accountId));
         return Ok(recurring);
     }
 
@@ -63,7 +54,7 @@ public class SummaryController : ControllerBase
         [FromQuery] Guid? accountId)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetAvoidableSpendingQuery(GetUserId(), monthStart, now, accountId)));
+        return Ok(await Mediator.Send(new GetAvoidableSpendingQuery(UserId, monthStart, now, accountId)));
     }
 
     [HttpGet("forecast")]
@@ -73,7 +64,7 @@ public class SummaryController : ControllerBase
         [FromQuery] Guid? accountId)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetCashFlowForecastQuery(GetUserId(), monthStart, now, accountId)));
+        return Ok(await Mediator.Send(new GetCashFlowForecastQuery(UserId, monthStart, now, accountId)));
     }
 
     [HttpGet("daily")]
@@ -84,7 +75,7 @@ public class SummaryController : ControllerBase
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
         var day = MonthPeriod.DayStart(monthStart, now, dayStart);
-        return Ok(await _mediator.Send(new GetDailyBudgetQuery(GetUserId(), monthStart, now, day)));
+        return Ok(await Mediator.Send(new GetDailyBudgetQuery(UserId, monthStart, now, day)));
     }
 
     [HttpGet("digest")]
@@ -95,27 +86,27 @@ public class SummaryController : ControllerBase
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
         var day = MonthPeriod.DayStart(monthStart, now, dayStart);
-        return Ok(await _mediator.Send(new GetDigestQuery(GetUserId(), monthStart, now, day)));
+        return Ok(await Mediator.Send(new GetDigestQuery(UserId, monthStart, now, day)));
     }
 
     [HttpGet("calendar")]
     public async Task<ActionResult<CalendarDto>> GetCalendar([FromQuery] DateTime? start, [FromQuery] DateTime? end)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        return Ok(await _mediator.Send(new GetCalendarQuery(GetUserId(), monthStart, now)));
+        return Ok(await Mediator.Send(new GetCalendarQuery(UserId, monthStart, now)));
     }
 
     [HttpPost("dismissals")]
     public async Task<IActionResult> Dismiss([FromBody] DismissInsightRequest request)
     {
-        await _mediator.Send(new DismissInsightCommand(GetUserId(), request.Key));
+        await Mediator.Send(new DismissInsightCommand(UserId, request.Key));
         return NoContent();
     }
 
     [HttpPut("subscriptions/choice")]
     public async Task<IActionResult> SetSubscriptionChoice([FromBody] SubscriptionChoiceRequest request)
     {
-        await _mediator.Send(new SetSubscriptionChoiceCommand(GetUserId(), request.Key, request.Name, request.Choice, DateTime.UtcNow));
+        await Mediator.Send(new SetSubscriptionChoiceCommand(UserId, request.Key, request.Name, request.Choice, DateTime.UtcNow));
         return NoContent();
     }
 
@@ -126,7 +117,7 @@ public class SummaryController : ControllerBase
         [FromQuery] Guid? accountId)
     {
         var (monthStart, now) = MonthPeriod.Resolve(start, end);
-        var analysis = await _mediator.Send(new GetSpendingAnalysisQuery(GetUserId(), monthStart, now, accountId));
+        var analysis = await Mediator.Send(new GetSpendingAnalysisQuery(UserId, monthStart, now, accountId));
         return Ok(analysis);
     }
 }

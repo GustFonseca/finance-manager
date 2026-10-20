@@ -1,4 +1,6 @@
-using AutoMapper;
+using FinanceManager.Domain.Entities;
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -6,30 +8,27 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Folders.Commands.RenameFolder;
 
-public class RenameFolderHandler : IRequestHandler<RenameFolderCommand, FolderDto?>
+public class RenameFolderHandler : IRequestHandler<RenameFolderCommand, FolderDto>
 {
     private readonly IFolderRepository _folderRepository;
     private readonly IStoredFileRepository _fileRepository;
-    private readonly IMapper _mapper;
 
-    public RenameFolderHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository, IMapper mapper)
+    public RenameFolderHandler(IFolderRepository folderRepository, IStoredFileRepository fileRepository)
     {
         _folderRepository = folderRepository;
         _fileRepository = fileRepository;
-        _mapper = mapper;
     }
 
-    public async Task<FolderDto?> Handle(RenameFolderCommand request, CancellationToken cancellationToken = default)
+    public async Task<FolderDto> Handle(RenameFolderCommand request, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepository.GetByIdAsync(request.FolderId);
-        if (folder == null || folder.UserId != request.UserId || folder.DeletedAt != null) return null;
+        var folder = await _folderRepository.GetLiveAsync(request.FolderId, request.UserId);
         if (folder.IsSystem)
             throw new BusinessRuleException("A pasta padrão não pode ser renomeada.");
 
-        folder.Name = ItemNames.Validate(request.Name, 100);
+        folder.Name = ItemNames.Validate(request.Name, EntityLimits.NameLength);
         await _folderRepository.UpdateAsync(folder);
 
-        var dto = _mapper.Map<FolderDto>(folder);
+        var dto = folder.ToDto();
         dto.FileCount = (await _fileRepository.CountActiveByFolderAsync(request.UserId)).GetValueOrDefault(folder.Id);
         return dto;
     }

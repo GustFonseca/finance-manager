@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Classification;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -39,8 +40,8 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
         if (request.Lines.Count == 0) throw new BusinessRuleException("Nenhuma transação selecionada.");
         if (request.Lines.Count > MaxLines) throw new BusinessRuleException($"No máximo {MaxLines} transações por importação.");
 
-        var account = await _accountRepository.GetByIdAsync(request.AccountId);
-        if (account == null || account.UserId != request.UserId) throw new BusinessRuleException("Conta não encontrada.");
+        var account = await _accountRepository.FindOwnedAsync(request.AccountId, request.UserId)
+            ?? throw new BusinessRuleException("Conta não encontrada.");
         var categories = (await _categoryRepository.GetByUserIdAsync(request.UserId)).ToDictionary(c => c.Id);
         var owner = await _userRepository.GetByIdAsync(request.UserId);
         var rules = await _rulesProvider.GetAsync(cancellationToken);
@@ -59,7 +60,7 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
                 var merchant = await MerchantCatalog.FileAsync(
                     _merchantRepository, rules, request.UserId, description, owner?.Name, category, cache: merchants);
 
-                transactions.Add(new Transaction
+                var transaction = new Transaction
                 {
                     UserId = request.UserId,
                     AccountId = account.Id,
@@ -69,8 +70,9 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
                     Description = description,
                     Date = TransactionInput.ToUtc(line.Date),
                     MerchantId = merchant?.Id,
-                });
-                TransactionInput.ApplyToBalance(account, line.Type, line.AmountCents);
+                };
+                account.Record(transaction);
+                transactions.Add(transaction);
             }
             catch (BusinessRuleException ex)
             {

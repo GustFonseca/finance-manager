@@ -1,4 +1,6 @@
-using AutoMapper;
+using FinanceManager.Aplication.Validation;
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Analysis;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
@@ -9,35 +11,28 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Merchants.Commands.UpdateMerchant;
 
-public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, UpdateMerchantResultDto?>
+public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, UpdateMerchantResultDto>
 {
-    private const int MaxNameLength = 100;
 
     private readonly IMerchantRepository _merchantRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ITransactionRepository _transactionRepository;
-    private readonly IMapper _mapper;
 
     public UpdateMerchantHandler(
         IMerchantRepository merchantRepository,
         ICategoryRepository categoryRepository,
-        ITransactionRepository transactionRepository,
-        IMapper mapper)
+        ITransactionRepository transactionRepository)
     {
         _merchantRepository = merchantRepository;
         _categoryRepository = categoryRepository;
         _transactionRepository = transactionRepository;
-        _mapper = mapper;
     }
 
-    public async Task<UpdateMerchantResultDto?> Handle(UpdateMerchantCommand request, CancellationToken cancellationToken = default)
+    public async Task<UpdateMerchantResultDto> Handle(UpdateMerchantCommand request, CancellationToken cancellationToken = default)
     {
-        var merchant = await _merchantRepository.GetByIdAsync(request.MerchantId);
-        if (merchant == null || merchant.UserId != request.UserId) return null;
+        var merchant = await _merchantRepository.GetOwnedAsync(request.MerchantId, request.UserId);
 
-        var name = request.Name.Trim();
-        if (name.Length == 0 || name.Length > MaxNameLength)
-            throw new BusinessRuleException($"O nome deve ter entre 1 e {MaxNameLength} caracteres");
+        var name = Input.Name(request.Name);
         if (MerchantParser.KeyOf(name) != merchant.Key)
         {
             var same = await _merchantRepository.GetByKeyAsync(request.UserId, MerchantParser.KeyOf(name));
@@ -48,9 +43,8 @@ public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, Upda
         Category? category = null;
         if (request.CategoryId.HasValue)
         {
-            category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value);
-            if (category == null || category.UserId != request.UserId)
-                throw new BusinessRuleException("Categoria não encontrada");
+            category = await _categoryRepository.FindOwnedAsync(request.CategoryId.Value, request.UserId)
+                ?? throw new BusinessRuleException("Categoria não encontrada");
         }
 
         merchant.Name = name;
@@ -71,6 +65,6 @@ public class UpdateMerchantHandler : IRequestHandler<UpdateMerchantCommand, Upda
             updated = changed.Count;
         }
 
-        return new UpdateMerchantResultDto { Merchant = _mapper.Map<MerchantDto>(merchant), UpdatedTransactions = updated };
+        return new UpdateMerchantResultDto { Merchant = merchant.ToDto(), UpdatedTransactions = updated };
     }
 }

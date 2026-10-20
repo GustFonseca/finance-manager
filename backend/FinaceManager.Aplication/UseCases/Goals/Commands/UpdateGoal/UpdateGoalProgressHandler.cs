@@ -1,5 +1,6 @@
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Validation;
-using AutoMapper;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -11,33 +12,20 @@ namespace FinanceManager.Aplication.UseCases.Goals.Commands.UpdateGoal;
 public class UpdateGoalProgressHandler : IRequestHandler<UpdateGoalProgressCommand, GoalDto>
 {
     private readonly IGoalRepository _goalRepository;
-    private readonly IMapper _mapper;
 
-    public UpdateGoalProgressHandler(IGoalRepository goalRepository, IMapper mapper)
+    public UpdateGoalProgressHandler(IGoalRepository goalRepository)
     {
         _goalRepository = goalRepository;
-        _mapper = mapper;
     }
 
     public async Task<GoalDto> Handle(UpdateGoalProgressCommand request, CancellationToken cancellationToken = default)
     {
         Input.Positive(request.AmountCents, "O valor deve ser maior que zero.");
-        var goal = await _goalRepository.GetByIdAsync(request.GoalId)
-            ?? throw new NotFoundException("Meta não encontrada.");
-        if (goal.UserId != request.UserId)
-            throw new NotFoundException("Meta não encontrada.");
-        if (goal.Status != GoalStatus.ACTIVE)
-            throw new BusinessRuleException("A meta não está ativa.");
+        var goal = await _goalRepository.GetOwnedAsync(request.GoalId, request.UserId);
 
-        goal.CurrentCents += request.AmountCents;
-
-        if (goal.CurrentCents >= goal.TargetCents)
-            goal.Status = GoalStatus.COMPLETED;
-
+        goal.AddProgress(request.AmountCents);
         await _goalRepository.UpdateAsync(goal);
 
-        var dto = _mapper.Map<GoalDto>(goal);
-        dto.ProgressPercent = goal.TargetCents > 0 ? Math.Round((double)goal.CurrentCents / goal.TargetCents * 100, 1) : 0;
-        return dto;
+        return goal.ToDto();
     }
 }

@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
 using FinanceManager.Domain.Entities;
@@ -6,7 +7,7 @@ using FinanceManager.Domain.Interfaces.Repositories;
 
 namespace FinanceManager.Aplication.UseCases.Savings.Commands.SetCategoryBudget;
 
-public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand, bool>
+public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand>
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ICategoryBudgetRepository _budgetRepository;
@@ -17,10 +18,9 @@ public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand
         _budgetRepository = budgetRepository;
     }
 
-    public async Task<bool> Handle(SetCategoryBudgetCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(SetCategoryBudgetCommand request, CancellationToken cancellationToken = default)
     {
-        var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
-        if (category == null || category.UserId != request.UserId) return false;
+        var category = await _categoryRepository.GetOwnedAsync(request.CategoryId, request.UserId);
         if (category.Type != CategoryType.EXPENSE)
             throw new BusinessRuleException("Só categorias de despesa têm orçamento.");
         if (request.LimitCents < 0)
@@ -30,7 +30,7 @@ public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand
         if (request.LimitCents is null or 0)
         {
             if (budget != null) await _budgetRepository.DeleteAsync(budget);
-            return true;
+            return;
         }
 
         if (budget == null)
@@ -48,6 +48,5 @@ public class SetCategoryBudgetHandler : IRequestHandler<SetCategoryBudgetCommand
             budget.UpdatedAt = DateTime.UtcNow;
             await _budgetRepository.UpdateAsync(budget);
         }
-        return true;
     }
 }

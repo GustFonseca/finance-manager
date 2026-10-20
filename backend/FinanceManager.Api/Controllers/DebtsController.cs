@@ -16,43 +16,33 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/debts")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class DebtsController : ControllerBase
+public class DebtsController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public DebtsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
-    public async Task<ActionResult<List<DebtDto>>> GetAll() => Ok(await _mediator.Send(new GetDebtsQuery(GetUserId())));
+    public async Task<ActionResult<List<DebtDto>>> GetAll() => Ok(await Mediator.Send(new GetDebtsQuery(UserId)));
 
     [HttpGet("plan")]
     public async Task<ActionResult<DebtPlanDto>> Plan([FromQuery] long? extraCents) =>
-        Ok(await _mediator.Send(new GetDebtPlanQuery(GetUserId(), extraCents ?? 0)));
+        Ok(await Mediator.Send(new GetDebtPlanQuery(UserId, extraCents ?? 0)));
 
     [HttpPost]
     public async Task<ActionResult<DebtDto>> Create([FromBody] SaveDebtRequest request)
     {
-        var debt = await _mediator.Send(new SaveDebtCommand(GetUserId(), null, request.Name, request.BalanceCents, request.MonthlyRatePercent, request.MinimumPaymentCents));
-        return Created($"/api/debts/{debt!.Id}", debt);
+        var debt = await Mediator.Send(new SaveDebtCommand(UserId, null, request.Name, request.BalanceCents, request.MonthlyRatePercent, request.MinimumPaymentCents));
+        return Created($"/api/debts/{debt.Id}", debt);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<DebtDto>> Update(Guid id, [FromBody] SaveDebtRequest request)
     {
-        var debt = await _mediator.Send(new SaveDebtCommand(GetUserId(), id, request.Name, request.BalanceCents, request.MonthlyRatePercent, request.MinimumPaymentCents));
-        if (debt == null) return NotFound();
+        var debt = await Mediator.Send(new SaveDebtCommand(UserId, id, request.Name, request.BalanceCents, request.MonthlyRatePercent, request.MinimumPaymentCents));
         return Ok(debt);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        if (!await _mediator.Send(new DeleteDebtCommand(GetUserId(), id))) return NotFound();
+        await Mediator.Send(new DeleteDebtCommand(UserId, id));
         return NoContent();
     }
 }

@@ -1,3 +1,4 @@
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Validation;
 using FinanceManager.Domain.Entities;
@@ -8,7 +9,7 @@ namespace FinanceManager.Aplication.UseCases.Transactions;
 
 public static class TransactionInput
 {
-    public const int MaxDescriptionLength = 500;
+    public const int MaxDescriptionLength = EntityLimits.DescriptionLength;
 
     public static string Validate(long amountCents, string? description, TransactionType type, Recurrence recurrence = Recurrence.NONE)
     {
@@ -29,12 +30,10 @@ public static class TransactionInput
         Guid categoryId,
         TransactionType type)
     {
-        var account = await accountRepository.GetByIdAsync(accountId);
-        if (account == null || account.UserId != userId)
-            throw new BusinessRuleException("Conta não encontrada.");
-        var category = await categoryRepository.GetByIdAsync(categoryId);
-        if (category == null || category.UserId != userId)
-            throw new BusinessRuleException("Categoria não encontrada.");
+        var account = await accountRepository.FindOwnedAsync(accountId, userId)
+            ?? throw new BusinessRuleException("Conta não encontrada.");
+        var category = await categoryRepository.FindOwnedAsync(categoryId, userId)
+            ?? throw new BusinessRuleException("Categoria não encontrada.");
         EnsureCategoryFits(category, type);
         return (account, category);
     }
@@ -52,10 +51,4 @@ public static class TransactionInput
         DateTimeKind.Local => date.ToUniversalTime(),
         _ => DateTime.SpecifyKind(date, DateTimeKind.Utc),
     };
-
-    public static void ApplyToBalance(Account account, TransactionType type, long amountCents)
-    {
-        if (type == TransactionType.INCOME) account.AddBalance(amountCents);
-        else account.SubtractBalance(amountCents);
-    }
 }

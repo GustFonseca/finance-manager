@@ -17,44 +17,33 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/categories")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class CategoriesController : ControllerBase
+public class CategoriesController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public CategoriesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<List<CategoryDto>>> GetAll([FromQuery] CategoryType? type)
     {
-        var categories = await _mediator.Send(new GetAllCategoriesQuery(GetUserId(), type));
+        var categories = await Mediator.Send(new GetAllCategoriesQuery(UserId, type));
         return Ok(categories);
     }
 
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> Create([FromBody] CreateCategoryRequest request)
     {
-        var category = await _mediator.Send(new CreateCategoryCommand(GetUserId(), request.Name, request.Type, request.Color));
+        var category = await Mediator.Send(new CreateCategoryCommand(UserId, request.Name, request.Type, request.Color));
         return Created($"/api/categories/{category.Id}", category);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<CategoryDto>> Update(Guid id, [FromBody] UpdateCategoryRequest request)
     {
-        var category = await _mediator.Send(new UpdateCategoryCommand(GetUserId(), id, request.Name, request.Type, request.Color));
-        if (category == null) return NotFound();
+        var category = await Mediator.Send(new UpdateCategoryCommand(UserId, id, request.Name, request.Type, request.Color));
         return Ok(category);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteCategoryCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteCategoryCommand(UserId, id));
         return NoContent();
     }
 }

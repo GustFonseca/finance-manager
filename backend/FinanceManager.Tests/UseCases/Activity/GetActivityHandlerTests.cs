@@ -23,7 +23,7 @@ public class GetActivityHandlerTests
     }
 
     private Task<List<Aplication.DTOs.ActivityLogDto>> Get(DateTime? before, int limit) =>
-        new GetActivityHandler(new ActivityLogRepository(_db), TestDb.Mapper).Handle(new GetActivityQuery(Me, before, limit));
+        new GetActivityHandler(new ActivityLogRepository(_db)).Handle(new GetActivityQuery(Me, before, limit));
 
     [Fact]
     public async Task Returns_the_users_entries_newest_first_up_to_the_limit()

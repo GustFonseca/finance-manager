@@ -15,36 +15,26 @@ namespace FinanceManager.Api.Controllers;
 [Route("api/challenges")]
 [Authorize]
 [OutputCache(PolicyName = UserDataCachePolicy.Name)]
-public class ChallengesController : ControllerBase
+public class ChallengesController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public ChallengesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<List<ChallengeDto>>> GetAll()
     {
-        return Ok(await _mediator.Send(new GetChallengesQuery(GetUserId(), DateTime.UtcNow)));
+        return Ok(await Mediator.Send(new GetChallengesQuery(UserId, DateTime.UtcNow)));
     }
 
     [HttpPost]
     public async Task<ActionResult<ChallengeDto>> Create([FromBody] CreateChallengeRequest request)
     {
-        var challenge = await _mediator.Send(new CreateChallengeCommand(
-            GetUserId(), request.Name, request.Scope, request.TargetId, request.LimitCents, request.StartsOn, request.Days, DateTime.UtcNow));
+        var challenge = await Mediator.Send(new CreateChallengeCommand(
+            UserId, request.Name, request.Scope, request.TargetId, request.LimitCents, request.StartsOn, request.Days, DateTime.UtcNow));
         return Created($"/api/challenges/{challenge.Id}", challenge);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _mediator.Send(new DeleteChallengeCommand(GetUserId(), id));
-        if (!deleted) return NotFound();
+        await Mediator.Send(new DeleteChallengeCommand(UserId, id));
         return NoContent();
     }
 }

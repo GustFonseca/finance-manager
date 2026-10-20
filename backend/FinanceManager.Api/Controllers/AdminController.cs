@@ -10,16 +10,9 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Policy = AdminPolicy.Name)]
-public class AdminController : ControllerBase
+public class AdminController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public AdminController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet("users")]
     public async Task<ActionResult<List<UserOverviewDto>>> GetUsers() =>
-        Ok(await _mediator.Send(new GetUsersOverviewQuery(DateTime.UtcNow)));
+        Ok(await Mediator.Send(new GetUsersOverviewQuery(DateTime.UtcNow)));
 }

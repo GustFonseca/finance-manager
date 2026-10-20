@@ -53,7 +53,7 @@ public class ProfileTests
 
         Assert.Equal(("Gustavo Fonseca", true, (string?)null), (profile!.Name, profile.IsAdmin, profile.AvatarIcon));
         Assert.Equal(_me.CreatedAt, profile.MemberSince);
-        Assert.Null(await new GetProfileHandler(new UserRepository(_db), _admins).Handle(new GetProfileQuery(Guid.NewGuid())));
+        await Assert.ThrowsAsync<NotFoundException>(() => new GetProfileHandler(new UserRepository(_db), _admins).Handle(new GetProfileQuery(Guid.NewGuid())));
 
         _me.Name = " ";
         _db.SaveChanges();
@@ -71,7 +71,7 @@ public class ProfileTests
         Assert.Equal((900000L, 5, 1, true), (profile.MonthlyIncomeCents!.Value, profile.Payday!.Value, profile.Dependents!.Value, profile.DigestByEmail));
         Assert.Equal(Now, _db.Users.Single(u => u.Id == _me.Id).ProfileUpdatedAt);
         Assert.Contains(_db.ActivityLogs, a => a.UserId == _me.Id && a.Description == "Dados da conta atualizados");
-        Assert.Null(await Update.Handle(new UpdateProfileCommand(Guid.NewGuid(), Valid(), Now)));
+        await Assert.ThrowsAsync<NotFoundException>(() => Update.Handle(new UpdateProfileCommand(Guid.NewGuid(), Valid(), Now)));
     }
 
     [Fact]
@@ -123,12 +123,12 @@ public class ProfileTests
         var me = Guid.NewGuid();
         var controller = new ProfileController(mediator).SignedIn(me);
         var dto = new ProfileDto { Name = "Ana" };
-        mediator.Returns<GetProfileQuery>(q => q.UserId == me ? dto : null);
-        mediator.Returns<UpdateProfileCommand>(c => c.Profile.Name == "Ana" ? dto : null);
+        mediator.Returns<GetProfileQuery>(q => q.UserId == me ? dto : throw new NotFoundException("não encontrado"));
+        mediator.Returns<UpdateProfileCommand>(c => c.Profile.Name == "Ana" ? dto : throw new NotFoundException("não encontrado"));
 
         Assert.Same(dto, Assert.IsType<OkObjectResult>((await controller.Get()).Result).Value);
         Assert.Same(dto, Assert.IsType<OkObjectResult>((await controller.Update(new UpdateProfileRequest { Name = "Ana" })).Result).Value);
-        Assert.IsType<NotFoundResult>((await controller.Update(new UpdateProfileRequest { Name = "Outro" })).Result);
-        Assert.IsType<NotFoundResult>((await new ProfileController(mediator).SignedIn(Guid.NewGuid()).Get()).Result);
+        await Assert.ThrowsAsync<NotFoundException>(() => controller.Update(new UpdateProfileRequest { Name = "Outro" }));
+        await Assert.ThrowsAsync<NotFoundException>(() => new ProfileController(mediator).SignedIn(Guid.NewGuid()).Get());
     }
 }

@@ -1,3 +1,4 @@
+using FinanceManager.Domain.Common;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.UseCases.Goals.Commands.CompleteGoal;
 using FinanceManager.Aplication.UseCases.Goals.Commands.CreateGoal;
@@ -35,7 +36,7 @@ public class GoalHandlersTests
     {
         var deadline = new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var dto = await new CreateGoalHandler(Goals, TestDb.Mapper).Handle(new CreateGoalCommand(Me, "Viagem", 500000, deadline));
+        var dto = await new CreateGoalHandler(Goals).Handle(new CreateGoalCommand(Me, "Viagem", 500000, deadline));
 
         var saved = Assert.Single(_db.Goals);
         Assert.Equal(saved.Id, dto.Id);
@@ -52,7 +53,7 @@ public class GoalHandlersTests
         AddGoal(Me, 0, createdAt: DateTime.UtcNow);
         AddGoal(SomeoneElse, 10000);
 
-        var goals = await new GetAllGoalsHandler(Goals, TestDb.Mapper).Handle(new GetAllGoalsQuery(Me));
+        var goals = await new GetAllGoalsHandler(Goals).Handle(new GetAllGoalsQuery(Me));
 
         Assert.Equal([0, 25.0], goals.Select(g => g.ProgressPercent));
     }
@@ -62,7 +63,7 @@ public class GoalHandlersTests
     {
         var goal = AddGoal(Me, 30000, 10000);
 
-        var dto = await new UpdateGoalProgressHandler(Goals, TestDb.Mapper).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 5000));
+        var dto = await new UpdateGoalProgressHandler(Goals).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 5000));
 
         Assert.Equal(15000, dto.CurrentCents);
         Assert.Equal(50.0, dto.ProgressPercent);
@@ -74,7 +75,7 @@ public class GoalHandlersTests
     {
         var goal = AddGoal(Me, 10000, 9000);
 
-        var dto = await new UpdateGoalProgressHandler(Goals, TestDb.Mapper).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 2000));
+        var dto = await new UpdateGoalProgressHandler(Goals).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 2000));
 
         Assert.Equal(GoalStatus.COMPLETED, dto.Status);
         Assert.Equal(110.0, dto.ProgressPercent);
@@ -85,7 +86,7 @@ public class GoalHandlersTests
     {
         var goal = AddGoal(Me, 0);
 
-        var dto = await new UpdateGoalProgressHandler(Goals, TestDb.Mapper).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 100));
+        var dto = await new UpdateGoalProgressHandler(Goals).Handle(new UpdateGoalProgressCommand(Me, goal.Id, 100));
 
         Assert.Equal(0, dto.ProgressPercent);
     }
@@ -95,11 +96,11 @@ public class GoalHandlersTests
     {
         var foreign = AddGoal(SomeoneElse, 10000);
         var done = AddGoal(Me, 10000, status: GoalStatus.COMPLETED);
-        var handler = new UpdateGoalProgressHandler(Goals, TestDb.Mapper);
+        var handler = new UpdateGoalProgressHandler(Goals);
 
         var missing = await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateGoalProgressCommand(Me, Guid.NewGuid(), 1)));
         var notMine = await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new UpdateGoalProgressCommand(Me, foreign.Id, 1)));
-        var inactive = await Assert.ThrowsAsync<BusinessRuleException>(() => handler.Handle(new UpdateGoalProgressCommand(Me, done.Id, 1)));
+        var inactive = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new UpdateGoalProgressCommand(Me, done.Id, 1)));
 
         Assert.Equal("Meta não encontrada.", missing.Message);
         Assert.Equal("Meta não encontrada.", notMine.Message);
@@ -111,7 +112,7 @@ public class GoalHandlersTests
     {
         var goal = AddGoal(Me, 20000, 5000);
 
-        var dto = await new CompleteGoalHandler(Goals, TestDb.Mapper).Handle(new CompleteGoalCommand(Me, goal.Id));
+        var dto = await new CompleteGoalHandler(Goals).Handle(new CompleteGoalCommand(Me, goal.Id));
 
         Assert.Equal(GoalStatus.COMPLETED, dto.Status);
         Assert.Equal(25.0, dto.ProgressPercent);
@@ -123,7 +124,7 @@ public class GoalHandlersTests
     {
         var goal = AddGoal(Me, 0);
 
-        var dto = await new CompleteGoalHandler(Goals, TestDb.Mapper).Handle(new CompleteGoalCommand(Me, goal.Id));
+        var dto = await new CompleteGoalHandler(Goals).Handle(new CompleteGoalCommand(Me, goal.Id));
 
         Assert.Equal(0, dto.ProgressPercent);
     }
@@ -132,7 +133,7 @@ public class GoalHandlersTests
     public async Task CompleteGoal_rejects_missing_and_foreign_goals()
     {
         var foreign = AddGoal(SomeoneElse, 10000);
-        var handler = new CompleteGoalHandler(Goals, TestDb.Mapper);
+        var handler = new CompleteGoalHandler(Goals);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new CompleteGoalCommand(Me, Guid.NewGuid())));
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new CompleteGoalCommand(Me, foreign.Id)));
@@ -146,9 +147,9 @@ public class GoalHandlersTests
         var foreign = AddGoal(SomeoneElse, 10000);
         var handler = new DeleteGoalHandler(Goals);
 
-        Assert.True(await handler.Handle(new DeleteGoalCommand(Me, mine.Id)));
-        Assert.False(await handler.Handle(new DeleteGoalCommand(Me, foreign.Id)));
-        Assert.False(await handler.Handle(new DeleteGoalCommand(Me, Guid.NewGuid())));
+        await handler.Handle(new DeleteGoalCommand(Me, mine.Id));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteGoalCommand(Me, foreign.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteGoalCommand(Me, Guid.NewGuid())));
         Assert.Equal([foreign.Id], _db.Goals.Select(g => g.Id));
     }
 }

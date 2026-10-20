@@ -136,9 +136,9 @@ public class ChallengeAndDailyHandlersTests
         var dto = await Create.Handle(Command());
         var handler = new DeleteChallengeHandler(new ChallengeRepository(_db));
 
-        Assert.False(await handler.Handle(new DeleteChallengeCommand(Guid.NewGuid(), dto.Id)));
-        Assert.False(await handler.Handle(new DeleteChallengeCommand(_me.Id, Guid.NewGuid())));
-        Assert.True(await handler.Handle(new DeleteChallengeCommand(_me.Id, dto.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteChallengeCommand(Guid.NewGuid(), dto.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new DeleteChallengeCommand(_me.Id, Guid.NewGuid())));
+        await handler.Handle(new DeleteChallengeCommand(_me.Id, dto.Id));
         Assert.Empty(_db.Challenges);
         Assert.Contains(_db.ActivityLogs, a => a.Description == "Desafio excluído: Sem cinema");
     }
@@ -237,10 +237,10 @@ public class ChallengeAndDailyControllerTests
     public async Task Delete_returns_204_or_404()
     {
         var id = Guid.NewGuid();
-        _mediator.Returns<DeleteChallengeCommand>(c => c.ChallengeId == id);
+        _mediator.Returns<DeleteChallengeCommand>(c => c.ChallengeId == id ? true : throw new NotFoundException("não encontrado"));
 
         Assert.IsType<NoContentResult>(await Challenges.Delete(id));
-        Assert.IsType<NotFoundResult>(await Challenges.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<NotFoundException>(() => Challenges.Delete(Guid.NewGuid()));
     }
 
     [Fact]

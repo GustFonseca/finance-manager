@@ -11,30 +11,19 @@ namespace FinanceManager.Api.Controllers;
 [ApiController]
 [Route("api/me")]
 [Authorize]
-public class ProfileController : ControllerBase
+public class ProfileController(IMediator mediator) : AppController(mediator)
 {
-    private readonly IMediator _mediator;
-
-    public ProfileController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    private Guid GetUserId() => User.GetUserId();
-
     [HttpGet]
     public async Task<ActionResult<ProfileDto>> Get()
     {
-        var profile = await _mediator.Send(new GetProfileQuery(GetUserId()));
-        if (profile == null) return NotFound();
+        var profile = await Mediator.Send(new GetProfileQuery(UserId));
         return Ok(profile);
     }
 
     [HttpPut]
     public async Task<ActionResult<ProfileDto>> Update([FromBody] UpdateProfileRequest request)
     {
-        var profile = await _mediator.Send(new UpdateProfileCommand(GetUserId(), request, DateTime.UtcNow));
-        if (profile == null) return NotFound();
+        var profile = await Mediator.Send(new UpdateProfileCommand(UserId, request, DateTime.UtcNow));
         return Ok(profile);
     }
 }

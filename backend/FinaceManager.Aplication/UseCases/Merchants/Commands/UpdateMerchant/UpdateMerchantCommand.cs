@@ -10,4 +10,4 @@ public record UpdateMerchantCommand(
     string Name,
     MerchantKind Kind,
     Guid? CategoryId,
-    bool ApplyToTransactions) : ICommand<UpdateMerchantResultDto?>;
+    bool ApplyToTransactions) : ICommand<UpdateMerchantResultDto>;

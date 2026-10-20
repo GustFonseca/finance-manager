@@ -107,7 +107,7 @@ public class ActivityLogInterceptorTests
         await files.UpdateAsync(loose);
         var before = History().Count;
 
-        await new EmptyTrashHandler(folders, files, new FakeStore().Storage, new FinanceManager.Infrastructure.Messaging.UnitOfWork()).Handle(new EmptyTrashCommand(Me));
+        await new EmptyTrashHandler(folders, files).Handle(new EmptyTrashCommand(Me));
 
         Assert.Equal(
             ["Arquivo excluído permanentemente: solto.pdf", "Pasta excluída permanentemente: Velha"],

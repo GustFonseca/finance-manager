@@ -1,12 +1,14 @@
 using System.Net;
 using System.Text;
 using FinanceManager.Aplication.Companies;
+using FinanceManager.Aplication.UseCases.Merchants;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.ApplyMerchantActivity;
 using FinanceManager.Aplication.UseCases.Merchants.Commands.RecordEnrichmentFailure;
 using FinanceManager.Aplication.UseCases.Merchants.Queries.GetMerchantsPendingEnrichment;
 using FinanceManager.Aplication.UseCases.Summary.Queries.GetCashFlowForecast;
 using FinanceManager.Domain.Entities;
 using FinanceManager.Domain.Enuns;
+using FinanceManager.Domain.Events;
 using FinanceManager.Infrastructure.Companies;
 using FinanceManager.Infrastructure.Context;
 using FinanceManager.Infrastructure.Repositories;
@@ -51,11 +53,8 @@ public class MerchantEnrichmentTests
         return merchant;
     }
 
-    private readonly FinanceManager.Infrastructure.Messaging.UnitOfWork _work = new();
-    private readonly List<Guid> _bumped = [];
-
     private ApplyMerchantActivityHandler ApplyHandler => new(
-        new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db), TestRules.Provider, _work, new RecordingVersions(_bumped));
+        new MerchantRepository(_db), new CategoryRepository(_db), new TransactionRepository(_db), TestRules.Provider);
 
     [Fact]
     public async Task Only_businesses_with_a_cnpj_that_were_never_looked_up_are_pending()
@@ -120,9 +119,20 @@ public class MerchantEnrichmentTests
         Assert.Equal(_alimentacao.Id, saved.CategoryId);
         Assert.Equal(_alimentacao.Id, _db.Transactions.Single(t => t.Id == unsorted.Id).CategoryId);
         Assert.Equal(_lazer.Id, _db.Transactions.Single(t => t.Id == chosen.Id).CategoryId);
-        Assert.Empty(_bumped);
-        await _work.FlushAsync();
-        Assert.Equal([_me.Id], _bumped);
+        Assert.Equal([new MerchantEnriched(merchant.Id, _me.Id)], _db.TakeDomainEvents());
+    }
+
+    [Fact]
+    public async Task Enriched_merchants_refresh_the_cache_of_each_owner_once()
+    {
+        var bumped = new List<Guid>();
+        var other = Guid.NewGuid();
+
+        await new MerchantEnrichedHandler(new RecordingVersions(bumped)).Handle(
+            [new MerchantEnriched(Guid.NewGuid(), _me.Id), new MerchantEnriched(Guid.NewGuid(), _me.Id), new MerchantEnriched(Guid.NewGuid(), other)],
+            CancellationToken.None);
+
+        Assert.Equal([_me.Id, other], bumped);
     }
 
     [Fact]

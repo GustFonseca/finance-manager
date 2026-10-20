@@ -77,7 +77,7 @@ public class RobustSpikeTests
     [InlineData(new long[] { 4, 1, 3, 2 }, 2)]
     public void The_median_is_the_middle_value(long[] values, long median)
     {
-        Assert.Equal(median, AvoidableSpendingAnalyzer.Median(values));
+        Assert.Equal(median, Stats.Median(values));
     }
 
     [Fact]

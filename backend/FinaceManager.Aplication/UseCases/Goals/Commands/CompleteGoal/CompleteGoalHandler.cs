@@ -1,4 +1,5 @@
-using AutoMapper;
+using FinanceManager.Aplication.Mappings;
+using FinanceManager.Aplication.Ownership;
 using FinanceManager.Aplication.DTOs;
 using FinanceManager.Aplication.Exceptions;
 using FinanceManager.Aplication.Mediator.Messaging;
@@ -10,26 +11,19 @@ namespace FinanceManager.Aplication.UseCases.Goals.Commands.CompleteGoal;
 public class CompleteGoalHandler : IRequestHandler<CompleteGoalCommand, GoalDto>
 {
     private readonly IGoalRepository _goalRepository;
-    private readonly IMapper _mapper;
 
-    public CompleteGoalHandler(IGoalRepository goalRepository, IMapper mapper)
+    public CompleteGoalHandler(IGoalRepository goalRepository)
     {
         _goalRepository = goalRepository;
-        _mapper = mapper;
     }
 
     public async Task<GoalDto> Handle(CompleteGoalCommand request, CancellationToken cancellationToken = default)
     {
-        var goal = await _goalRepository.GetByIdAsync(request.GoalId)
-            ?? throw new NotFoundException("Meta não encontrada.");
-        if (goal.UserId != request.UserId)
-            throw new NotFoundException("Meta não encontrada.");
+        var goal = await _goalRepository.GetOwnedAsync(request.GoalId, request.UserId);
 
-        goal.Status = GoalStatus.COMPLETED;
+        goal.Complete();
         await _goalRepository.UpdateAsync(goal);
 
-        var dto = _mapper.Map<GoalDto>(goal);
-        dto.ProgressPercent = goal.TargetCents > 0 ? Math.Round((double)goal.CurrentCents / goal.TargetCents * 100, 1) : 0;
-        return dto;
+        return goal.ToDto();
     }
 }
